@@ -25,7 +25,8 @@ interface DevelopmentPlan {
 }
 
 const ACTION_TYPES: DevelopmentPlan["actionType"][] = ["İş Üstünde","Koçluk","Proje","Formal Eğitim","Okuma / Araştırma"];
-const LABEL_TO_CODE:Record<string,string>={"Dijital Okuryazarlık":"DIG","Analitik Düşünme":"ANA","Sonuç Odaklılık":"RES","Detaylara Özen":"DET","Sürekli Öğrenme":"LRN","Etik ve Uyum":"ETH","Öz-Disiplin":"DIS","Stratejik Bakış":"STR","Takım Çalışması":"TEA","İletişim Becerileri":"COM"};
+const LABEL_TO_CODE:Record<string,string>={"Dijital Okuryazarlık":"DIG","Analitik Düşünme":"ANA","Sonuç Odaklılık":"RES","Detaylara Özen":"DET","Sürekli Öğrenme":"LRN","Etik ve Uyum":"ETH","Öz-Disiplin":"DIS","Dayanıklılık & Stres Yönetimi":"STR","Stratejik Bakış":"STR","Takım Çalışması":"TEA","İletişim Becerileri":"COM"};
+const displayCompetencyLabel=(label:string)=>label==="Stratejik Bakış"?"Dayanıklılık & Stres Yönetimi":label;
 
 export default function GelisimPage(){
   const {addNotification,showToast}=useNotifications();
@@ -34,7 +35,7 @@ export default function GelisimPage(){
   const role=String(user?.role||"").toUpperCase();const employees=useMemo(()=>{if(!user)return[];if(role==="CEO"||role==="IK")return orgData;try{return getManageableEmployees(user,orgData)}catch{return[]}},[user,orgData,role]);
   useEffect(()=>{if(!selectedName&&employees.length)setSelectedName(employees[0]["Ad Soyad"])},[employees,selectedName]);
   const selectedOrg=orgData.find((e)=>e["Ad Soyad"]===selectedName)||{};const latestAssessment=assessments.find((e)=>(e.Personel||e.target)===selectedName)||{};const selected={...selectedOrg,...latestAssessment};
-  const target=JOB_PROFILES[selectedOrg.Pozisyon]||{};const current=extractCompetencyMap(selected);const gaps=Object.entries(target).map(([label,expected])=>{const code=LABEL_TO_CODE[label]||label;const actual=Number(current[code]||0);return{label,actual,expected:Number(expected),gap:Number(expected)-actual}}).filter(i=>i.actual>0&&i.gap>0).sort((a,b)=>b.gap-a.gap);
+  const target=JOB_PROFILES[selectedOrg.Pozisyon]||{};const current=extractCompetencyMap(selected);const gaps=Object.entries(target).map(([label,expected])=>{const code=LABEL_TO_CODE[label]||label;const actual=Number(current[code]||0);return{label:displayCompetencyLabel(label),actual,expected:Number(expected),gap:Number(expected)-actual}}).filter(i=>i.actual>0&&i.gap>0).sort((a,b)=>b.gap-a.gap);
   const employeePlans=plans.filter((p)=>p.employee===selectedName);
   const savePlans=(next:DevelopmentPlan[])=>{setPlans(next);setStorageData(STORAGE_KEYS.DEVELOPMENT_PLANS,next);window.dispatchEvent(new CustomEvent("dataUpdated"));};
   const create=(e:FormEvent)=>{e.preventDefault();if(!selectedName||!form.goal.trim()||!form.action.trim()||!form.successMetric.trim())return;const plan:DevelopmentPlan={id:`dev-${Date.now()}`,employee:selectedName,competency:form.competency||undefined,goal:form.goal.trim(),action:form.action.trim(),actionType:form.actionType,successMetric:form.successMetric.trim(),dueDate:form.dueDate||undefined,status:"Planlandı",createdBy:user?.name||user?.username||"",createdAt:new Date().toISOString()};savePlans([plan,...plans]);addNotification(`Yeni gelişim aksiyonu tanımlandı: ${plan.goal}`,"info",{targetUser:selectedName,link:"/gelisim",source:"development"});setForm({competency:"",goal:"",action:"",actionType:"İş Üstünde",successMetric:"",dueDate:""});};
