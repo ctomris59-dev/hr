@@ -150,16 +150,16 @@ export const VALIDATION_SCENARIOS: ValidationScenario[] = [
     ],
   },
   {
-    id: "strategic-priority-tradeoff",
-    title: "Kısa ve uzun vadeli öncelik",
+    id: "resilience-pressure-recovery",
+    title: "Baskı altında toparlanma",
     prompt:
-      "Önemli bir müşteri acil bir talep iletiyor. Talebi karşılamak bu ayki hedefe katkı sağlayacak ancak ekip kaynaklarını stratejik bir projeden iki hafta uzaklaştıracak. Ne yaparsınız?",
-    competencies: ["STR", "ANA", "RES"],
+      "Kritik bir teslimden kısa süre önce önemli bir hata ortaya çıkıyor. Zaman daralıyor ve ekipte gerilim yükseliyor. Nasıl ilerlersiniz?",
+    competencies: ["STR", "RES", "COM"],
     options: [
-      { id: "a", label: "Acil olan her zaman önceliklidir; stratejik projeyi ertelerim.", score: 1 },
-      { id: "b", label: "Gelir, müşteri etkisi, proje gecikmesi ve kaynak maliyetini birlikte değerlendirip seçenekleri görünür kılarım.", score: 4 },
-      { id: "c", label: "Stratejik proje planlandıysa müşteri talebini doğrudan reddederim.", score: 2 },
-      { id: "d", label: "İki işi de aynı ekibe ekler, süreleri değiştirmem.", score: 2 },
+      { id: "a", label: "Panik büyümeden hızlıca birini sorumlu tutar ve ilk çözümü uygularım.", score: 1 },
+      { id: "b", label: "Durumu kısa biçimde netleştirir, öncelikleri ayırır, iletişim tonunu korur ve uygulanabilir bir çözüm planı oluştururum.", score: 4 },
+      { id: "c", label: "Önce hatayı kimin yaptığını kesinleştirir, sonra çözüm ararım.", score: 1 },
+      { id: "d", label: "Gerilimi azaltmak için sorunu tamamen üstlenir ve ekiple paylaşmam.", score: 2 },
     ],
   },
   {
@@ -167,7 +167,7 @@ export const VALIDATION_SCENARIOS: ValidationScenario[] = [
     title: "Yapıcı görüş ayrılığı",
     prompt:
       "Ekip toplantısında çoğunluk bir çözümü destekliyor ancak siz önemli bir risk görüyorsunuz. Kararın bugün verilmesi gerekiyor. Ne yaparsınız?",
-    competencies: ["TEA", "COM", "STR"],
+    competencies: ["TEA", "COM"],
     options: [
       { id: "a", label: "Uyumu bozmamak için itiraz etmem.", score: 1 },
       { id: "b", label: "Riski somut gerekçelerle açıklar, alternatif önerir ve karar verildikten sonra uygulamayı desteklerim.", score: 4 },
