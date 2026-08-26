@@ -19,7 +19,9 @@ export const STORAGE_KEYS = {
   PULSE_ANSWERS: "hr_pulse_answers",
 };
 
-export function getStorageData<T>(key: string, defaultValue: T): T {
+export function getStorageData(key: string, defaultValue: null): any;
+export function getStorageData<T>(key: string, defaultValue: T): T;
+export function getStorageData<T>(key: string, defaultValue: T | null): T | any {
   if (typeof window === "undefined") return defaultValue;
   try {
     const item = localStorage.getItem(key);
