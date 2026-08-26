@@ -225,10 +225,10 @@ def get_assignable_targets(
         for emp in all_employees:
             position = (emp.get("position") or emp.get("Pozisyon", "")).lower()
             # Include only Directors and Genel Müdür
-            is_director = "direktör" in position or "director" in position
-            is_genel_mudur = "genel müdür" in position or "genel müdür" in position
+            target_is_director = "direktör" in position or "director" in position
+            target_is_genel_mudur = "genel müdür" in position or "general manager" in position
             # Exclude CEO themselves and lower ranks
-            if (is_director or is_genel_mudur) and "ceo" not in position and "başkan" not in position:
+            if (target_is_director or target_is_genel_mudur) and "ceo" not in position and "başkan" not in position:
                 assignable_list.append(emp)
         return assignable_list
     
@@ -239,8 +239,8 @@ def get_assignable_targets(
             if emp_dept == user_dept:
                 position = (emp.get("position") or emp.get("Pozisyon", "")).lower()
                 # Only Managers (not Directors, CEO, or Employees)
-                is_manager = ("müdür" in position or "manager" in position) and "direktör" not in position and "genel müdür" not in position
-                if is_manager and "ceo" not in position and "başkan" not in position:
+                target_is_manager = ("müdür" in position or "manager" in position) and "direktör" not in position and "genel müdür" not in position
+                if target_is_manager and "ceo" not in position and "başkan" not in position:
                     assignable_list.append(emp)
         return assignable_list
     
@@ -284,9 +284,9 @@ def can_evaluate_employee(
     target_position = (target_employee.get("position") or target_employee.get("Pozisyon", "")).lower()
     target_name = target_employee.get("name") or target_employee.get("Ad Soyad", "")
     
-    # CEO evaluates Directors
+    # CEO/IK has organization-wide evaluation authority.
     if is_ceo(evaluator_role):
-        return "direktör" in target_position or "director" in target_position
+        return target_name != evaluator_name
     
     # DIRECTOR evaluates Managers & Employees in their department
     if is_director(evaluator_role):
