@@ -1,0 +1,346 @@
+/* FutureHR — module-specific premium chart & table layer */
+
+.module-workspace {
+  --viz-grid: #dbe4ef;
+  --viz-axis: #cbd5e1;
+  --viz-label: #64748b;
+  --viz-tooltip-bg: rgba(255, 255, 255, 0.98);
+  --viz-tooltip-border: #e2e8f0;
+  --viz-row-hover: rgba(248, 250, 252, 0.96);
+  --viz-cell-border: #edf2f7;
+  --viz-zebra: rgba(248, 250, 252, 0.58);
+  --viz-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+/* ---------- Shared chart readability ---------- */
+.module-workspace .module-native-content .recharts-wrapper,
+.module-workspace .module-native-content .recharts-responsive-container {
+  font-variant-numeric: tabular-nums;
+}
+
+.module-workspace .module-native-content .recharts-cartesian-grid line,
+.module-workspace .module-native-content .recharts-polar-grid-concentric-polygon,
+.module-workspace .module-native-content .recharts-polar-grid-angle line {
+  stroke: var(--viz-grid) !important;
+  opacity: 0.92;
+}
+
+.module-workspace .module-native-content .recharts-cartesian-axis-line,
+.module-workspace .module-native-content .recharts-polar-radius-axis-line {
+  stroke: var(--viz-axis) !important;
+}
+
+.module-workspace .module-native-content .recharts-text,
+.module-workspace .module-native-content .recharts-cartesian-axis-tick-value,
+.module-workspace .module-native-content .recharts-legend-item-text,
+.module-workspace .module-native-content .recharts-polar-angle-axis text,
+.module-workspace .module-native-content .recharts-polar-radius-axis text {
+  fill: var(--viz-label) !important;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.module-workspace .module-native-content .recharts-legend-wrapper {
+  padding-top: 10px;
+}
+
+.module-workspace .module-native-content .recharts-default-tooltip {
+  border: 1px solid var(--viz-tooltip-border) !important;
+  border-radius: 14px !important;
+  background: var(--viz-tooltip-bg) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--viz-shadow) !important;
+  padding: 10px 12px !important;
+}
+
+.module-workspace .module-native-content .recharts-tooltip-label {
+  color: #0f172a !important;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px !important;
+}
+
+.module-workspace .module-native-content .recharts-tooltip-item {
+  font-size: 12px !important;
+  padding: 2px 0 !important;
+}
+
+.module-workspace .module-native-content .recharts-surface:focus {
+  outline: none;
+}
+
+.module-workspace .module-native-content .recharts-dot,
+.module-workspace .module-native-content .recharts-active-dot,
+.module-workspace .module-native-content .recharts-scatter-symbol {
+  filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.12));
+}
+
+.module-workspace .module-native-content .recharts-radar-polygon,
+.module-workspace .module-native-content .recharts-area-area,
+.module-workspace .module-native-content .recharts-bar-rectangle path {
+  filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.05));
+}
+
+/* ---------- Shared premium table system ---------- */
+.module-workspace .module-native-content table {
+  width: 100%;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.module-workspace .module-native-content table tbody tr:nth-child(even) {
+  background: var(--viz-zebra);
+}
+
+.module-workspace .module-native-content table tbody tr {
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.module-workspace .module-native-content table tbody tr:hover {
+  background: var(--viz-row-hover) !important;
+}
+
+.module-workspace .module-native-content table tbody td {
+  border-bottom-color: var(--viz-cell-border) !important;
+  vertical-align: middle;
+}
+
+.module-workspace .module-native-content table tbody td:first-child {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.module-workspace .module-native-content table.border-separate {
+  border-spacing: 0 9px !important;
+}
+
+.module-workspace .module-native-content table.border-separate tbody tr {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 20px rgba(15, 23, 42, 0.045);
+}
+
+.module-workspace .module-native-content table.border-separate tbody td {
+  background: #fff;
+  border-top: 1px solid #e8eef5;
+  border-bottom: 1px solid #e8eef5 !important;
+}
+
+.module-workspace .module-native-content table.border-separate tbody td:first-child {
+  border-left: 1px solid #e8eef5;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.module-workspace .module-native-content table.border-separate tbody td:last-child {
+  border-right: 1px solid #e8eef5;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+/* ---------- İzin: takvim / operasyon dili ---------- */
+.module-workspace.workspace-izinler .module-native-content table thead th {
+  background: linear-gradient(180deg, #eff6ff 0%, #ecfeff 100%) !important;
+  color: #0369a1 !important;
+  border-bottom-color: #bae6fd !important;
+}
+
+.module-workspace.workspace-izinler .module-native-content table tbody tr:hover {
+  box-shadow: inset 3px 0 0 var(--module-accent);
+}
+
+.module-workspace.workspace-izinler .module-native-content .recharts-cartesian-grid line {
+  stroke-dasharray: 3 5 !important;
+}
+
+/* ---------- Organizasyon: yoğun veri yönetimi ---------- */
+.module-workspace.workspace-organizasyon .module-native-content table thead th {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%) !important;
+  color: #475569 !important;
+  font-size: 10px !important;
+  letter-spacing: 0.07em !important;
+}
+
+.module-workspace.workspace-organizasyon .module-native-content table tbody td {
+  padding-top: 0.72rem !important;
+  padding-bottom: 0.72rem !important;
+}
+
+.module-workspace.workspace-organizasyon .module-native-content table tbody tr:hover {
+  box-shadow: inset 3px 0 0 #0ea5e9;
+}
+
+/* ---------- 360: puanlama / kalibrasyon ---------- */
+.module-workspace.workspace-degerlendirme .module-native-content table thead th {
+  background: linear-gradient(90deg, #f5f3ff 0%, #fff7ed 100%) !important;
+  color: #6d28d9 !important;
+}
+
+.module-workspace.workspace-degerlendirme .module-native-content .recharts-polar-grid-concentric-polygon,
+.module-workspace.workspace-degerlendirme .module-native-content .recharts-polar-grid-angle line {
+  stroke: #ddd6fe !important;
+}
+
+.module-workspace.workspace-degerlendirme .module-native-content .recharts-cartesian-grid line {
+  stroke-dasharray: 3 5 !important;
+}
+
+/* ---------- Yetenek Matrisi: karar destek / 9-box ---------- */
+.module-workspace.workspace-yetenek-matrisi .module-native-content table thead th {
+  background: linear-gradient(90deg, #eef2ff 0%, #ecfdf5 100%) !important;
+  color: #4338ca !important;
+}
+
+.module-workspace.workspace-yetenek-matrisi .module-native-content .recharts-cartesian-grid line {
+  stroke-dasharray: 4 6 !important;
+}
+
+.module-workspace.workspace-yetenek-matrisi .module-native-content .recharts-reference-line line {
+  opacity: 0.82;
+}
+
+/* ---------- Eğitim: LMS / öğrenme operasyonu ---------- */
+.module-workspace.workspace-egitim .module-native-content table thead th {
+  background: linear-gradient(90deg, #f5f3ff 0%, #ecfeff 100%) !important;
+  color: #6d28d9 !important;
+}
+
+.module-workspace.workspace-egitim .module-native-content .recharts-polar-grid-concentric-polygon,
+.module-workspace.workspace-egitim .module-native-content .recharts-polar-grid-angle line {
+  stroke: #ddd6fe !important;
+}
+
+/* ---------- Gelişim: gap → ilerleme ---------- */
+.module-workspace.workspace-gelisim .module-native-content table thead th {
+  background: linear-gradient(90deg, #ecfdf5 0%, #eef2ff 100%) !important;
+  color: #047857 !important;
+}
+
+.module-workspace.workspace-gelisim .module-native-content .recharts-polar-grid-concentric-polygon,
+.module-workspace.workspace-gelisim .module-native-content .recharts-polar-grid-angle line {
+  stroke: #bbf7d0 !important;
+}
+
+/* ---------- Kariyer: rol rotası / mobilite ---------- */
+.module-workspace.workspace-kariyer .module-native-content table thead th {
+  background: linear-gradient(90deg, #fdf4ff 0%, #fffbeb 100%) !important;
+  color: #a21caf !important;
+}
+
+.module-workspace.workspace-kariyer .module-native-content .recharts-polar-grid-concentric-polygon,
+.module-workspace.workspace-kariyer .module-native-content .recharts-polar-grid-angle line {
+  stroke: #f5d0fe !important;
+}
+
+/* ---------- Yedekleme: risk / halefiyet ---------- */
+.module-workspace.workspace-yedekleme .module-native-content table thead th {
+  background: linear-gradient(90deg, #fef2f2 0%, #fff7ed 100%) !important;
+  color: #b91c1c !important;
+  border-bottom-color: #fecaca !important;
+}
+
+.module-workspace.workspace-yedekleme .module-native-content table tbody tr:hover {
+  box-shadow: inset 3px 0 0 #ef4444, 0 8px 18px rgba(127, 29, 29, 0.05);
+}
+
+/* ---------- Maaş: finansal / numerik yoğunluk ---------- */
+.module-workspace.workspace-maas .module-native-content table thead th {
+  background: linear-gradient(90deg, #ecfeff 0%, #eff6ff 100%) !important;
+  color: #0f766e !important;
+}
+
+.module-workspace.workspace-maas .module-native-content table tbody td {
+  font-variant-numeric: tabular-nums;
+  padding-top: 0.78rem !important;
+  padding-bottom: 0.78rem !important;
+}
+
+.module-workspace.workspace-maas .module-native-content .recharts-cartesian-grid line {
+  stroke-dasharray: 2 6 !important;
+}
+
+.module-workspace.workspace-maas .module-native-content .recharts-scatter-symbol {
+  filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.15));
+}
+
+/* ---------- İşe Alım: aday pipeline ---------- */
+.module-workspace.workspace-ise-alim .module-native-content table thead th {
+  background: linear-gradient(90deg, #f5f3ff 0%, #f0fdfa 100%) !important;
+  color: #6d28d9 !important;
+}
+
+.module-workspace.workspace-ise-alim .module-native-content table tbody tr:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(76, 29, 149, 0.06);
+}
+
+.module-workspace.workspace-ise-alim .module-native-content .recharts-polar-grid-concentric-polygon,
+.module-workspace.workspace-ise-alim .module-native-content .recharts-polar-grid-angle line {
+  stroke: #ddd6fe !important;
+}
+
+/* ---------- Yetkinlik Testi: odak / rapor ---------- */
+.module-workspace.workspace-aday-testi .module-native-content table thead th {
+  background: linear-gradient(90deg, #eef2ff 0%, #ecfeff 100%) !important;
+  color: #4338ca !important;
+}
+
+.module-workspace.workspace-aday-testi .module-native-content table tbody tr:hover {
+  box-shadow: inset 3px 0 0 #6366f1;
+}
+
+/* ---------- Ekip & Kullanıcı: admin console ---------- */
+.module-workspace.workspace-ekip-yonetimi .module-native-content table thead th {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%) !important;
+  color: #475569 !important;
+  font-size: 10px !important;
+}
+
+.module-workspace.workspace-ekip-yonetimi .module-native-content table tbody td {
+  padding-top: 0.72rem !important;
+  padding-bottom: 0.72rem !important;
+}
+
+.module-workspace.workspace-ekip-yonetimi .module-native-content table tbody tr:hover {
+  box-shadow: inset 3px 0 0 #6366f1;
+}
+
+/* ---------- Dark theme ---------- */
+.dark .module-workspace {
+  --viz-grid: #334155;
+  --viz-axis: #475569;
+  --viz-label: #94a3b8;
+  --viz-tooltip-bg: rgba(15, 23, 42, 0.97);
+  --viz-tooltip-border: #334155;
+  --viz-row-hover: rgba(30, 41, 59, 0.55);
+  --viz-cell-border: #1e293b;
+  --viz-zebra: rgba(15, 23, 42, 0.28);
+}
+
+.dark .module-workspace .module-native-content .recharts-tooltip-label {
+  color: #e2e8f0 !important;
+}
+
+.dark .module-workspace .module-native-content table tbody td:first-child {
+  color: #f8fafc;
+}
+
+.dark .module-workspace .module-native-content table.border-separate tbody td {
+  background: #111827;
+  border-color: #334155 !important;
+}
+
+.dark .module-workspace.workspace-izinler .module-native-content table thead th,
+.dark .module-workspace.workspace-organizasyon .module-native-content table thead th,
+.dark .module-workspace.workspace-degerlendirme .module-native-content table thead th,
+.dark .module-workspace.workspace-yetenek-matrisi .module-native-content table thead th,
+.dark .module-workspace.workspace-egitim .module-native-content table thead th,
+.dark .module-workspace.workspace-gelisim .module-native-content table thead th,
+.dark .module-workspace.workspace-kariyer .module-native-content table thead th,
+.dark .module-workspace.workspace-yedekleme .module-native-content table thead th,
+.dark .module-workspace.workspace-maas .module-native-content table thead th,
+.dark .module-workspace.workspace-ise-alim .module-native-content table thead th,
+.dark .module-workspace.workspace-aday-testi .module-native-content table thead th,
+.dark .module-workspace.workspace-ekip-yonetimi .module-native-content table thead th {
+  background: linear-gradient(180deg, #172033 0%, #111827 100%) !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #334155 !important;
+}
