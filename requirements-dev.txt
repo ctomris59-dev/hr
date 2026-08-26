@@ -1,0 +1,16 @@
+# Development dependencies (including legacy UI support)
+# Install with: pip install -r requirements-dev.txt
+
+# Include production dependencies
+-r requirements.txt
+
+# Legacy UI support (Streamlit-based modules in legacy/ folder)
+streamlit==1.52.2
+
+# Development tools
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
