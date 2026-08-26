@@ -4,6 +4,7 @@ export interface AssessmentQualityResult {
   score: number;
   band: "Yüksek" | "Orta" | "Dikkatle İncele";
   completeness: number;
+  qualityItemCompleteness: number;
   idealizedSelfPresentation: number;
   dominantResponseShare: number;
   reverseItemDifference: number;
@@ -23,18 +24,43 @@ function variance(values: number[]): number {
   return mean(values.map((value) => Math.pow(value - avg, 2)));
 }
 
+const AGREE_RISK_WEIGHTS: Record<number, number> = {
+  1: 0,
+  2: 0.05,
+  3: 0.2,
+  4: 0.65,
+  5: 1,
+};
+
+const DISAGREE_RISK_WEIGHTS: Record<number, number> = {
+  1: 1,
+  2: 0.65,
+  3: 0.2,
+  4: 0.05,
+  5: 0,
+};
+
+function idealizationRisk(question: AssessmentQuestion, value: number): number {
+  const direction = question.qualityDirection || "AGREE_RISK";
+  return direction === "DISAGREE_RISK"
+    ? DISAGREE_RISK_WEIGHTS[value] ?? 0
+    : AGREE_RISK_WEIGHTS[value] ?? 0;
+}
+
 /**
  * Yanıt Kalitesi Endeksi
  *
- * Bu çıktı bir yalan tespit aracı, kişilik tanısı veya dürüstlük puanı değildir.
- * Yalnızca veri kalitesini etkileyebilecek cevap örüntülerini işaretler:
- * - tamamlanma oranı,
- * - gerçekçi olmayan aşırı olumlu kendini sunma eğilimi,
- * - tek seçeneğe yığılma (straight-lining),
- * - normal ve ters maddeler arasındaki büyük farklar,
+ * Bir yalan tespit aracı, dürüstlük puanı veya psikolojik tanı değildir.
+ * Yalnızca değerlendirme verisinin ne kadar dikkatle yorumlanması gerektiğine
+ * ilişkin yardımcı sinyaller üretir:
+ * - çekirdek ve yanıt-kalitesi maddelerinin tamamlanması,
+ * - çift yönlü idealize kendini sunma örüntüsü,
+ * - tek seçeneğe yığılma / straight-lining,
+ * - normal ve ters maddeler arasındaki belirgin uyuşmazlık,
  * - olağandışı hızlı tamamlama.
  *
- * İşe alım, terfi veya ücret kararı için tek başına kullanılamaz.
+ * Eşikler ürün içi kalite kontrol eşikleridir; norm çalışması yapıldığında
+ * gerçek örneklem dağılımına göre yeniden kalibre edilmelidir.
  */
 export function calculateAssessmentQuality(
   questions: AssessmentQuestion[],
@@ -42,26 +68,42 @@ export function calculateAssessmentQuality(
   durationSeconds: number | null
 ): AssessmentQualityResult {
   const coreQuestions = questions.filter((question) => question.category !== "LIE");
-  const lieQuestions = questions.filter((question) => question.category === "LIE");
-  const answeredCore = coreQuestions.filter((question) => Number.isFinite(answers[question.id]));
-  const coreValues = answeredCore.map((question) => answers[question.id]);
-  const completeness = coreQuestions.length ? answeredCore.length / coreQuestions.length : 0;
+  const qualityQuestions = questions.filter((question) => question.category === "LIE");
 
-  // Bu maddelerin tümü gerçekçi olmayan mutlak olumlu iddialardır.
-  // Bu nedenle 4-5 yönündeki katılım idealize edilmiş kendini sunma sinyali üretir;
-  // 1 verilmesi artık yanlış biçimde cezalandırılmaz.
-  const lieValues = lieQuestions
-    .map((question) => answers[question.id])
-    .filter((value) => Number.isFinite(value));
-  const idealizationWeights: Record<number, number> = { 1: 0, 2: 0.05, 3: 0.2, 4: 0.6, 5: 1 };
-  const idealizedSelfPresentation = lieValues.length
-    ? Math.round(mean(lieValues.map((value) => idealizationWeights[value] ?? 0)) * 100)
+  const answeredCore = coreQuestions.filter((question) =>
+    Number.isFinite(answers[question.id])
+  );
+  const answeredQuality = qualityQuestions.filter((question) =>
+    Number.isFinite(answers[question.id])
+  );
+  const coreValues = answeredCore.map((question) => answers[question.id]);
+
+  const completeness = coreQuestions.length
+    ? answeredCore.length / coreQuestions.length
+    : 0;
+  const qualityItemCompleteness = qualityQuestions.length
+    ? answeredQuality.length / qualityQuestions.length
+    : 0;
+
+  // Yeni maddeler iki yönlü anahtarlanır:
+  // AGREE_RISK: kusursuzluk iddiasına yüksek katılım risk sinyalidir.
+  // DISAGREE_RISK: olağan insan hatasını kategorik biçimde reddetmek risk sinyalidir.
+  // Böylece "tüm maddelere 1 verme" gibi önceki paradoks oluşmaz.
+  const idealizationRisks = answeredQuality.map((question) =>
+    idealizationRisk(question, answers[question.id])
+  );
+  const idealizedSelfPresentation = idealizationRisks.length
+    ? Math.round(mean(idealizationRisks) * 100)
     : 0;
 
   const responseCounts = new Map<number, number>();
-  coreValues.forEach((value) => responseCounts.set(value, (responseCounts.get(value) || 0) + 1));
+  coreValues.forEach((value) =>
+    responseCounts.set(value, (responseCounts.get(value) || 0) + 1)
+  );
   const dominantCount = Math.max(0, ...Array.from(responseCounts.values()));
-  const dominantResponseShare = coreValues.length ? dominantCount / coreValues.length : 0;
+  const dominantResponseShare = coreValues.length
+    ? dominantCount / coreValues.length
+    : 0;
   const coreVariance = variance(coreValues);
 
   const categories = Array.from(
@@ -70,11 +112,15 @@ export function calculateAssessmentQuality(
   const reverseDifferences: number[] = [];
   categories.forEach((category) => {
     const standard = coreQuestions
-      .filter((question) => question.category === category && question.type === "S")
+      .filter(
+        (question) => question.category === category && question.type === "S"
+      )
       .map((question) => answers[question.id])
       .filter((value) => Number.isFinite(value));
     const reversed = coreQuestions
-      .filter((question) => question.category === category && question.type === "R")
+      .filter(
+        (question) => question.category === category && question.type === "R"
+      )
       .map((question) => answers[question.id])
       .filter((value) => Number.isFinite(value))
       .map((value) => 6 - value);
@@ -82,12 +128,13 @@ export function calculateAssessmentQuality(
       reverseDifferences.push(Math.abs(mean(standard) - mean(reversed)));
     }
   });
-  const reverseItemDifference = reverseDifferences.length ? mean(reverseDifferences) : 0;
+  const reverseItemDifference = reverseDifferences.length
+    ? mean(reverseDifferences)
+    : 0;
 
+  const answeredTotal = answeredCore.length + answeredQuality.length;
   const secondsPerItem =
-    durationSeconds && answeredCore.length
-      ? durationSeconds / answeredCore.length
-      : null;
+    durationSeconds && answeredTotal ? durationSeconds / answeredTotal : null;
 
   const flags: string[] = [];
   let penalty = 0;
@@ -95,15 +142,22 @@ export function calculateAssessmentQuality(
   if (completeness < 1) {
     const missingShare = 1 - completeness;
     penalty += Math.min(40, missingShare * 80);
-    flags.push(`Çekirdek maddelerin %${Math.round(completeness * 100)} kadarı yanıtlandı.`);
+    flags.push(
+      `Çekirdek maddelerin %${Math.round(completeness * 100)} kadarı yanıtlandı.`
+    );
   }
 
-  if (idealizedSelfPresentation >= 55) {
-    penalty += Math.min(25, (idealizedSelfPresentation - 45) * 0.5);
-    flags.push("Aşırı kusursuz kendini sunma maddelerinde yüksek katılım var.");
-  } else if (idealizedSelfPresentation >= 40) {
+  if (qualityItemCompleteness < 0.8) {
+    penalty += Math.min(12, (0.8 - qualityItemCompleteness) * 30);
+    flags.push("Yanıt-kalitesi maddelerinin önemli bir bölümü eksik.");
+  }
+
+  if (idealizedSelfPresentation >= 60) {
+    penalty += Math.min(25, (idealizedSelfPresentation - 50) * 0.5);
+    flags.push("İdealize edilmiş kendini sunma sinyali yüksek.");
+  } else if (idealizedSelfPresentation >= 42) {
     penalty += 5;
-    flags.push("Kendini idealize etme sinyali orta düzeyde.");
+    flags.push("İdealize edilmiş kendini sunma sinyali orta düzeyde.");
   }
 
   if (dominantResponseShare >= 0.7) {
@@ -123,7 +177,7 @@ export function calculateAssessmentQuality(
 
   if (reverseItemDifference >= 1.25) {
     penalty += 15;
-    flags.push("Normal ve ters maddeler arasında belirgin uyumsuzluk var.");
+    flags.push("Normal ve ters maddeler arasında belirgin uyuşmazlık var.");
   } else if (reverseItemDifference >= 0.9) {
     penalty += 6;
   }
@@ -144,28 +198,33 @@ export function calculateAssessmentQuality(
     score,
     band,
     completeness: Math.round(completeness * 100),
+    qualityItemCompleteness: Math.round(qualityItemCompleteness * 100),
     idealizedSelfPresentation,
     dominantResponseShare: Math.round(dominantResponseShare * 100),
     reverseItemDifference: Number(reverseItemDifference.toFixed(2)),
     secondsPerItem: secondsPerItem === null ? null : Number(secondsPerItem.toFixed(1)),
     flags,
     note:
-      "Yanıt Kalitesi Endeksi yalnızca veri kalitesi sinyalidir; yalan, dürüstlük veya manipülasyon ölçümü değildir ve tek başına karar kriteri olarak kullanılamaz.",
+      "Yanıt Kalitesi Endeksi yalnızca veri kalitesi sinyalidir; yalan, dürüstlük veya manipülasyon ölçümü değildir ve işe alım, terfi ya da ücret kararında tek başına kullanılamaz.",
   };
 }
 
-// Eski kayıtları/olası eski çağrıları bozmamak için geriye dönük uyumluluk.
+// Eski kayıtları/çağrıları bozmamak için geriye dönük uyumluluk.
+// Yön metadata'sı bulunmadığından eski fonksiyon yalnızca tek yönlü idealizasyon
+// sinyali üretebilir; yeni değerlendirmelerde calculateAssessmentQuality kullanılır.
 export function calculateResponseConsistency(answers: number[]) {
-  const idealizationWeights: Record<number, number> = { 1: 0, 2: 0.05, 3: 0.2, 4: 0.6, 5: 1 };
-  const valid = answers.filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
+  const valid = answers.filter(
+    (value) => Number.isFinite(value) && value >= 1 && value <= 5
+  );
   const idealization = valid.length
-    ? Math.round(mean(valid.map((value) => idealizationWeights[value] ?? 0)) * 100)
+    ? Math.round(mean(valid.map((value) => AGREE_RISK_WEIGHTS[value] ?? 0)) * 100)
     : 100;
   const score = Math.max(0, 100 - idealization);
   return {
     score,
-    band: score >= 75 ? "Tutarlı" : score >= 55 ? "Dikkatle İncele" : "Düşük Güven",
+    band:
+      score >= 75 ? "Tutarlı" : score >= 55 ? "Dikkatle İncele" : "Düşük Güven",
     note:
-      "Bu eski uyumluluk çıktısı yalnızca idealize edilmiş kendini sunma sinyalidir; dürüstlük ölçümü değildir.",
+      "Bu geriye dönük uyumluluk çıktısı yalnızca idealize edilmiş kendini sunma sinyalidir; dürüstlük ölçümü değildir.",
   };
 }
