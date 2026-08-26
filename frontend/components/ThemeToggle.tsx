@@ -28,7 +28,7 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="relative h-9 w-9 rounded-lg border border-slate-200 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all active:scale-95 dark:border-slate-700 dark:bg-slate-800/70"
+      className="relative h-9 w-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
       aria-label="Tema değiştir"
     >
       <Sun

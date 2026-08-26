@@ -67,7 +67,7 @@ export default function CommandPalette() {
         onClick={() => setOpen(false)}
       />
       <div className="absolute left-1/2 top-[12vh] w-full max-w-2xl -translate-x-1/2 px-4">
-        <div className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl shadow-2xl dark:bg-slate-900/80 dark:border-slate-700">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.16)] dark:bg-slate-900 dark:border-slate-700">
           <Command shouldFilter={false} className="w-full">
             <div className="flex items-center gap-2 border-b border-slate-200/70 px-4 py-3 text-sm text-slate-500 dark:border-slate-700">
               <Search className="h-4 w-4" />

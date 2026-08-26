@@ -114,18 +114,13 @@ export default function NotificationBell() {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-11 h-11 bg-white dark:bg-slate-900/50 rounded-full shadow-lg shadow-indigo-100/50 dark:shadow-indigo-900/50 border border-indigo-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 group"
+        className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 group"
       >
-        <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
+        <Bell className="h-4 w-4 text-slate-600 dark:text-slate-300" />
         
         {/* Badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg animate-ping">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
+          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -137,25 +132,25 @@ export default function NotificationBell() {
         <div
           ref={panelRef}
           style={panelStyle ?? undefined}
-          className="fixed z-[9999] w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-indigo-200/50 dark:shadow-indigo-900/50 border border-indigo-100/50 dark:border-slate-800/50 overflow-hidden animate-[fadeIn_0.3s_ease-out_forwards]"
+          className="fixed z-[9999] w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.14)] dark:border-slate-700 dark:bg-slate-900"
         >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-indigo-100/50 dark:border-slate-800/50 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-800/50 dark:to-slate-800/50 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Bildirimler</h3>
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bildirimler</h3>
             <div className="flex items-center gap-2">
               {notifications.length > 0 && (
                 <button
                   onClick={clearAll}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors"
+                  className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   Temizle
                 </button>
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="w-6 h-6 rounded-full hover:bg-indigo-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
               >
-                <X className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -165,10 +160,10 @@ export default function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell className="w-12 h-12 text-indigo-300 dark:text-indigo-700 mx-auto mb-2" />
-                <p className="text-sm text-indigo-400 dark:text-slate-500">Henüz bildirim yok</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">Henüz bildirim yok</p>
               </div>
             ) : (
-              <div className="divide-y divide-indigo-50/50 dark:divide-slate-800/50">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
@@ -177,8 +172,8 @@ export default function NotificationBell() {
                         markAsRead(notification.id);
                       }
                     }}
-                    className={`px-4 py-3 hover:bg-indigo-50/30 dark:hover:bg-slate-800/30 transition-colors cursor-pointer group ${
-                      !notification.read ? "bg-indigo-50/20 dark:bg-slate-800/20" : ""
+                    className={`px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group ${
+                      !notification.read ? "bg-indigo-50/40 dark:bg-indigo-950/10" : ""
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -192,10 +187,10 @@ export default function NotificationBell() {
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${!notification.read ? "font-semibold text-indigo-900 dark:text-indigo-100" : "text-indigo-700 dark:text-slate-300"}`}>
+                        <p className={`text-sm ${!notification.read ? "font-semibold text-slate-900 dark:text-slate-100" : "text-slate-700 dark:text-slate-300"}`}>
                           {notification.message}
                         </p>
-                        <p className="text-xs text-indigo-400 dark:text-slate-500 mt-1">
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                           {formatRelativeTime(notification.timestamp)}
                         </p>
                       </div>
@@ -213,8 +208,8 @@ export default function NotificationBell() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-4 py-2 border-t border-indigo-100/50 dark:border-slate-800/50 bg-indigo-50/30 dark:bg-slate-800/30">
-              <p className="text-xs text-center text-indigo-600 dark:text-indigo-400">
+            <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
                 {unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}
               </p>
             </div>
