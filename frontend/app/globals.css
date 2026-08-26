@@ -1,20 +1,27 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
-  /* Bento-Box Modern Color Palette */
-  --background: #fafafa;
-  --foreground: #0f172a;
-  --card-bg: #fafafa;
-  --card-border: #e4e4e7;
+  /* FutureHR Enterprise Design System */
+  --background: #f5f7fa;
+  --foreground: #172033;
+  --surface: #ffffff;
+  --surface-subtle: #f8fafc;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
   --primary: #4f46e5;
   --primary-hover: #4338ca;
-  --secondary: #0f172a;
-  --accent: #8b5cf6;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
-  --radius: 1.5rem; /* 24px - Heavy rounding for Bento-Box */
+  --primary-soft: #eef2ff;
+  --secondary: #1e293b;
+  --accent: #6366f1;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --radius: 0.75rem;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.035);
 }
 
 @theme inline {
@@ -29,23 +36,35 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-heading: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono);
   --radius-card: var(--radius);
 }
 
 .dark {
   --background: #0f172a;
-  --foreground: #e2e8f0;
-  --card-bg: #1e293b;
-  --card-border: #334155;
-  --primary: #4f46e5;
-  --primary-hover: #6366f1;
-  --secondary: #0f172a;
-  --accent: #22d3ee;
-  --muted: #1f2937;
+  --foreground: #e5e7eb;
+  --surface: #111827;
+  --surface-subtle: #172033;
+  --card-bg: #111827;
+  --card-border: #263244;
+  --primary: #818cf8;
+  --primary-hover: #a5b4fc;
+  --primary-soft: #1e1b4b;
+  --secondary: #cbd5e1;
+  --accent: #818cf8;
+  --muted: #172033;
   --muted-foreground: #94a3b8;
-  --border: #334155;
+  --border: #263244;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.18), 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -53,18 +72,9 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   min-height: 100vh;
-  /* Subtle texture for depth */
-  background-image: 
-    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.015) 1px, transparent 0);
-  background-size: 20px 20px;
-}
-
-button {
-  transition: transform 120ms ease;
-}
-
-button:active {
-  transform: scale(0.98);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -74,30 +84,87 @@ h4,
 h5,
 h6 {
   font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+button,
+a,
+input,
+select,
+textarea {
+  transition-property: color, background-color, border-color, box-shadow, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
 }
 
-/* Custom scrollbar - Bento-Box style */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(79, 70, 229, 0.32);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(79, 70, 229, 0.16);
+}
+
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--muted);
-  border-radius: 0.5rem;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--card-border);
-  border-radius: 0.5rem;
-  border: 2px solid var(--muted);
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: #94a3b8;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Shared enterprise primitives. Existing pages can adopt these incrementally. */
+.enterprise-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.enterprise-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.enterprise-eyebrow {
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.enterprise-title {
+  color: var(--foreground);
+  font-weight: 650;
+  letter-spacing: -0.025em;
 }
