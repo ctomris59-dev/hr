@@ -20,13 +20,13 @@ export async function GET(request: Request) {
 
   // Add user headers if they exist
   if (userRole) {
-    headers["x-user-role"] = userRole;
+    headers["x-user-role"] = encodeURIComponent(userRole);
   }
   if (userDept) {
-    headers["x-user-dept"] = userDept;
+    headers["x-user-dept"] = encodeURIComponent(userDept);
   }
   if (userName) {
-    headers["x-user-name"] = userName;
+    headers["x-user-name"] = encodeURIComponent(userName);
   }
 
   try {

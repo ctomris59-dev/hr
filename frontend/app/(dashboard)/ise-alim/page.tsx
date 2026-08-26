@@ -211,8 +211,8 @@ export default function IseAlimPage() {
       const response = await fetch(API_BASE_URL + "/api/candidates", {
         headers: {
           "Content-Type": "application/json",
-          "X-User-Role": role,
-          "X-User-Dept": dept,
+          "X-User-Role": encodeURIComponent(role),
+          "X-User-Dept": encodeURIComponent(dept),
         },
       });
       if (response.ok) {
