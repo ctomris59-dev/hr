@@ -30,6 +30,7 @@ import WelcomeWidget from "./WelcomeWidget";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import CommandPalette from "./CommandPalette";
+import DemoRoleSwitcher from "./DemoRoleSwitcher";
 
 const menuItems = [
   { href: "/dashboard", label: "Yönetici Özeti", icon: LayoutDashboard, section: "Genel" },
@@ -122,7 +123,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               alt="FutureHR"
               width={500}
               height={500}
-              className="h-8 w-auto object-contain brightness-0 invert"
+              className="h-10 w-auto origin-left object-contain brightness-0 invert"
               priority
             />
           </div>
@@ -192,6 +193,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <WelcomeWidget />
 
           <div className="flex items-center gap-2">
+            <DemoRoleSwitcher />
             <button
               type="button"
               onClick={() => {
