@@ -1,0 +1,11 @@
+{
+  "issues": [],
+  "meta": {
+    "startedAt": "2026-01-29T06:32:57.407Z",
+    "baseUrl": "http://localhost:3000",
+    "backendUrl": "http://127.0.0.1:8000",
+    "seedVersion": "20260129063257",
+    "sampleEmployeeId": "burak3871",
+    "sampleEmployeeName": "Burak Kurt"
+  }
+}
