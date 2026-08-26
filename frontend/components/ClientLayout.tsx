@@ -49,12 +49,35 @@ const menuItems = [
   { href: "/ekip-yonetimi", label: "Ekip & Kullanıcı", icon: Users, section: "Yönetim" },
 ];
 
+const WORKSPACE_CLASS_BY_PATH: Record<string, string> = {
+  "/izinler": "module-izinler",
+  "/organizasyon": "module-organizasyon",
+  "/degerlendirme": "module-degerlendirme",
+  "/yetenek-matrisi": "module-yetenek-matrisi",
+  "/egitim": "module-egitim",
+  "/gelisim": "module-gelisim",
+  "/kariyer": "module-kariyer",
+  "/yedekleme": "module-yedekleme",
+  "/maas": "module-maas",
+  "/ise-alim": "module-ise-alim",
+  "/aday-testi": "module-aday-testi",
+  "/ekip-yonetimi": "module-ekip-yonetimi",
+};
+
+function getWorkspaceClass(pathname: string) {
+  const match = Object.entries(WORKSPACE_CLASS_BY_PATH).find(
+    ([path]) => pathname === path || pathname.startsWith(`${path}/`)
+  );
+  return match?.[1] || "";
+}
+
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const { currentUserRole } = useAuth();
+  const workspaceClass = getWorkspaceClass(pathname);
 
   useEffect(() => {
     const loadUser = () => {
@@ -213,7 +236,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-5 lg:px-6 lg:py-6">
           <ModuleContextBar pathname={pathname} />
-          <div className="module-page-content">{children}</div>
+          <div className={`module-page-content ${workspaceClass}`.trim()}>{children}</div>
         </main>
       </div>
       <CommandPalette />
