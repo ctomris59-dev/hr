@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 from schemas.models import *
 from routers.dependencies import get_current_user_role, get_current_user_dept, get_current_user_name
 from app_state import is_data_cleared, CLEAN_DB, JOB_PROFILES
@@ -6,6 +7,22 @@ from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 
 router = APIRouter()
+
+
+class LeaveConflictCheckRequest(BaseModel):
+    department_id: str = Field(..., min_length=1)
+    start_date: str = Field(..., min_length=10)
+    end_date: str = Field(..., min_length=10)
+    exclude_request_id: Optional[int] = None
+
+
+class PulseAnswerRequest(BaseModel):
+    employee_id: str = Field(..., min_length=1)
+    employee_name: str = Field(..., min_length=1)
+    department_id: str = Field(..., min_length=1)
+    department_name: str = Field(..., min_length=1)
+    score: float = Field(..., ge=1, le=5)
+    week_number: str = Field(..., min_length=1)
 
 
 @router.post("/api/360-data")
@@ -90,70 +107,44 @@ async def get_leaves(
 
 @router.get("/api/leave/suggestions")
 async def get_leave_suggestions():
-    """
-    Leave suggestion algorithm:
-    Returns suggested leave dates (bridge days)
-    """
-    suggestions = [
-        {
-            "year": 2029,
-            "holiday_name": "Ramazan Bayramı",
-            "holiday_date": "2029-02-20",
-            "suggested_start_date": "2029-02-19",
-            "suggested_end_date": "2029-02-23",
-            "days_to_take": 4,
-            "total_off_days": 9,
-            "slogan": "4 Gün İzin Al, 9 Gün Tatil Yap!",
-            "description": "Ramazan Bayramı hafta ortası, 4 gün izin alarak 9 gün tatil yapabilirsiniz."
-        },
-        {
-            "year": 2029,
-            "holiday_name": "Kurban Bayramı",
-            "holiday_date": "2029-07-05",
-            "suggested_start_date": "2029-07-02",
-            "suggested_end_date": "2029-07-09",
-            "days_to_take": 3,
-            "total_off_days": 9,
-            "slogan": "3 Gün İzin Al, 9 Gün Tatil Yap!",
-            "description": "Kurban Bayramı ortası hafta, 3 gün izinle uzun tatil."
-        },
-        {
-            "year": 2029,
-            "holiday_name": "29 Ekim Cumhuriyet Bayramı",
-            "holiday_date": "2029-10-29",  # Monday
-            "suggested_start_date": "2029-10-26",  # Friday (previous week)
-            "suggested_end_date": "2029-10-26",
-            "days_to_take": 1,
-            "total_off_days": 4,
-            "slogan": "1 Gün İzin Al, 4 Gün Tatil Yap!",
-            "description": "Pazartesi tatil, önceki haftanın Cuma'sını alarak uzun hafta sonu yapın."
-        },
-        {
-            "year": 2030,
-            "holiday_name": "Ulusal Egemenlik ve Çocuk Bayramı (23 Nisan)",
-            "holiday_date": "2030-04-23",  # Tuesday
-            "suggested_start_date": "2030-04-22",  # Monday
-            "suggested_end_date": "2030-04-22",
-            "days_to_take": 1,
-            "total_off_days": 4,
-            "slogan": "1 Gün İzin Al, 4 Gün Tatil Yap!",
-            "description": "Salı tatil, Pazartesi'yi bağlayarak uzun hafta sonu yapın."
-        },
-        {
-            "year": 2030,
-            "holiday_name": "Zafer Bayramı (30 Ağustos)",
-            "holiday_date": "2030-08-30",  # Friday
-            "suggested_start_date": "2030-08-29",  # Thursday
-            "suggested_end_date": "2030-08-29",
-            "days_to_take": 1,
-            "total_off_days": 4,
-            "slogan": "1 Gün İzin Al, 4 Gün Tatil Yap!",
-            "description": "Cuma tatil, Perşembe'yi bağlayarak uzun hafta sonu yapın."
-        }
-    ]
-    
-    return {"success": True, "data": suggestions}
+    """Return date-aware bridge-day suggestions from the holiday database."""
+    from services.leave_service import get_smart_holiday_suggestions
+    return {"success": True, "data": get_smart_holiday_suggestions()}
 
+
+@router.get("/api/holidays")
+async def get_holidays():
+    """Return configured official holidays."""
+    from utils_db import load_holidays
+    return {"success": True, "data": load_holidays()}
+
+
+@router.post("/api/leave-conflict-check")
+async def leave_conflict_check(request: LeaveConflictCheckRequest):
+    """Check whether approving a leave request creates department overlap risk."""
+    from services.leave_service import check_leave_conflict
+    result = check_leave_conflict(
+        department_id=request.department_id,
+        start_date=request.start_date,
+        end_date=request.end_date,
+        exclude_request_id=request.exclude_request_id,
+    )
+    return {"success": True, "data": result}
+
+
+@router.post("/api/pulse-answer")
+async def save_pulse_response(request: PulseAnswerRequest):
+    """Persist a weekly pulse answer used by the training/dashboard UI."""
+    from utils_db import save_pulse_answer
+    saved = save_pulse_answer(
+        employee_id=request.employee_id,
+        employee_name=request.employee_name,
+        department_id=request.department_id,
+        department_name=request.department_name,
+        score=request.score,
+        week_number=request.week_number,
+    )
+    return {"success": bool(saved)}
 
 @router.get("/api/metadata")
 async def get_metadata():

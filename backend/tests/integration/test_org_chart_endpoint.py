@@ -5,6 +5,7 @@ Tests the full request/response cycle including authentication and business logi
 import pytest
 from unittest.mock import patch, Mock
 from fastapi.testclient import TestClient
+from urllib.parse import quote
 
 
 class TestOrgChartEndpoint:
@@ -25,7 +26,7 @@ class TestOrgChartEndpoint:
                         "/api/org-chart",
                         headers={
                             "x-user-role": "CEO",
-                            "x-user-dept": "Yönetim",
+                            "x-user-dept": quote("Yönetim"),
                             "x-user-name": "CEO User"
                         }
                     )
@@ -52,7 +53,7 @@ class TestOrgChartEndpoint:
                         "/api/org-chart",
                         headers={
                             "x-user-role": "DIRECTOR",
-                            "x-user-dept": "Satış",
+                            "x-user-dept": quote("Satış"),
                             "x-user-name": "Director User"
                         }
                     )
@@ -68,22 +69,22 @@ class TestOrgChartEndpoint:
             "/api/org-chart",
             headers={
                 "x-user-role": "EMPLOYEE",
-                "x-user-dept": "Satış",
+                "x-user-dept": quote("Satış"),
                 "x-user-name": "Employee User"
             }
         )
         
         assert response.status_code == 403
-        assert "Yasak" in response.json()["detail"] or "Forbidden" in response.text
+        assert "Yasak" in response.json().get("error", "") or "Forbidden" in response.text
     
     def test_get_org_chart_empty_when_data_cleared(self, client: TestClient):
         """Should return empty data when data is cleared."""
-        with patch("app_state.is_data_cleared", return_value=True):
+        with patch("domain.services.org_chart_service.is_data_cleared", return_value=True):
             response = client.get(
                 "/api/org-chart",
                 headers={
                     "x-user-role": "CEO",
-                    "x-user-dept": "Yönetim",
+                    "x-user-dept": quote("Yönetim"),
                     "x-user-name": "CEO User"
                 }
             )
@@ -145,10 +146,11 @@ class Test360DataEndpoint:
         
         response = client.post("/api/360-data", json=request_data)
         
-        assert response.status_code == 200  # Returns 200 with error in body
+        assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
-        assert "personel" in data["error"].lower()
+        fields = data.get("details", {}).get("fields", {})
+        assert "body.personel" in fields
     
     def test_get_360_data_success(self, client: TestClient, sample_360_evaluations):
         """Should successfully retrieve 360 evaluation data."""
@@ -167,7 +169,7 @@ class Test360DataEndpoint:
     
     def test_get_360_data_empty_when_cleared(self, client: TestClient):
         """Should return empty data when cleared."""
-        with patch("app_state.is_data_cleared", return_value=True):
+        with patch("domain.services.org_chart_service.is_data_cleared", return_value=True):
             response = client.get("/api/360-data")
             
             assert response.status_code == 200

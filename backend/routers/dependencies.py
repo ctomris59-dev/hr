@@ -1,7 +1,19 @@
 from fastapi import Depends, Header, HTTPException
 from typing import Optional
+from urllib.parse import unquote
 
 from core.config import get_settings
+
+
+
+def _decode_header(value: Optional[str]) -> str:
+    """Decode percent-encoded UTF-8 header values sent by the frontend proxy."""
+    if not value:
+        return ""
+    try:
+        return unquote(value)
+    except Exception:
+        return value
 
 try:
     from services.hierarchy_service import can_access_recruitment
@@ -18,7 +30,7 @@ async def get_current_user_role(x_user_role: Optional[str] = Header(None)) -> st
     # Development mode: COMPLETE BYPASS - always return CEO, ignore headers
     if settings.ENVIRONMENT == "development" or settings.APP_ENV == "development":
         return "CEO"  # Always CEO in dev, ignore header
-    return x_user_role or "EMPLOYEE"
+    return _decode_header(x_user_role) or "EMPLOYEE"
 
 
 async def get_current_user_dept(x_user_dept: Optional[str] = Header(None)) -> str:
@@ -30,7 +42,7 @@ async def get_current_user_dept(x_user_dept: Optional[str] = Header(None)) -> st
     # Development mode: COMPLETE BYPASS - always return Yönetim, ignore header
     if settings.ENVIRONMENT == "development" or settings.APP_ENV == "development":
         return "Yönetim"  # Always Yönetim in dev, ignore header
-    return x_user_dept or ""
+    return _decode_header(x_user_dept)
 
 
 async def get_current_user_name(x_user_name: Optional[str] = Header(None)) -> str:
@@ -42,7 +54,7 @@ async def get_current_user_name(x_user_name: Optional[str] = Header(None)) -> st
     # Development mode: COMPLETE BYPASS - always return Development User, ignore header
     if settings.ENVIRONMENT == "development" or settings.APP_ENV == "development":
         return "Development User"  # Always Development User in dev, ignore header
-    return x_user_name or ""
+    return _decode_header(x_user_name)
 
 
 async def get_current_tenant_id() -> str:

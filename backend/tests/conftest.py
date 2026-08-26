@@ -17,12 +17,19 @@ from main import app
 
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
-    """
-    FastAPI TestClient fixture.
-    Provides a test client for making HTTP requests to the API.
-    """
-    with TestClient(app) as test_client:
-        yield test_client
+    """FastAPI client with production-like auth behavior enabled."""
+    from core.config import get_settings
+
+    settings = get_settings()
+    old_environment, old_app_env = settings.ENVIRONMENT, settings.APP_ENV
+    settings.ENVIRONMENT = "test"
+    settings.APP_ENV = "test"
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        settings.ENVIRONMENT = old_environment
+        settings.APP_ENV = old_app_env
 
 
 @pytest.fixture
