@@ -22,13 +22,16 @@ const LABEL_TO_CODE: Record<string, string> = {
   "Sürekli Öğrenme": "LRN",
   "Etik ve Uyum": "ETH",
   "Öz-Disiplin": "DIS",
+  "Dayanıklılık & Stres Yönetimi": "STR",
+  // Eski kayıtların okunabilmesi için geriye dönük uyumluluk.
   "Stratejik Bakış": "STR",
   "Takım Çalışması": "TEA",
   "İletişim Becerileri": "COM",
 };
 
 const clamp = (value: number, min = 1, max = 5) => Math.min(max, Math.max(min, value));
-const avg = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : 3);
+const avg = (values: number[]) =>
+  values.length ? values.reduce((a, b) => a + b, 0) / values.length : 3;
 
 function numeric(value: unknown): number | null {
   const n = Number(value);
@@ -57,18 +60,41 @@ export function extractCompetencyMap(person: any): Record<string, number> {
     add(code, person?.[`${code}_Mgr`]);
   });
 
-  return Object.fromEntries(Object.entries(buckets).map(([code, values]) => [code, avg(values)]));
+  return Object.fromEntries(
+    Object.entries(buckets).map(([code, values]) => [code, avg(values)])
+  );
 }
 
-function factorScore(map: Record<string, number>, codes: string[]): number {
-  return clamp(avg(codes.map((code) => map[code]).filter((v): v is number => Number.isFinite(v))));
+function weightedFactorScore(
+  map: Record<string, number>,
+  weights: Record<string, number>
+): number {
+  const available = Object.entries(weights).filter(([code]) => Number.isFinite(map[code]));
+  if (!available.length) return 3;
+  const totalWeight = available.reduce((sum, [, weight]) => sum + weight, 0);
+  const weighted = available.reduce(
+    (sum, [code, weight]) => sum + map[code] * weight,
+    0
+  );
+  return clamp(weighted / totalWeight);
 }
 
 /**
- * Potansiyel mevcut performansın tekrarı değildir.
- * Endeks; öğrenme çevikliği, liderlik kapasitesi, uyum, karmaşıklık yönetimi,
- * kariyer isteği ve mobilite isteğini ayrı faktörler olarak ele alır.
- * Eksik öz-bildirim alanları nötr 3,0 kabul edilir ve güven skoru düşürülür.
+ * FutureHR Potansiyel Endeksi bir otomatik terfi kararı veya psikometrik olarak
+ * valide edilmiş gelecek-performans tahmini değildir; yetenek görüşmelerinde
+ * kullanılacak çok faktörlü bir karar-destek göstergesidir.
+ *
+ * 130 soruluk temel envanter liderliği doğrudan ölçmediği için endekste
+ * "liderlik kapasitesi" adıyla türetilmiş bir faktör kullanılmaz.
+ * Faktörler testin gerçekten ölçtüğü yapılara dayanır:
+ * - Öğrenme çevikliği %30
+ * - Analitik / karmaşıklık kapasitesi %20
+ * - Dayanıklılık & stres yönetimi %15
+ * - İletişim & işbirliği %15
+ * - Kariyer isteği %10
+ * - Mobilite / yeni sorumluluk isteği %10
+ *
+ * Eksik profil girdileri nötr 3,0 kabul edilir ve veri güveni düşürülür.
  */
 export function calculatePotentialIndex(person: any): PotentialResult {
   const map = extractCompetencyMap(person);
@@ -76,24 +102,76 @@ export function calculatePotentialIndex(person: any): PotentialResult {
   const mobility = numeric(person?.mobility_willingness ?? person?.mobilityWillingness);
   const missingInputs: string[] = [];
   if (aspiration === null) missingInputs.push("Kariyer isteği");
-  if (mobility === null) missingInputs.push("Mobilite isteği");
+  if (mobility === null) missingInputs.push("Mobilite / yeni sorumluluk isteği");
 
   const factors: PotentialFactor[] = [
-    { key: "learning", label: "Öğrenme çevikliği", score: factorScore(map, ["LRN", "ANA", "DIG"]), weight: 0.30, source: "assessment" },
-    { key: "leadership", label: "Liderlik kapasitesi", score: factorScore(map, ["STR", "COM", "TEA", "RES"]), weight: 0.25, source: "assessment" },
-    { key: "adaptability", label: "Uyum & değişim", score: factorScore(map, ["LRN", "DIG", "DIS"]), weight: 0.15, source: "assessment" },
-    { key: "complexity", label: "Karmaşıklık yönetimi", score: factorScore(map, ["ANA", "STR", "DET"]), weight: 0.10, source: "assessment" },
-    { key: "aspiration", label: "Kariyer isteği", score: aspiration ?? 3, weight: 0.10, source: "profile" },
-    { key: "mobility", label: "Mobilite isteği", score: mobility ?? 3, weight: 0.10, source: "profile" },
+    {
+      key: "learning",
+      label: "Öğrenme çevikliği",
+      score: weightedFactorScore(map, { LRN: 0.5, ANA: 0.25, DIG: 0.25 }),
+      weight: 0.3,
+      source: "assessment",
+    },
+    {
+      key: "complexity",
+      label: "Analitik / karmaşıklık kapasitesi",
+      score: weightedFactorScore(map, { ANA: 0.6, DET: 0.2, DIG: 0.2 }),
+      weight: 0.2,
+      source: "assessment",
+    },
+    {
+      key: "resilience",
+      label: "Dayanıklılık & stres yönetimi",
+      score: weightedFactorScore(map, { STR: 1 }),
+      weight: 0.15,
+      source: "assessment",
+    },
+    {
+      key: "collaboration",
+      label: "İletişim & işbirliği",
+      score: weightedFactorScore(map, { COM: 0.6, TEA: 0.4 }),
+      weight: 0.15,
+      source: "assessment",
+    },
+    {
+      key: "aspiration",
+      label: "Kariyer isteği",
+      score: aspiration ?? 3,
+      weight: 0.1,
+      source: "profile",
+    },
+    {
+      key: "mobility",
+      label: "Mobilite / yeni sorumluluk isteği",
+      score: mobility ?? 3,
+      weight: 0.1,
+      source: "profile",
+    },
   ];
 
-  const score = clamp(factors.reduce((sum, factor) => sum + factor.score * factor.weight, 0));
-  const assessmentCoverage = Object.keys(map).length / 10;
-  const profileCoverage = ((aspiration !== null ? 1 : 0) + (mobility !== null ? 1 : 0)) / 2;
-  const confidence = Math.round(Math.min(100, (assessmentCoverage * 0.75 + profileCoverage * 0.25) * 100));
-  const label = score >= 4.35 ? "Çok Yüksek" : score >= 3.8 ? "Yüksek" : score >= 3.2 ? "Gelişen" : "Düşük";
+  const score = clamp(
+    factors.reduce((sum, factor) => sum + factor.score * factor.weight, 0)
+  );
 
-  return { score: Math.round(score * 100) / 100, confidence, factors, missingInputs, label };
+  const requiredAssessmentCodes = ["LRN", "ANA", "DIG", "DET", "STR", "COM", "TEA"];
+  const assessmentCoverage =
+    requiredAssessmentCodes.filter((code) => Number.isFinite(map[code])).length /
+    requiredAssessmentCodes.length;
+  const profileCoverage =
+    ((aspiration !== null ? 1 : 0) + (mobility !== null ? 1 : 0)) / 2;
+  const confidence = Math.round(
+    Math.min(100, (assessmentCoverage * 0.75 + profileCoverage * 0.25) * 100)
+  );
+  const label =
+    score >= 4.35 ? "Çok Yüksek" : score >= 3.8 ? "Yüksek" : score >= 3.2 ? "Gelişen" : "Düşük";
+
+  return {
+    score: Math.round(score * 100) / 100,
+    confidence,
+    factors,
+    missingInputs,
+    label,
+  };
 }
 
 export function getNineBox(performance: number, potential: number): string {
