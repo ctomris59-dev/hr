@@ -16,9 +16,13 @@ const COMPETENCIES: Record<string, string> = {
   LRN: "Sürekli Öğrenme",
   ETH: "Etik ve Uyum",
   DIS: "Öz-Disiplin",
-  STR: "Stratejik Bakış",
+  STR: "Dayanıklılık & Stres Yönetimi",
   TEA: "Takım Çalışması",
   COM: "İletişim Becerileri",
+};
+
+const legacyTargetLabel: Record<string, string> = {
+  STR: "Stratejik Bakış",
 };
 
 const emptyScores = Object.fromEntries(Object.keys(COMPETENCIES).map((code) => [code, 3])) as Record<string, number>;
@@ -53,7 +57,14 @@ export default function DegerlendirmePage() {
 
   const selected = useMemo(() => orgData.find((item) => item["Ad Soyad"] === selectedName), [orgData, selectedName]);
   const target = JOB_PROFILES[selected?.Pozisyon] || {};
-  const radarData = Object.entries(COMPETENCIES).map(([code, label]) => ({ subject: label.replace(" Becerileri", "").replace("Dijital Okuryazarlık", "Dijital"), current: scores[code] || 0, target: Number(target[label] || 0) }));
+  const radarData = Object.entries(COMPETENCIES).map(([code, label]) => {
+    const targetLabel = target[label] !== undefined ? label : legacyTargetLabel[code];
+    return {
+      subject: label.replace(" Becerileri", "").replace("Dijital Okuryazarlık", "Dijital"),
+      current: scores[code] || 0,
+      target: Number((targetLabel && target[targetLabel]) || 0),
+    };
+  });
   const selectedHistory = useMemo(() => history.filter((item) => (item.Personel || item.target) === selectedName).sort((a,b)=>String(a.date || a.Tarih || "").localeCompare(String(b.date || b.Tarih || ""))), [history, selectedName]);
   const lineData = selectedHistory.map((item, index) => ({ label: item.date || item.Tarih || `${index + 1}. ölçüm`, performance: Number(item.Performans || item.performance || 0) }));
 
@@ -107,7 +118,7 @@ export default function DegerlendirmePage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="text-sm font-semibold">Mevcut yetkinlik vs. rol hedefi</h2><p className="mt-1 text-xs text-slate-500">Rol hedefi kurumun pozisyon profilinden gelir.</p><div className="mt-3 h-[320px]"><ResponsiveContainer width="100%" height="100%"><RadarChart data={radarData}><PolarGrid/><PolarAngleAxis dataKey="subject" tick={{fontSize:10}}/><PolarRadiusAxis domain={[0,5]} tick={{fontSize:9}}/><Radar name="Değerlendirme" dataKey="current" stroke="#2563eb" fill="#2563eb" fillOpacity={0.15}/><Radar name="Rol Hedefi" dataKey="target" stroke="#f97316" fill="#f97316" fillOpacity={0.08}/><Tooltip/></RadarChart></ResponsiveContainer></div></div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="text-sm font-semibold">Mevcut yetkinlik vs. rol hedefi</h2><p className="mt-1 text-xs text-slate-500">Rol hedefi kurumun pozisyon profilinden gelir. Eski profillerdeki STR hedefi, liderlik ek modülü devreye alınana kadar Dayanıklılık & Stres Yönetimi hedefi olarak gösterilir.</p><div className="mt-3 h-[320px]"><ResponsiveContainer width="100%" height="100%"><RadarChart data={radarData}><PolarGrid/><PolarAngleAxis dataKey="subject" tick={{fontSize:10}}/><PolarRadiusAxis domain={[0,5]} tick={{fontSize:9}}/><Radar name="Değerlendirme" dataKey="current" stroke="#2563eb" fill="#2563eb" fillOpacity={0.15}/><Radar name="Rol Hedefi" dataKey="target" stroke="#f97316" fill="#f97316" fillOpacity={0.08}/><Tooltip/></RadarChart></ResponsiveContainer></div></div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="text-sm font-semibold">Performans geçmişi</h2><p className="mt-1 text-xs text-slate-500">Kayıtlı yönetici değerlendirmeleri.</p><div className="mt-3 h-[320px]">{lineData.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={lineData}><CartesianGrid vertical={false} strokeDasharray="3 5"/><XAxis dataKey="label" tick={{fontSize:10}}/><YAxis domain={[0,5]} tick={{fontSize:10}}/><Tooltip/><Line type="monotone" dataKey="performance" stroke="#2563eb" strokeWidth={2.2} dot={{r:3}}/></LineChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-sm text-slate-500">Henüz geçmiş değerlendirme yok.</div>}</div></div>
       </div>
     </div>
