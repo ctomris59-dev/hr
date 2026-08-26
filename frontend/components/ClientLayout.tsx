@@ -31,6 +31,7 @@ import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import CommandPalette from "./CommandPalette";
 import DemoRoleSwitcher from "./DemoRoleSwitcher";
+import ModuleContextBar from "./ModuleContextBar";
 
 const menuItems = [
   { href: "/dashboard", label: "Yönetici Özeti", icon: LayoutDashboard, section: "Genel" },
@@ -211,7 +212,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-5 lg:px-6 lg:py-6">
-          {children}
+          <ModuleContextBar pathname={pathname} />
+          <div className="module-page-content">{children}</div>
         </main>
       </div>
       <CommandPalette />
