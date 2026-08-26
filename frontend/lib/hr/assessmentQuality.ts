@@ -1,34 +1,171 @@
-export interface ConsistencyResult {
+import type { AssessmentQuestion } from "@/app/data/questions";
+
+export interface AssessmentQualityResult {
   score: number;
-  band: "Tutarlı" | "Dikkatle İncele" | "Düşük Güven";
+  band: "Yüksek" | "Orta" | "Dikkatle İncele";
+  completeness: number;
+  idealizedSelfPresentation: number;
+  dominantResponseShare: number;
+  reverseItemDifference: number;
+  secondsPerItem: number | null;
+  flags: string[];
   note: string;
 }
 
+function mean(values: number[]): number {
+  if (!values.length) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function variance(values: number[]): number {
+  if (!values.length) return 0;
+  const avg = mean(values);
+  return mean(values.map((value) => Math.pow(value - avg, 2)));
+}
+
 /**
- * Bu gösterge bir yalan tespit aracı değildir ve kişilik/klinik tanı üretmez.
- * Yalnızca LIE kategorisindeki maddelerde aşırı uç cevapların yoğunluğunu
- * işaretleyen basit bir yanıt-kalitesi sinyalidir. İşe alım/terfi kararı için
- * tek başına kullanılamaz.
+ * Yanıt Kalitesi Endeksi
+ *
+ * Bu çıktı bir yalan tespit aracı, kişilik tanısı veya dürüstlük puanı değildir.
+ * Yalnızca veri kalitesini etkileyebilecek cevap örüntülerini işaretler:
+ * - tamamlanma oranı,
+ * - gerçekçi olmayan aşırı olumlu kendini sunma eğilimi,
+ * - tek seçeneğe yığılma (straight-lining),
+ * - normal ve ters maddeler arasındaki büyük farklar,
+ * - olağandışı hızlı tamamlama.
+ *
+ * İşe alım, terfi veya ücret kararı için tek başına kullanılamaz.
  */
-export function calculateResponseConsistency(answers: number[]): ConsistencyResult {
-  if (!answers.length) {
-    return { score: 0, band: "Düşük Güven", note: "Tutarlılık maddesi bulunamadı." };
-  }
-  const valid = answers.filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
-  if (!valid.length) {
-    return { score: 0, band: "Düşük Güven", note: "Geçerli tutarlılık yanıtı bulunamadı." };
+export function calculateAssessmentQuality(
+  questions: AssessmentQuestion[],
+  answers: Record<number, number>,
+  durationSeconds: number | null
+): AssessmentQualityResult {
+  const coreQuestions = questions.filter((question) => question.category !== "LIE");
+  const lieQuestions = questions.filter((question) => question.category === "LIE");
+  const answeredCore = coreQuestions.filter((question) => Number.isFinite(answers[question.id]));
+  const coreValues = answeredCore.map((question) => answers[question.id]);
+  const completeness = coreQuestions.length ? answeredCore.length / coreQuestions.length : 0;
+
+  // Bu maddelerin tümü gerçekçi olmayan mutlak olumlu iddialardır.
+  // Bu nedenle 4-5 yönündeki katılım idealize edilmiş kendini sunma sinyali üretir;
+  // 1 verilmesi artık yanlış biçimde cezalandırılmaz.
+  const lieValues = lieQuestions
+    .map((question) => answers[question.id])
+    .filter((value) => Number.isFinite(value));
+  const idealizationWeights: Record<number, number> = { 1: 0, 2: 0.05, 3: 0.2, 4: 0.6, 5: 1 };
+  const idealizedSelfPresentation = lieValues.length
+    ? Math.round(mean(lieValues.map((value) => idealizationWeights[value] ?? 0)) * 100)
+    : 0;
+
+  const responseCounts = new Map<number, number>();
+  coreValues.forEach((value) => responseCounts.set(value, (responseCounts.get(value) || 0) + 1));
+  const dominantCount = Math.max(0, ...Array.from(responseCounts.values()));
+  const dominantResponseShare = coreValues.length ? dominantCount / coreValues.length : 0;
+  const coreVariance = variance(coreValues);
+
+  const categories = Array.from(
+    new Set(coreQuestions.map((question) => question.category))
+  );
+  const reverseDifferences: number[] = [];
+  categories.forEach((category) => {
+    const standard = coreQuestions
+      .filter((question) => question.category === category && question.type === "S")
+      .map((question) => answers[question.id])
+      .filter((value) => Number.isFinite(value));
+    const reversed = coreQuestions
+      .filter((question) => question.category === category && question.type === "R")
+      .map((question) => answers[question.id])
+      .filter((value) => Number.isFinite(value))
+      .map((value) => 6 - value);
+    if (standard.length && reversed.length) {
+      reverseDifferences.push(Math.abs(mean(standard) - mean(reversed)));
+    }
+  });
+  const reverseItemDifference = reverseDifferences.length ? mean(reverseDifferences) : 0;
+
+  const secondsPerItem =
+    durationSeconds && answeredCore.length
+      ? durationSeconds / answeredCore.length
+      : null;
+
+  const flags: string[] = [];
+  let penalty = 0;
+
+  if (completeness < 1) {
+    const missingShare = 1 - completeness;
+    penalty += Math.min(40, missingShare * 80);
+    flags.push(`Çekirdek maddelerin %${Math.round(completeness * 100)} kadarı yanıtlandı.`);
   }
 
-  const extremeShare = valid.filter((value) => value === 1 || value === 5).length / valid.length;
-  const mean = valid.reduce((a, b) => a + b, 0) / valid.length;
-  const variance = valid.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / valid.length;
-  const lowVariancePenalty = variance < 0.15 ? 20 : variance < 0.3 ? 8 : 0;
-  const extremePenalty = Math.max(0, (extremeShare - 0.6) * 80);
-  const score = Math.round(Math.max(0, Math.min(100, 100 - lowVariancePenalty - extremePenalty)));
-  const band = score >= 75 ? "Tutarlı" : score >= 55 ? "Dikkatle İncele" : "Düşük Güven";
+  if (idealizedSelfPresentation >= 55) {
+    penalty += Math.min(25, (idealizedSelfPresentation - 45) * 0.5);
+    flags.push("Aşırı kusursuz kendini sunma maddelerinde yüksek katılım var.");
+  } else if (idealizedSelfPresentation >= 40) {
+    penalty += 5;
+    flags.push("Kendini idealize etme sinyali orta düzeyde.");
+  }
+
+  if (dominantResponseShare >= 0.7) {
+    penalty += 18;
+    flags.push("Yanıtlar tek bir seçeneğe olağandışı ölçüde yığılmış.");
+  } else if (dominantResponseShare >= 0.6) {
+    penalty += 8;
+    flags.push("Yanıt dağılımı sınırlı çeşitlilik gösteriyor.");
+  }
+
+  if (coreVariance < 0.35) {
+    penalty += 12;
+    flags.push("Çekirdek maddelerde yanıt varyansı çok düşük.");
+  } else if (coreVariance < 0.55) {
+    penalty += 5;
+  }
+
+  if (reverseItemDifference >= 1.25) {
+    penalty += 15;
+    flags.push("Normal ve ters maddeler arasında belirgin uyumsuzluk var.");
+  } else if (reverseItemDifference >= 0.9) {
+    penalty += 6;
+  }
+
+  if (secondsPerItem !== null && secondsPerItem < 3.5) {
+    penalty += 15;
+    flags.push("Tamamlama hızı olağandışı yüksek.");
+  } else if (secondsPerItem !== null && secondsPerItem < 5) {
+    penalty += 7;
+    flags.push("Tamamlama hızı hızlı; sonuçlar dikkatle yorumlanmalı.");
+  }
+
+  const score = Math.round(Math.max(0, Math.min(100, 100 - penalty)));
+  const band: AssessmentQualityResult["band"] =
+    score >= 80 ? "Yüksek" : score >= 60 ? "Orta" : "Dikkatle İncele";
+
   return {
     score,
     band,
-    note: "Yanıt tutarlılığı yalnızca veri kalitesi göstergesidir; dürüstlük veya manipülasyon ölçümü değildir.",
+    completeness: Math.round(completeness * 100),
+    idealizedSelfPresentation,
+    dominantResponseShare: Math.round(dominantResponseShare * 100),
+    reverseItemDifference: Number(reverseItemDifference.toFixed(2)),
+    secondsPerItem: secondsPerItem === null ? null : Number(secondsPerItem.toFixed(1)),
+    flags,
+    note:
+      "Yanıt Kalitesi Endeksi yalnızca veri kalitesi sinyalidir; yalan, dürüstlük veya manipülasyon ölçümü değildir ve tek başına karar kriteri olarak kullanılamaz.",
+  };
+}
+
+// Eski kayıtları/olası eski çağrıları bozmamak için geriye dönük uyumluluk.
+export function calculateResponseConsistency(answers: number[]) {
+  const idealizationWeights: Record<number, number> = { 1: 0, 2: 0.05, 3: 0.2, 4: 0.6, 5: 1 };
+  const valid = answers.filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
+  const idealization = valid.length
+    ? Math.round(mean(valid.map((value) => idealizationWeights[value] ?? 0)) * 100)
+    : 100;
+  const score = Math.max(0, 100 - idealization);
+  return {
+    score,
+    band: score >= 75 ? "Tutarlı" : score >= 55 ? "Dikkatle İncele" : "Düşük Güven",
+    note:
+      "Bu eski uyumluluk çıktısı yalnızca idealize edilmiş kendini sunma sinyalidir; dürüstlük ölçümü değildir.",
   };
 }
