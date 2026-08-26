@@ -22,6 +22,7 @@ export const PolarGrid = noSsr(() => import("recharts").then((m) => m.PolarGrid 
 export const PolarAngleAxis = noSsr(() => import("recharts").then((m) => m.PolarAngleAxis as ComponentType<any>));
 export const PolarRadiusAxis = noSsr(() => import("recharts").then((m) => m.PolarRadiusAxis as ComponentType<any>));
 export const ReferenceLine = noSsr(() => import("recharts").then((m) => m.ReferenceLine as ComponentType<any>));
+export const ReferenceArea = noSsr(() => import("recharts").then((m) => m.ReferenceArea as ComponentType<any>));
 export const LineChart = noSsr(() => import("recharts").then((m) => m.LineChart as ComponentType<any>));
 export const Line = noSsr(() => import("recharts").then((m) => m.Line as ComponentType<any>));
 export const Legend = noSsr(() => import("recharts").then((m) => m.Legend as ComponentType<any>));
