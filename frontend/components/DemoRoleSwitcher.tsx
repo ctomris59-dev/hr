@@ -15,33 +15,27 @@ export default function DemoRoleSwitcher() {
   ];
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Shield className="w-3 h-3 text-slate-600" />
-          <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">
-            Demo: Rol
-          </span>
-        </div>
-        <select
-          value={currentUserRole || ""}
-          onChange={(e) => {
-            const selectedRole = e.target.value as UserRole;
-            if (selectedRole) {
-              switchRole(selectedRole);
-            }
-          }}
-          className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-        >
-          <option value="">Rol seçin...</option>
-          {roles.map((role) => (
-            <option key={role.value} value={role.value}>
-              {role.label}
-            </option>
-          ))}
-        </select>
-      </div>
+    <div className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-2.5 lg:flex dark:border-slate-700 dark:bg-slate-800/70">
+      <Shield className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.8} />
+      <span className="hidden text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 2xl:inline">
+        Demo rol
+      </span>
+      <select
+        value={currentUserRole || ""}
+        onChange={(e) => {
+          const selectedRole = e.target.value as UserRole;
+          if (selectedRole) switchRole(selectedRole);
+        }}
+        aria-label="Demo rol seçimi"
+        className="min-w-[76px] cursor-pointer border-0 bg-transparent py-0 text-xs font-medium text-slate-600 outline-none dark:text-slate-300"
+      >
+        <option value="">Rol seçin</option>
+        {roles.map((role) => (
+          <option key={role.value} value={role.value}>
+            {role.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
-
