@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1",
+    "name": "Test Aday",
+    "email": "test.aday@example.com",
+    "phone": "",
+    "position": "Veri Analisti",
+    "status": "Test Bekliyor",
+    "status_date": null,
+    "raw_scores": {
+      "Analitik Düşünme": 4.4,
+      "İletişim Becerileri": 3.8,
+      "Dijital Okuryazarlık": 4.2
+    },
+    "avg_score": 4.13,
+    "ai_karar": "ÖNERİ: KABUL",
+    "manipulation_score": null,
+    "lie": null,
+    "date": "2026-01-30 13:30",
+    "type": "Aday"
+  }
+]

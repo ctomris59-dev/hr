@@ -1,0 +1,578 @@
+[
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W01",
+        "score": 7.9,
+        "count": 30
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W02",
+        "score": 9.2,
+        "count": 19
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W03",
+        "score": 7.0,
+        "count": 32
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W04",
+        "score": 9.1,
+        "count": 31
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W05",
+        "score": 7.2,
+        "count": 21
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W06",
+        "score": 6.5,
+        "count": 17
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W07",
+        "score": 7.3,
+        "count": 32
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W08",
+        "score": 9.0,
+        "count": 34
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W09",
+        "score": 7.5,
+        "count": 32
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W10",
+        "score": 6.6,
+        "count": 19
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W11",
+        "score": 7.9,
+        "count": 25
+    },
+    {
+        "department": "İnsan Kaynakları",
+        "week_number": "2025-W12",
+        "score": 8.2,
+        "count": 25
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W01",
+        "score": 6.6,
+        "count": 22
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W02",
+        "score": 6.8,
+        "count": 30
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W03",
+        "score": 6.7,
+        "count": 19
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W04",
+        "score": 6.7,
+        "count": 20
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W05",
+        "score": 6.5,
+        "count": 23
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W06",
+        "score": 7.2,
+        "count": 35
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W07",
+        "score": 8.7,
+        "count": 35
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W08",
+        "score": 7.2,
+        "count": 21
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W09",
+        "score": 7.1,
+        "count": 19
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W10",
+        "score": 7.5,
+        "count": 31
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W11",
+        "score": 7.4,
+        "count": 23
+    },
+    {
+        "department": "Bilgi Teknolojileri",
+        "week_number": "2025-W12",
+        "score": 9.0,
+        "count": 29
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W01",
+        "score": 7.4,
+        "count": 31
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W02",
+        "score": 9.0,
+        "count": 23
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W03",
+        "score": 6.5,
+        "count": 33
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W04",
+        "score": 7.4,
+        "count": 22
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W05",
+        "score": 8.7,
+        "count": 21
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W06",
+        "score": 9.1,
+        "count": 26
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W07",
+        "score": 8.6,
+        "count": 21
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W08",
+        "score": 7.8,
+        "count": 19
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W09",
+        "score": 7.0,
+        "count": 22
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W10",
+        "score": 6.7,
+        "count": 32
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W11",
+        "score": 7.5,
+        "count": 35
+    },
+    {
+        "department": "Finans",
+        "week_number": "2025-W12",
+        "score": 7.5,
+        "count": 26
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W01",
+        "score": 9.1,
+        "count": 35
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W02",
+        "score": 6.7,
+        "count": 28
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W03",
+        "score": 8.3,
+        "count": 31
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W04",
+        "score": 9.2,
+        "count": 15
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W05",
+        "score": 6.6,
+        "count": 24
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W06",
+        "score": 8.6,
+        "count": 22
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W07",
+        "score": 7.9,
+        "count": 24
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W08",
+        "score": 8.3,
+        "count": 33
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W09",
+        "score": 8.9,
+        "count": 30
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W10",
+        "score": 8.2,
+        "count": 16
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W11",
+        "score": 7.6,
+        "count": 30
+    },
+    {
+        "department": "Satış",
+        "week_number": "2025-W12",
+        "score": 6.6,
+        "count": 15
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W01",
+        "score": 9.0,
+        "count": 16
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W02",
+        "score": 6.6,
+        "count": 22
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W03",
+        "score": 8.3,
+        "count": 30
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W04",
+        "score": 7.5,
+        "count": 21
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W05",
+        "score": 6.8,
+        "count": 29
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W06",
+        "score": 9.1,
+        "count": 16
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W07",
+        "score": 7.4,
+        "count": 21
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W08",
+        "score": 9.0,
+        "count": 17
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W09",
+        "score": 8.2,
+        "count": 26
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W10",
+        "score": 6.6,
+        "count": 26
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W11",
+        "score": 7.4,
+        "count": 24
+    },
+    {
+        "department": "Pazarlama",
+        "week_number": "2025-W12",
+        "score": 7.2,
+        "count": 25
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W01",
+        "score": 7.4,
+        "count": 29
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W02",
+        "score": 7.5,
+        "count": 22
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W03",
+        "score": 6.6,
+        "count": 18
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W04",
+        "score": 8.0,
+        "count": 17
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W05",
+        "score": 6.9,
+        "count": 34
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W06",
+        "score": 7.9,
+        "count": 29
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W07",
+        "score": 8.9,
+        "count": 31
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W08",
+        "score": 9.0,
+        "count": 26
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W09",
+        "score": 8.4,
+        "count": 32
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W10",
+        "score": 8.9,
+        "count": 20
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W11",
+        "score": 7.8,
+        "count": 19
+    },
+    {
+        "department": "Operasyon",
+        "week_number": "2025-W12",
+        "score": 8.1,
+        "count": 35
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W01",
+        "score": 8.9,
+        "count": 35
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W02",
+        "score": 8.8,
+        "count": 18
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W03",
+        "score": 9.1,
+        "count": 34
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W04",
+        "score": 7.5,
+        "count": 16
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W05",
+        "score": 8.6,
+        "count": 19
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W06",
+        "score": 8.5,
+        "count": 29
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W07",
+        "score": 6.7,
+        "count": 28
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W08",
+        "score": 6.8,
+        "count": 35
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W09",
+        "score": 8.2,
+        "count": 20
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W10",
+        "score": 6.9,
+        "count": 30
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W11",
+        "score": 8.0,
+        "count": 18
+    },
+    {
+        "department": "AR-GE",
+        "week_number": "2025-W12",
+        "score": 8.9,
+        "count": 35
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W01",
+        "score": 7.6,
+        "count": 32
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W02",
+        "score": 7.0,
+        "count": 25
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W03",
+        "score": 9.0,
+        "count": 25
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W04",
+        "score": 6.9,
+        "count": 29
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W05",
+        "score": 6.5,
+        "count": 15
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W06",
+        "score": 8.5,
+        "count": 22
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W07",
+        "score": 6.6,
+        "count": 15
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W08",
+        "score": 6.8,
+        "count": 28
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W09",
+        "score": 8.5,
+        "count": 26
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W10",
+        "score": 7.1,
+        "count": 27
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W11",
+        "score": 8.0,
+        "count": 24
+    },
+    {
+        "department": "Hukuk",
+        "week_number": "2025-W12",
+        "score": 8.5,
+        "count": 22
+    }
+]

@@ -1,0 +1,863 @@
+{
+    "ceo": {
+        "password": "123",
+        "name": "Emin Öncü",
+        "role": "CEO",
+        "dept": "Yönetim",
+        "position": "Yönetim Kurulu Başkanı"
+    },
+    "ik_dir": {
+        "password": "123",
+        "name": "Canan İns (Dir)",
+        "role": "IK",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Direktörü"
+    },
+    "emin5662": {
+        "password": "123",
+        "name": "Emin Öncü",
+        "role": "MANAGER",
+        "dept": "Yönetim",
+        "position": "Genel Müdür"
+    },
+    "ahmet9351": {
+        "password": "123",
+        "name": "Ahmet Çelik",
+        "role": "DIRECTOR",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Direktörü"
+    },
+    "zeynep3684": {
+        "password": "123",
+        "name": "Zeynep Yıldız",
+        "role": "MANAGER",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Müdür"
+    },
+    "ozan4341": {
+        "password": "123",
+        "name": "Ozan Özkan",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Kıdemli Uzman"
+    },
+    "murat5576": {
+        "password": "123",
+        "name": "Murat Öztürk",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Kıdemli Uzman"
+    },
+    "burak8574": {
+        "password": "123",
+        "name": "Burak Aydin",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman"
+    },
+    "murat4069": {
+        "password": "123",
+        "name": "Murat Özkan",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman"
+    },
+    "deniz3878": {
+        "password": "123",
+        "name": "Deniz Kurt",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Kıdemli Uzman"
+    },
+    "gamze5318": {
+        "password": "123",
+        "name": "Gamze Öztürk",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman Yardımcısı"
+    },
+    "can6371": {
+        "password": "123",
+        "name": "Can Aydın",
+        "role": "MANAGER",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Müdür"
+    },
+    "burak1011": {
+        "password": "123",
+        "name": "Burak Kurt",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman"
+    },
+    "ozan4160": {
+        "password": "123",
+        "name": "Ozan Aydin",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman"
+    },
+    "ozan7682": {
+        "password": "123",
+        "name": "Ozan Öztürk",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman Yardımcısı"
+    },
+    "gamze7510": {
+        "password": "123",
+        "name": "Gamze Özkan",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman"
+    },
+    "deniz3900": {
+        "password": "123",
+        "name": "Deniz Kurt",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman"
+    },
+    "serkan3107": {
+        "password": "123",
+        "name": "Serkan Aydin",
+        "role": "PERSONEL",
+        "dept": "İnsan Kaynakları",
+        "position": "İnsan Kaynakları Uzman"
+    },
+    "fatma7966": {
+        "password": "123",
+        "name": "Fatma Kaya",
+        "role": "DIRECTOR",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Direktörü"
+    },
+    "elif3094": {
+        "password": "123",
+        "name": "Elif Aydın",
+        "role": "MANAGER",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Müdür"
+    },
+    "ozan8254": {
+        "password": "123",
+        "name": "Ozan Aydin",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Uzman"
+    },
+    "murat7104": {
+        "password": "123",
+        "name": "Murat Özkan",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Kıdemli Uzman"
+    },
+    "deniz9827": {
+        "password": "123",
+        "name": "Deniz Aydin",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Uzman"
+    },
+    "burak9761": {
+        "password": "123",
+        "name": "Burak Aydin",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Uzman Yardımcısı"
+    },
+    "burak7353": {
+        "password": "123",
+        "name": "Burak Kurt",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Uzman"
+    },
+    "murat5836": {
+        "password": "123",
+        "name": "Murat Kurt",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Uzman Yardımcısı"
+    },
+    "ali6145": {
+        "password": "123",
+        "name": "Ali Şahin",
+        "role": "MANAGER",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Müdür"
+    },
+    "ozan7093": {
+        "password": "123",
+        "name": "Ozan Öztürk",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Uzman"
+    },
+    "ozan4884": {
+        "password": "123",
+        "name": "Ozan Öztürk",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Uzman Yardımcısı"
+    },
+    "serkan1589": {
+        "password": "123",
+        "name": "Serkan Özkan",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Uzman"
+    },
+    "murat7874": {
+        "password": "123",
+        "name": "Murat Aydin",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Kıdemli Uzman"
+    },
+    "ozan5531": {
+        "password": "123",
+        "name": "Ozan Aydin",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Kıdemli Uzman"
+    },
+    "serkan8736": {
+        "password": "123",
+        "name": "Serkan Aydin",
+        "role": "PERSONEL",
+        "dept": "Bilgi Teknolojileri",
+        "position": "Bilgi Teknolojileri Kıdemli Uzman"
+    },
+    "ayse2504": {
+        "password": "123",
+        "name": "Ayşe Çelik",
+        "role": "DIRECTOR",
+        "dept": "Finans",
+        "position": "Finans Direktörü"
+    },
+    "zeynep8820": {
+        "password": "123",
+        "name": "Zeynep Yıldız",
+        "role": "MANAGER",
+        "dept": "Finans",
+        "position": "Finans Müdürü"
+    },
+    "deniz8965": {
+        "password": "123",
+        "name": "Deniz Özkan",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Uzman Yardımcısı"
+    },
+    "ozan9159": {
+        "password": "123",
+        "name": "Ozan Aydin",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Uzman Yardımcısı"
+    },
+    "deniz3940": {
+        "password": "123",
+        "name": "Deniz Kurt",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Uzmanı"
+    },
+    "serkan3774": {
+        "password": "123",
+        "name": "Serkan Aydin",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Kıdemli Uzman"
+    },
+    "selin5748": {
+        "password": "123",
+        "name": "Selin Aydin",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Uzmanı"
+    },
+    "burak9621": {
+        "password": "123",
+        "name": "Burak Öztürk",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Kıdemli Uzman"
+    },
+    "ali1773": {
+        "password": "123",
+        "name": "Ali Yıldız",
+        "role": "MANAGER",
+        "dept": "Finans",
+        "position": "Finans Müdürü"
+    },
+    "deniz6683": {
+        "password": "123",
+        "name": "Deniz Öztürk",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Kıdemli Uzman"
+    },
+    "ozan2648": {
+        "password": "123",
+        "name": "Ozan Özkan",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Kıdemli Uzman"
+    },
+    "burak7321": {
+        "password": "123",
+        "name": "Burak Özkan",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Uzmanı"
+    },
+    "gamze8807": {
+        "password": "123",
+        "name": "Gamze Özkan",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Uzman Yardımcısı"
+    },
+    "serkan3453": {
+        "password": "123",
+        "name": "Serkan Özkan",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Uzman Yardımcısı"
+    },
+    "serkan1271": {
+        "password": "123",
+        "name": "Serkan Kurt",
+        "role": "PERSONEL",
+        "dept": "Finans",
+        "position": "Finans Kıdemli Uzman"
+    },
+    "mehmet4812": {
+        "password": "123",
+        "name": "Mehmet Demir",
+        "role": "DIRECTOR",
+        "dept": "Satış",
+        "position": "Satış Direktörü"
+    },
+    "zeynep6967": {
+        "password": "123",
+        "name": "Zeynep Arslan",
+        "role": "MANAGER",
+        "dept": "Satış",
+        "position": "Kurumsal Satış Müdürü"
+    },
+    "selin3114": {
+        "password": "123",
+        "name": "Selin Öztürk",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Uzmanı / Temsilcisi"
+    },
+    "serkan1231": {
+        "password": "123",
+        "name": "Serkan Kurt",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Uzman Yardımcısı"
+    },
+    "gamze5259": {
+        "password": "123",
+        "name": "Gamze Kurt",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Uzman Yardımcısı"
+    },
+    "deniz7297": {
+        "password": "123",
+        "name": "Deniz Özkan",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satın Alma Uzmanı"
+    },
+    "serkan5083": {
+        "password": "123",
+        "name": "Serkan Özkan",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Kıdemli Uzman"
+    },
+    "burak8444": {
+        "password": "123",
+        "name": "Burak Aydin",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Uzman Yardımcısı"
+    },
+    "ali2477": {
+        "password": "123",
+        "name": "Ali Yıldız",
+        "role": "MANAGER",
+        "dept": "Satış",
+        "position": "Bölge Satış Müdürü"
+    },
+    "serkan3157": {
+        "password": "123",
+        "name": "Serkan Kurt",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Uzman Yardımcısı"
+    },
+    "gamze4845": {
+        "password": "123",
+        "name": "Gamze Özkan",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Stratejik Satın Alma Uzmanı"
+    },
+    "serkan6581": {
+        "password": "123",
+        "name": "Serkan Aydin",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Uzman Yardımcısı"
+    },
+    "burak3501": {
+        "password": "123",
+        "name": "Burak Öztürk",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Uzman Yardımcısı"
+    },
+    "ozan7672": {
+        "password": "123",
+        "name": "Ozan Kurt",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Satış Kıdemli Uzman"
+    },
+    "serkan1158": {
+        "password": "123",
+        "name": "Serkan Özkan",
+        "role": "PERSONEL",
+        "dept": "Satış",
+        "position": "Stratejik Satın Alma Uzmanı"
+    },
+    "fatma3735": {
+        "password": "123",
+        "name": "Fatma Demir",
+        "role": "DIRECTOR",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Direktörü"
+    },
+    "ali4672": {
+        "password": "123",
+        "name": "Ali Aydın",
+        "role": "MANAGER",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Müdür"
+    },
+    "deniz1599": {
+        "password": "123",
+        "name": "Deniz Aydin",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Uzman Yardımcısı"
+    },
+    "murat5312": {
+        "password": "123",
+        "name": "Murat Aydin",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Dijital Pazarlama Uzmanı"
+    },
+    "ozan9983": {
+        "password": "123",
+        "name": "Ozan Kurt",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Uzman Yardımcısı"
+    },
+    "deniz8161": {
+        "password": "123",
+        "name": "Deniz Özkan",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Kıdemli Uzman"
+    },
+    "serkan3450": {
+        "password": "123",
+        "name": "Serkan Öztürk",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Dijital Pazarlama Uzmanı"
+    },
+    "ozan5721": {
+        "password": "123",
+        "name": "Ozan Aydin",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Uzmanı"
+    },
+    "zeynep3502": {
+        "password": "123",
+        "name": "Zeynep Şahin",
+        "role": "MANAGER",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Müdür"
+    },
+    "gamze7679": {
+        "password": "123",
+        "name": "Gamze Özkan",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Dijital Pazarlama Uzmanı"
+    },
+    "burak7094": {
+        "password": "123",
+        "name": "Burak Öztürk",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Uzman Yardımcısı"
+    },
+    "murat6595": {
+        "password": "123",
+        "name": "Murat Öztürk",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Uzman Yardımcısı"
+    },
+    "gamze8418": {
+        "password": "123",
+        "name": "Gamze Özkan",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Uzman Yardımcısı"
+    },
+    "murat3476": {
+        "password": "123",
+        "name": "Murat Aydin",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Kıdemli Uzman"
+    },
+    "murat6000": {
+        "password": "123",
+        "name": "Murat Aydin",
+        "role": "PERSONEL",
+        "dept": "Pazarlama",
+        "position": "Pazarlama Uzman Yardımcısı"
+    },
+    "ahmet2927": {
+        "password": "123",
+        "name": "Ahmet Kaya",
+        "role": "DIRECTOR",
+        "dept": "Operasyon",
+        "position": "Operasyon Direktörü"
+    },
+    "can4341": {
+        "password": "123",
+        "name": "Can Yıldız",
+        "role": "MANAGER",
+        "dept": "Operasyon",
+        "position": "Operasyon Müdürü"
+    },
+    "murat4158": {
+        "password": "123",
+        "name": "Murat Kurt",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Kıdemli Uzman"
+    },
+    "selin9800": {
+        "password": "123",
+        "name": "Selin Özkan",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Uzman Yardımcısı"
+    },
+    "murat8326": {
+        "password": "123",
+        "name": "Murat Aydin",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Uzmanı"
+    },
+    "gamze6076": {
+        "password": "123",
+        "name": "Gamze Kurt",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Kıdemli Uzman"
+    },
+    "murat9460": {
+        "password": "123",
+        "name": "Murat Aydin",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Uzmanı"
+    },
+    "gamze9064": {
+        "password": "123",
+        "name": "Gamze Öztürk",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Kıdemli Uzman"
+    },
+    "can9927": {
+        "password": "123",
+        "name": "Can Aydın",
+        "role": "MANAGER",
+        "dept": "Operasyon",
+        "position": "Operasyon Müdürü"
+    },
+    "murat4791": {
+        "password": "123",
+        "name": "Murat Öztürk",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Kıdemli Uzman"
+    },
+    "selin4046": {
+        "password": "123",
+        "name": "Selin Öztürk",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Uzman Yardımcısı"
+    },
+    "deniz8859": {
+        "password": "123",
+        "name": "Deniz Aydin",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Kıdemli Uzman"
+    },
+    "burak4898": {
+        "password": "123",
+        "name": "Burak Özkan",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Kıdemli Uzman"
+    },
+    "murat3974": {
+        "password": "123",
+        "name": "Murat Kurt",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Uzman Yardımcısı"
+    },
+    "deniz1056": {
+        "password": "123",
+        "name": "Deniz Aydin",
+        "role": "PERSONEL",
+        "dept": "Operasyon",
+        "position": "Operasyon Kıdemli Uzman"
+    },
+    "mehmet4118": {
+        "password": "123",
+        "name": "Mehmet Çelik",
+        "role": "DIRECTOR",
+        "dept": "AR-GE",
+        "position": "AR-GE Direktörü"
+    },
+    "elif4859": {
+        "password": "123",
+        "name": "Elif Aydın",
+        "role": "MANAGER",
+        "dept": "AR-GE",
+        "position": "AR-GE Müdür"
+    },
+    "ozan7331": {
+        "password": "123",
+        "name": "Ozan Kurt",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Kıdemli Uzman"
+    },
+    "selin9947": {
+        "password": "123",
+        "name": "Selin Kurt",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Kıdemli Uzman"
+    },
+    "murat1600": {
+        "password": "123",
+        "name": "Murat Aydin",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Uzman"
+    },
+    "selin6455": {
+        "password": "123",
+        "name": "Selin Öztürk",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Uzman Yardımcısı"
+    },
+    "deniz8812": {
+        "password": "123",
+        "name": "Deniz Özkan",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Uzman Yardımcısı"
+    },
+    "gamze8198": {
+        "password": "123",
+        "name": "Gamze Özkan",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Kıdemli Uzman"
+    },
+    "elif1108": {
+        "password": "123",
+        "name": "Elif Şahin",
+        "role": "MANAGER",
+        "dept": "AR-GE",
+        "position": "AR-GE Müdür"
+    },
+    "selin6065": {
+        "password": "123",
+        "name": "Selin Özkan",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Uzman Yardımcısı"
+    },
+    "serkan8937": {
+        "password": "123",
+        "name": "Serkan Aydin",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Kıdemli Uzman"
+    },
+    "serkan4324": {
+        "password": "123",
+        "name": "Serkan Aydin",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Uzman Yardımcısı"
+    },
+    "burak9932": {
+        "password": "123",
+        "name": "Burak Öztürk",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Kıdemli Uzman"
+    },
+    "murat6335": {
+        "password": "123",
+        "name": "Murat Öztürk",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Uzman Yardımcısı"
+    },
+    "deniz8688": {
+        "password": "123",
+        "name": "Deniz Kurt",
+        "role": "PERSONEL",
+        "dept": "AR-GE",
+        "position": "AR-GE Uzman Yardımcısı"
+    },
+    "ahmet6573": {
+        "password": "123",
+        "name": "Ahmet Çelik",
+        "role": "DIRECTOR",
+        "dept": "Hukuk",
+        "position": "Hukuk Direktörü"
+    },
+    "veli5763": {
+        "password": "123",
+        "name": "Veli Aydın",
+        "role": "MANAGER",
+        "dept": "Hukuk",
+        "position": "Hukuk Müdürü"
+    },
+    "gamze5568": {
+        "password": "123",
+        "name": "Gamze Aydin",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman Yardımcısı"
+    },
+    "ozan5869": {
+        "password": "123",
+        "name": "Ozan Özkan",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman"
+    },
+    "serkan8406": {
+        "password": "123",
+        "name": "Serkan Kurt",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman Yardımcısı"
+    },
+    "selin6125": {
+        "password": "123",
+        "name": "Selin Öztürk",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman Yardımcısı"
+    },
+    "selin1155": {
+        "password": "123",
+        "name": "Selin Kurt",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Kıdemli Uzman"
+    },
+    "ozan4681": {
+        "password": "123",
+        "name": "Ozan Öztürk",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman Yardımcısı"
+    },
+    "zeynep3329": {
+        "password": "123",
+        "name": "Zeynep Yıldız",
+        "role": "MANAGER",
+        "dept": "Hukuk",
+        "position": "Hukuk Müdürü"
+    },
+    "selin2027": {
+        "password": "123",
+        "name": "Selin Kurt",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman Yardımcısı"
+    },
+    "selin8538": {
+        "password": "123",
+        "name": "Selin Aydin",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman"
+    },
+    "murat5165": {
+        "password": "123",
+        "name": "Murat Öztürk",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Kıdemli Uzman"
+    },
+    "burak7917": {
+        "password": "123",
+        "name": "Burak Kurt",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman Yardımcısı"
+    },
+    "gamze1846": {
+        "password": "123",
+        "name": "Gamze Öztürk",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Uzman Yardımcısı"
+    },
+    "selin9658": {
+        "password": "123",
+        "name": "Selin Öztürk",
+        "role": "PERSONEL",
+        "dept": "Hukuk",
+        "position": "Hukuk Kıdemli Uzman"
+    }
+}
