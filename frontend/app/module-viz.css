@@ -1,346 +1,494 @@
-/* FutureHR — module-specific premium chart & table layer */
+/* FutureHR — premium module design system
+   Safe, route-scoped presentation layer. Business logic stays inside each page. */
 
 .module-workspace {
-  --viz-grid: #dbe4ef;
-  --viz-axis: #cbd5e1;
-  --viz-label: #64748b;
-  --viz-tooltip-bg: rgba(255, 255, 255, 0.98);
-  --viz-tooltip-border: #e2e8f0;
-  --viz-row-hover: rgba(248, 250, 252, 0.96);
-  --viz-cell-border: #edf2f7;
-  --viz-zebra: rgba(248, 250, 252, 0.58);
-  --viz-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-}
-
-/* ---------- Shared chart readability ---------- */
-.module-workspace .module-native-content .recharts-wrapper,
-.module-workspace .module-native-content .recharts-responsive-container {
-  font-variant-numeric: tabular-nums;
-}
-
-.module-workspace .module-native-content .recharts-cartesian-grid line,
-.module-workspace .module-native-content .recharts-polar-grid-concentric-polygon,
-.module-workspace .module-native-content .recharts-polar-grid-angle line {
-  stroke: var(--viz-grid) !important;
-  opacity: 0.92;
-}
-
-.module-workspace .module-native-content .recharts-cartesian-axis-line,
-.module-workspace .module-native-content .recharts-polar-radius-axis-line {
-  stroke: var(--viz-axis) !important;
-}
-
-.module-workspace .module-native-content .recharts-text,
-.module-workspace .module-native-content .recharts-cartesian-axis-tick-value,
-.module-workspace .module-native-content .recharts-legend-item-text,
-.module-workspace .module-native-content .recharts-polar-angle-axis text,
-.module-workspace .module-native-content .recharts-polar-radius-axis text {
-  fill: var(--viz-label) !important;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.module-workspace .module-native-content .recharts-legend-wrapper {
-  padding-top: 10px;
-}
-
-.module-workspace .module-native-content .recharts-default-tooltip {
-  border: 1px solid var(--viz-tooltip-border) !important;
-  border-radius: 14px !important;
-  background: var(--viz-tooltip-bg) !important;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--viz-shadow) !important;
-  padding: 10px 12px !important;
-}
-
-.module-workspace .module-native-content .recharts-tooltip-label {
-  color: #0f172a !important;
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 4px !important;
-}
-
-.module-workspace .module-native-content .recharts-tooltip-item {
-  font-size: 12px !important;
-  padding: 2px 0 !important;
-}
-
-.module-workspace .module-native-content .recharts-surface:focus {
-  outline: none;
-}
-
-.module-workspace .module-native-content .recharts-dot,
-.module-workspace .module-native-content .recharts-active-dot,
-.module-workspace .module-native-content .recharts-scatter-symbol {
-  filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.12));
-}
-
-.module-workspace .module-native-content .recharts-radar-polygon,
-.module-workspace .module-native-content .recharts-area-area,
-.module-workspace .module-native-content .recharts-bar-rectangle path {
-  filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.05));
-}
-
-/* ---------- Shared premium table system ---------- */
-.module-workspace .module-native-content table {
+  --module-accent: #4f46e5;
+  --module-accent-2: #0f766e;
+  --module-soft: #eef2ff;
+  --module-border: color-mix(in srgb, var(--module-accent) 16%, #e2e8f0);
+  --module-shadow: 0 1px 2px rgba(15, 23, 42, 0.035), 0 14px 34px rgba(15, 23, 42, 0.055);
+  --module-shadow-hover: 0 2px 5px rgba(15, 23, 42, 0.05), 0 18px 42px rgba(15, 23, 42, 0.075);
+  min-width: 0;
   width: 100%;
-  font-size: 0.875rem;
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+/* ---------- Premium module hero ---------- */
+.module-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 22px 28px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--module-accent) 11%, transparent) 0, transparent 34%),
+    linear-gradient(135deg, #ffffff 0%, #ffffff 55%, color-mix(in srgb, var(--module-soft) 52%, #ffffff) 100%);
+  box-shadow: var(--module-shadow);
+  padding: 22px 24px 0;
+}
+
+.module-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  height: 3px;
+  background: linear-gradient(90deg, var(--module-accent), var(--module-accent-2));
+}
+
+.module-hero-glow {
+  position: absolute;
+  z-index: -1;
+  top: -90px;
+  right: -70px;
+  width: 280px;
+  height: 280px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--module-accent) 8%, transparent);
+  filter: blur(2px);
+}
+
+.module-hero-main {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 15px;
+  padding-bottom: 19px;
+}
+
+.module-hero-icon {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--module-accent) 20%, #e2e8f0);
+  border-radius: 13px;
+  background: linear-gradient(145deg, #fff, var(--module-soft));
+  color: var(--module-accent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--module-accent) 11%, transparent);
+}
+
+.module-hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: var(--module-accent);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.105em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.module-hero-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.4rem, 2vw, 1.8rem);
+  font-weight: 720;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+
+.module-hero-description {
+  max-width: 850px;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+.module-hero-side {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  padding-bottom: 17px;
+}
+
+.module-live-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-end;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: rgba(240, 253, 244, 0.86);
+  padding: 5px 9px;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.module-focus-card {
+  margin-top: auto;
+  border: 1px solid color-mix(in srgb, var(--module-accent) 14%, #e2e8f0);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 11px 12px;
+  backdrop-filter: blur(8px);
+}
+
+.module-focus-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--module-accent);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.module-focus-card p {
+  margin-top: 5px;
+  color: #475569;
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.module-workflow {
+  grid-column: 1 / -1;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  border-top: 1px solid #eef2f7;
+  margin: 0 -24px;
+  padding: 10px 24px;
+  background: rgba(248, 250, 252, 0.72);
+  scrollbar-width: none;
+}
+
+.module-workflow::-webkit-scrollbar { display: none; }
+
+.module-workflow-label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding-right: 3px;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.module-workflow-step {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5eaf1;
+  border-radius: 999px;
+  background: #fff;
+  padding: 5px 9px 5px 6px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.module-workflow-step span {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--module-soft);
+  color: var(--module-accent);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.module-native-content {
+  min-width: 0;
+  margin-top: 18px;
+}
+
+.module-native-content > * { min-width: 0; }
+
+/* Current pages already contain their own title block. Keep their actions/tabs,
+   but remove only the duplicated left title copy when the premium hero is present. */
+.module-native-content > div > div:first-child > div:first-child:has(h1) {
+  display: none;
+}
+
+/* ---------- Page surface normalization ---------- */
+.module-native-content > div {
+  background: transparent !important;
+}
+
+.module-native-content [class*="bg-white"][class*="border"][class*="rounded-xl"],
+.module-native-content [class*="bg-white"][class*="border"][class*="rounded-2xl"],
+.module-native-content [class*="bg-white"][class*="border"][class*="rounded-3xl"] {
+  border-color: #e4eaf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025), 0 8px 24px rgba(15, 23, 42, 0.035);
+}
+
+.module-native-content [class*="bg-white"][class*="border"][class*="rounded-xl"]:hover,
+.module-native-content [class*="bg-white"][class*="border"][class*="rounded-2xl"]:hover {
+  border-color: color-mix(in srgb, var(--module-accent) 15%, #dbe3ed) !important;
+}
+
+.module-native-content .rounded-3xl { border-radius: 18px !important; }
+.module-native-content .rounded-2xl { border-radius: 16px !important; }
+
+/* Preserve semantic red/green/amber actions; theme the normal primary actions. */
+.module-native-content button[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]),
+.module-native-content a[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]) {
+  background: linear-gradient(135deg, var(--module-accent), var(--module-accent-2)) !important;
+  border-color: transparent !important;
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--module-accent) 18%, transparent);
+}
+
+.module-native-content button[class*="text-white"]:not(:disabled):hover,
+.module-native-content a[class*="text-white"]:hover {
+  filter: brightness(0.97);
+}
+
+/* ---------- Inputs / controls ---------- */
+.module-native-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.module-native-content select,
+.module-native-content textarea {
+  border-color: #dbe3ed !important;
+  border-radius: 10px !important;
+  background-color: #fff;
+  color: #1e293b;
+  box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.02);
+}
+
+.module-native-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.module-native-content select:focus,
+.module-native-content textarea:focus {
+  border-color: color-mix(in srgb, var(--module-accent) 55%, #cbd5e1) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--module-accent) 10%, transparent) !important;
+  outline: none !important;
+}
+
+.module-native-content input[type="range"] { accent-color: var(--module-accent); }
+
+/* ---------- Premium segmented tabs ---------- */
+.module-native-content div[class*="rounded-xl"][class*="p-1"][class*="border"] {
+  border-color: #e1e7ef !important;
+  background: #f8fafc !important;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.025);
+}
+
+.module-native-content div[class*="rounded-xl"][class*="p-1"][class*="border"] button {
+  min-height: 32px;
+  border-radius: 8px !important;
+}
+
+/* ---------- Tables ---------- */
+.module-native-content .overflow-x-auto,
+.module-native-content .overflow-auto {
+  scrollbar-gutter: stable;
+}
+
+.module-native-content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
-.module-workspace .module-native-content table tbody tr:nth-child(even) {
-  background: var(--viz-zebra);
+.module-native-content table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid #e4eaf1 !important;
+  background: #f8fafc !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  color: #64748b !important;
+  font-size: 9px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.075em !important;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.module-workspace .module-native-content table tbody tr {
-  transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
-}
-
-.module-workspace .module-native-content table tbody tr:hover {
-  background: var(--viz-row-hover) !important;
-}
-
-.module-workspace .module-native-content table tbody td {
-  border-bottom-color: var(--viz-cell-border) !important;
+.module-native-content table tbody td {
+  border-bottom-color: #edf1f6 !important;
+  color: #475569;
   vertical-align: middle;
 }
 
-.module-workspace .module-native-content table tbody td:first-child {
+.module-native-content table tbody td:first-child {
   color: #0f172a;
-  font-weight: 600;
+  font-weight: 650;
 }
 
-.module-workspace .module-native-content table.border-separate {
-  border-spacing: 0 9px !important;
+.module-native-content table tbody tr {
+  transition: background-color 130ms ease, box-shadow 130ms ease;
 }
 
-.module-workspace .module-native-content table.border-separate tbody tr {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 20px rgba(15, 23, 42, 0.045);
+.module-native-content table tbody tr:hover {
+  background: color-mix(in srgb, var(--module-soft) 62%, #ffffff) !important;
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--module-accent) 72%, transparent);
 }
 
-.module-workspace .module-native-content table.border-separate tbody td {
+.module-native-content table.border-separate {
+  border-spacing: 0 8px !important;
+}
+
+.module-native-content table.border-separate tbody td {
   background: #fff;
-  border-top: 1px solid #e8eef5;
-  border-bottom: 1px solid #e8eef5 !important;
+  border-top: 1px solid #e8edf4;
+  border-bottom: 1px solid #e8edf4 !important;
 }
 
-.module-workspace .module-native-content table.border-separate tbody td:first-child {
-  border-left: 1px solid #e8eef5;
-  border-top-left-radius: 12px;
-  border-bottom-left-radius: 12px;
+.module-native-content table.border-separate tbody td:first-child {
+  border-left: 1px solid #e8edf4;
+  border-radius: 11px 0 0 11px;
 }
 
-.module-workspace .module-native-content table.border-separate tbody td:last-child {
-  border-right: 1px solid #e8eef5;
-  border-top-right-radius: 12px;
-  border-bottom-right-radius: 12px;
+.module-native-content table.border-separate tbody td:last-child {
+  border-right: 1px solid #e8edf4;
+  border-radius: 0 11px 11px 0;
 }
 
-/* ---------- İzin: takvim / operasyon dili ---------- */
-.module-workspace.workspace-izinler .module-native-content table thead th {
-  background: linear-gradient(180deg, #eff6ff 0%, #ecfeff 100%) !important;
-  color: #0369a1 !important;
-  border-bottom-color: #bae6fd !important;
-}
-
-.module-workspace.workspace-izinler .module-native-content table tbody tr:hover {
-  box-shadow: inset 3px 0 0 var(--module-accent);
-}
-
-.module-workspace.workspace-izinler .module-native-content .recharts-cartesian-grid line {
-  stroke-dasharray: 3 5 !important;
-}
-
-/* ---------- Organizasyon: yoğun veri yönetimi ---------- */
-.module-workspace.workspace-organizasyon .module-native-content table thead th {
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%) !important;
-  color: #475569 !important;
-  font-size: 10px !important;
-  letter-spacing: 0.07em !important;
-}
-
-.module-workspace.workspace-organizasyon .module-native-content table tbody td {
-  padding-top: 0.72rem !important;
-  padding-bottom: 0.72rem !important;
-}
-
-.module-workspace.workspace-organizasyon .module-native-content table tbody tr:hover {
-  box-shadow: inset 3px 0 0 #0ea5e9;
-}
-
-/* ---------- 360: puanlama / kalibrasyon ---------- */
-.module-workspace.workspace-degerlendirme .module-native-content table thead th {
-  background: linear-gradient(90deg, #f5f3ff 0%, #fff7ed 100%) !important;
-  color: #6d28d9 !important;
-}
-
-.module-workspace.workspace-degerlendirme .module-native-content .recharts-polar-grid-concentric-polygon,
-.module-workspace.workspace-degerlendirme .module-native-content .recharts-polar-grid-angle line {
-  stroke: #ddd6fe !important;
-}
-
-.module-workspace.workspace-degerlendirme .module-native-content .recharts-cartesian-grid line {
-  stroke-dasharray: 3 5 !important;
-}
-
-/* ---------- Yetenek Matrisi: karar destek / 9-box ---------- */
-.module-workspace.workspace-yetenek-matrisi .module-native-content table thead th {
-  background: linear-gradient(90deg, #eef2ff 0%, #ecfdf5 100%) !important;
-  color: #4338ca !important;
-}
-
-.module-workspace.workspace-yetenek-matrisi .module-native-content .recharts-cartesian-grid line {
-  stroke-dasharray: 4 6 !important;
-}
-
-.module-workspace.workspace-yetenek-matrisi .module-native-content .recharts-reference-line line {
-  opacity: 0.82;
-}
-
-/* ---------- Eğitim: LMS / öğrenme operasyonu ---------- */
-.module-workspace.workspace-egitim .module-native-content table thead th {
-  background: linear-gradient(90deg, #f5f3ff 0%, #ecfeff 100%) !important;
-  color: #6d28d9 !important;
-}
-
-.module-workspace.workspace-egitim .module-native-content .recharts-polar-grid-concentric-polygon,
-.module-workspace.workspace-egitim .module-native-content .recharts-polar-grid-angle line {
-  stroke: #ddd6fe !important;
-}
-
-/* ---------- Gelişim: gap → ilerleme ---------- */
-.module-workspace.workspace-gelisim .module-native-content table thead th {
-  background: linear-gradient(90deg, #ecfdf5 0%, #eef2ff 100%) !important;
-  color: #047857 !important;
-}
-
-.module-workspace.workspace-gelisim .module-native-content .recharts-polar-grid-concentric-polygon,
-.module-workspace.workspace-gelisim .module-native-content .recharts-polar-grid-angle line {
-  stroke: #bbf7d0 !important;
-}
-
-/* ---------- Kariyer: rol rotası / mobilite ---------- */
-.module-workspace.workspace-kariyer .module-native-content table thead th {
-  background: linear-gradient(90deg, #fdf4ff 0%, #fffbeb 100%) !important;
-  color: #a21caf !important;
-}
-
-.module-workspace.workspace-kariyer .module-native-content .recharts-polar-grid-concentric-polygon,
-.module-workspace.workspace-kariyer .module-native-content .recharts-polar-grid-angle line {
-  stroke: #f5d0fe !important;
-}
-
-/* ---------- Yedekleme: risk / halefiyet ---------- */
-.module-workspace.workspace-yedekleme .module-native-content table thead th {
-  background: linear-gradient(90deg, #fef2f2 0%, #fff7ed 100%) !important;
-  color: #b91c1c !important;
-  border-bottom-color: #fecaca !important;
-}
-
-.module-workspace.workspace-yedekleme .module-native-content table tbody tr:hover {
-  box-shadow: inset 3px 0 0 #ef4444, 0 8px 18px rgba(127, 29, 29, 0.05);
-}
-
-/* ---------- Maaş: finansal / numerik yoğunluk ---------- */
-.module-workspace.workspace-maas .module-native-content table thead th {
-  background: linear-gradient(90deg, #ecfeff 0%, #eff6ff 100%) !important;
-  color: #0f766e !important;
-}
-
-.module-workspace.workspace-maas .module-native-content table tbody td {
+/* ---------- Charts ---------- */
+.module-native-content .recharts-wrapper,
+.module-native-content .recharts-responsive-container {
   font-variant-numeric: tabular-nums;
-  padding-top: 0.78rem !important;
-  padding-bottom: 0.78rem !important;
 }
 
-.module-workspace.workspace-maas .module-native-content .recharts-cartesian-grid line {
-  stroke-dasharray: 2 6 !important;
+.module-native-content .recharts-cartesian-grid line,
+.module-native-content .recharts-polar-grid-concentric-polygon,
+.module-native-content .recharts-polar-grid-angle line {
+  stroke: #e2e8f0 !important;
+  opacity: 0.92;
 }
 
-.module-workspace.workspace-maas .module-native-content .recharts-scatter-symbol {
-  filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.15));
+.module-native-content .recharts-cartesian-axis-line,
+.module-native-content .recharts-polar-radius-axis-line {
+  stroke: #cbd5e1 !important;
 }
 
-/* ---------- İşe Alım: aday pipeline ---------- */
-.module-workspace.workspace-ise-alim .module-native-content table thead th {
-  background: linear-gradient(90deg, #f5f3ff 0%, #f0fdfa 100%) !important;
-  color: #6d28d9 !important;
+.module-native-content .recharts-text,
+.module-native-content .recharts-cartesian-axis-tick-value,
+.module-native-content .recharts-legend-item-text,
+.module-native-content .recharts-polar-angle-axis text,
+.module-native-content .recharts-polar-radius-axis text {
+  fill: #64748b !important;
+  font-size: 10px;
+  font-weight: 550;
 }
 
-.module-workspace.workspace-ise-alim .module-native-content table tbody tr:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(76, 29, 149, 0.06);
+.module-native-content .recharts-default-tooltip {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 13px !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.12) !important;
+  backdrop-filter: blur(10px);
 }
 
-.module-workspace.workspace-ise-alim .module-native-content .recharts-polar-grid-concentric-polygon,
-.module-workspace.workspace-ise-alim .module-native-content .recharts-polar-grid-angle line {
-  stroke: #ddd6fe !important;
+.module-native-content .recharts-tooltip-label {
+  color: #0f172a !important;
+  font-size: 11px;
+  font-weight: 750;
 }
 
-/* ---------- Yetkinlik Testi: odak / rapor ---------- */
-.module-workspace.workspace-aday-testi .module-native-content table thead th {
-  background: linear-gradient(90deg, #eef2ff 0%, #ecfeff 100%) !important;
-  color: #4338ca !important;
+.module-native-content .recharts-dot,
+.module-native-content .recharts-active-dot,
+.module-native-content .recharts-scatter-symbol {
+  filter: drop-shadow(0 4px 7px rgba(15, 23, 42, 0.12));
 }
 
-.module-workspace.workspace-aday-testi .module-native-content table tbody tr:hover {
-  box-shadow: inset 3px 0 0 #6366f1;
+/* ---------- Module-specific character ---------- */
+.workspace-izinler .module-hero { background: radial-gradient(circle at 88% 8%, rgba(14,165,233,.10), transparent 34%), linear-gradient(135deg,#fff,#f0fdfa); }
+.workspace-organizasyon .module-hero { background: radial-gradient(circle at 88% 8%, rgba(37,99,235,.09), transparent 34%), linear-gradient(135deg,#fff,#f8fafc); }
+.workspace-degerlendirme .module-hero { background: radial-gradient(circle at 88% 8%, rgba(124,58,237,.10), transparent 34%), linear-gradient(135deg,#fff,#f5f3ff); }
+.workspace-yetenek-matrisi .module-hero { background: radial-gradient(circle at 88% 8%, rgba(16,185,129,.09), transparent 32%), radial-gradient(circle at 72% 0%, rgba(79,70,229,.08), transparent 30%), #fff; }
+.workspace-egitim .module-hero { background: radial-gradient(circle at 88% 8%, rgba(8,145,178,.10), transparent 34%), linear-gradient(135deg,#fff,#ecfeff); }
+.workspace-gelisim .module-hero { background: radial-gradient(circle at 88% 8%, rgba(5,150,105,.10), transparent 34%), linear-gradient(135deg,#fff,#ecfdf5); }
+.workspace-kariyer .module-hero { background: radial-gradient(circle at 88% 8%, rgba(192,38,211,.10), transparent 34%), linear-gradient(135deg,#fff,#fdf4ff); }
+.workspace-yedekleme .module-hero { background: radial-gradient(circle at 88% 8%, rgba(220,38,38,.08), transparent 34%), linear-gradient(135deg,#fff,#fff7ed); }
+.workspace-maas .module-hero,
+.workspace-maas-talep .module-hero { background: radial-gradient(circle at 88% 8%, rgba(15,118,110,.10), transparent 34%), linear-gradient(135deg,#fff,#f0fdfa); }
+.workspace-ise-alim .module-hero { background: radial-gradient(circle at 88% 8%, rgba(124,58,237,.10), transparent 34%), linear-gradient(135deg,#fff,#f5f3ff); }
+.workspace-aday-testi .module-hero { background: radial-gradient(circle at 88% 8%, rgba(37,99,235,.10), transparent 34%), linear-gradient(135deg,#fff,#eff6ff); }
+.workspace-ekip-yonetimi .module-hero,
+.workspace-admin .module-hero { background: radial-gradient(circle at 88% 8%, rgba(71,85,105,.10), transparent 34%), linear-gradient(135deg,#fff,#f8fafc); }
+
+.workspace-maas .module-native-content table tbody td,
+.workspace-organizasyon .module-native-content table tbody td,
+.workspace-admin .module-native-content table tbody td {
+  font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Ekip & Kullanıcı: admin console ---------- */
-.module-workspace.workspace-ekip-yonetimi .module-native-content table thead th {
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%) !important;
-  color: #475569 !important;
-  font-size: 10px !important;
+.workspace-yedekleme .module-native-content table tbody tr:hover { box-shadow: inset 3px 0 0 #dc2626; }
+.workspace-ise-alim .module-native-content table tbody tr:hover { box-shadow: inset 3px 0 0 #7c3aed; }
+.workspace-maas .module-native-content .recharts-cartesian-grid line,
+.workspace-yetenek-matrisi .module-native-content .recharts-cartesian-grid line { stroke-dasharray: 3 5; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 980px) {
+  .module-hero { grid-template-columns: 1fr; padding: 20px 20px 0; }
+  .module-hero-side { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; padding-bottom: 15px; }
+  .module-live-badge { align-self: center; }
+  .module-workflow { margin: 0 -20px; padding-inline: 20px; }
 }
 
-.module-workspace.workspace-ekip-yonetimi .module-native-content table tbody td {
-  padding-top: 0.72rem !important;
-  padding-bottom: 0.72rem !important;
+@media (max-width: 640px) {
+  .module-hero { border-radius: 16px; gap: 14px; padding: 17px 16px 0; }
+  .module-hero-main { gap: 11px; padding-bottom: 4px; }
+  .module-hero-icon { width: 38px; height: 38px; border-radius: 11px; }
+  .module-hero-title { font-size: 1.3rem; }
+  .module-hero-description { font-size: 11.5px; }
+  .module-hero-side { grid-template-columns: 1fr; }
+  .module-live-badge { align-self: flex-start; }
+  .module-workflow { margin: 0 -16px; padding-inline: 16px; }
+  .module-native-content { margin-top: 14px; }
+  .module-native-content table { font-size: 11px; }
 }
 
-.module-workspace.workspace-ekip-yonetimi .module-native-content table tbody tr:hover {
-  box-shadow: inset 3px 0 0 #6366f1;
+/* ---------- Dark mode ---------- */
+.dark .module-hero {
+  border-color: #263244;
+  background: radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--module-accent) 13%, transparent), transparent 34%), linear-gradient(135deg,#111827,#0f172a) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 16px 38px rgba(0,0,0,.18);
 }
+.dark .module-hero-title { color: #f8fafc; }
+.dark .module-hero-description,
+.dark .module-focus-card p { color: #94a3b8; }
+.dark .module-hero-icon { border-color: #334155; background: #172033; }
+.dark .module-focus-card { border-color: #334155; background: rgba(15,23,42,.68); }
+.dark .module-live-badge { border-color: rgba(34,197,94,.28); background: rgba(20,83,45,.22); color: #86efac; }
+.dark .module-workflow { border-top-color: #263244; background: rgba(15,23,42,.58); }
+.dark .module-workflow-step { border-color: #334155; background: #172033; color: #cbd5e1; }
 
-/* ---------- Dark theme ---------- */
-.dark .module-workspace {
-  --viz-grid: #334155;
-  --viz-axis: #475569;
-  --viz-label: #94a3b8;
-  --viz-tooltip-bg: rgba(15, 23, 42, 0.97);
-  --viz-tooltip-border: #334155;
-  --viz-row-hover: rgba(30, 41, 59, 0.55);
-  --viz-cell-border: #1e293b;
-  --viz-zebra: rgba(15, 23, 42, 0.28);
-}
-
-.dark .module-workspace .module-native-content .recharts-tooltip-label {
-  color: #e2e8f0 !important;
-}
-
-.dark .module-workspace .module-native-content table tbody td:first-child {
-  color: #f8fafc;
-}
-
-.dark .module-workspace .module-native-content table.border-separate tbody td {
-  background: #111827;
-  border-color: #334155 !important;
-}
-
-.dark .module-workspace.workspace-izinler .module-native-content table thead th,
-.dark .module-workspace.workspace-organizasyon .module-native-content table thead th,
-.dark .module-workspace.workspace-degerlendirme .module-native-content table thead th,
-.dark .module-workspace.workspace-yetenek-matrisi .module-native-content table thead th,
-.dark .module-workspace.workspace-egitim .module-native-content table thead th,
-.dark .module-workspace.workspace-gelisim .module-native-content table thead th,
-.dark .module-workspace.workspace-kariyer .module-native-content table thead th,
-.dark .module-workspace.workspace-yedekleme .module-native-content table thead th,
-.dark .module-workspace.workspace-maas .module-native-content table thead th,
-.dark .module-workspace.workspace-ise-alim .module-native-content table thead th,
-.dark .module-workspace.workspace-aday-testi .module-native-content table thead th,
-.dark .module-workspace.workspace-ekip-yonetimi .module-native-content table thead th {
-  background: linear-gradient(180deg, #172033 0%, #111827 100%) !important;
-  color: #94a3b8 !important;
-  border-bottom-color: #334155 !important;
-}
+.dark .module-native-content [class*="bg-white"][class*="border"] { border-color: #263244 !important; background-color: #111827 !important; }
+.dark .module-native-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark .module-native-content select,
+.dark .module-native-content textarea { border-color: #334155 !important; background-color: #0f172a !important; color: #e2e8f0; }
+.dark .module-native-content div[class*="rounded-xl"][class*="p-1"][class*="border"] { border-color: #334155 !important; background: #0f172a !important; }
+.dark .module-native-content table thead th { border-bottom-color: #334155 !important; background: #172033 !important; color: #94a3b8 !important; }
+.dark .module-native-content table tbody td { border-bottom-color: #1e293b !important; color: #cbd5e1; }
+.dark .module-native-content table tbody td:first-child { color: #f8fafc; }
+.dark .module-native-content table tbody tr:hover { background: rgba(30,41,59,.55) !important; }
+.dark .module-native-content table.border-separate tbody td { border-color: #334155 !important; background: #111827; }
+.dark .module-native-content .recharts-cartesian-grid line,
+.dark .module-native-content .recharts-polar-grid-concentric-polygon,
+.dark .module-native-content .recharts-polar-grid-angle line { stroke: #334155 !important; }
+.dark .module-native-content .recharts-text,
+.dark .module-native-content .recharts-cartesian-axis-tick-value,
+.dark .module-native-content .recharts-legend-item-text,
+.dark .module-native-content .recharts-polar-angle-axis text { fill: #94a3b8 !important; }
+.dark .module-native-content .recharts-default-tooltip { border-color: #334155 !important; background: rgba(15,23,42,.97) !important; }
+.dark .module-native-content .recharts-tooltip-label { color: #f8fafc !important; }
