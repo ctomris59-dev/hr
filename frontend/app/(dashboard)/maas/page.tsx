@@ -617,7 +617,7 @@ export default function MaasPage() {
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto w-full px-4 py-8">
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white rounded-xl p-6 shadow-sm">
           <Skeleton className="h-6 w-1/3" />
           <Skeleton className="h-4 w-1/4 mt-3" />
           <div className="mt-6">

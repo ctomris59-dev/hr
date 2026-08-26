@@ -637,7 +637,7 @@ export default function DashboardPage() {
 
   if (dataLoading) {
     return (
-      <div className="bg-white rounded-2xl p-6 shadow-sm">
+      <div className="bg-white rounded-xl p-6 shadow-sm">
         <Skeleton className="h-6 w-1/3" />
         <div className="mt-4">
           <SkeletonTable rows={6} cols={5} />
@@ -660,75 +660,86 @@ export default function DashboardPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <LayoutDashboard className="w-4 h-4 text-slate-600" />
-          <h1 className="text-xl font-semibold text-slate-800">
-            Yönetici Kokpiti
-          </h1>
-        </div>
-        <p className="text-xs text-slate-500">
-          Hoş geldiniz, {user?.name} ({user?.role}) • Hedef: {TARGET_SCORE}
-        </p>
-        <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-indigo-100 bg-white/70 px-3 py-2 text-xs text-slate-600 shadow-sm">
-          <span className="font-semibold text-slate-700">Sonraki Adım:</span>
-          <div className="flex flex-wrap gap-1.5">
-            <Link href={`/yetenek-matrisi${quickEmployeeQuery}`} className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-1 text-[11px] text-indigo-700 hover:bg-indigo-100">
-              <TrendingUp className="w-3 h-3" />
-              Yetenek Matrisi
-            </Link>
-            <Link href={`/degerlendirme${quickEmployeeQuery}`} className="inline-flex items-center gap-1.5 rounded-md bg-orange-50 px-2 py-1 text-[11px] text-orange-700 hover:bg-orange-100">
-              <Target className="w-3 h-3" />
-              360 Değerlendirme
-            </Link>
-            <Link href={`/egitim${quickEmployeeQuery}`} className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-100">
-              <Calendar className="w-3 h-3" />
-              Eğitim
-            </Link>
-            <Link href={`/gelisim${quickEmployeeQuery}`} className="inline-flex items-center gap-1.5 rounded-md bg-violet-50 px-2 py-1 text-[11px] text-violet-700 hover:bg-violet-100">
-              <Heart className="w-3 h-3" />
-              Gelişim Planı
-            </Link>
-            <Link href={`/kariyer${quickEmployeeQuery}`} className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-[11px] text-amber-700 hover:bg-amber-100">
-              <Star className="w-3 h-3" />
-              Kariyer Yolu
-            </Link>
+      <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="enterprise-eyebrow">Yönetim paneli</span>
+            <span className="h-1 w-1 rounded-full bg-slate-300" />
+            <span className="text-[11px] font-medium text-slate-400">Hedef skor {TARGET_SCORE}</span>
           </div>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <LayoutDashboard className="h-4 w-4" strokeWidth={1.8} />
+            </div>
+            <div>
+              <h1 className="text-[22px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
+                Yönetici Özeti
+              </h1>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {user?.name ? `${user.name} için organizasyon görünümü` : "Organizasyon görünümü"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 hidden text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 2xl:inline">Hızlı işlemler</span>
+          <Link href={`/yetenek-matrisi${quickEmployeeQuery}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <TrendingUp className="h-3.5 w-3.5" />
+            Yetenek Matrisi
+          </Link>
+          <Link href={`/degerlendirme${quickEmployeeQuery}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <Target className="h-3.5 w-3.5" />
+            360 Değerlendirme
+          </Link>
+          <Link href={`/egitim${quickEmployeeQuery}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <Calendar className="h-3.5 w-3.5" />
+            Eğitim
+          </Link>
+          <Link href={`/gelisim${quickEmployeeQuery}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <Heart className="h-3.5 w-3.5" />
+            Gelişim Planı
+          </Link>
+          <Link href={`/kariyer${quickEmployeeQuery}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <Star className="h-3.5 w-3.5" />
+            Kariyer Yolu
+          </Link>
         </div>
       </div>
 
       {missingTestScore && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-start gap-2 text-sm text-amber-900">
-            <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5" />
-            <span>
-              Yetkinlik testiniz henüz tamamlanmadı. Profilinizin oluşması için lütfen testi çözün.
-            </span>
+        <div className="mb-5 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-950/20">
+          <div className="flex items-start gap-2.5 text-sm text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+            <span>Yetkinlik testiniz henüz tamamlanmadı. Profilinizin oluşması için testi tamamlayın.</span>
           </div>
-          <Link
-            href="/aday-testi"
-            className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors"
-          >
+          <Link href="/aday-testi" className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-semibold text-white hover:bg-amber-800">
             Testi Başlat
           </Link>
         </div>
       )}
 
       {/* Filters */}
-      <details className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20 p-4 mb-4 hover:shadow-xl hover:shadow-indigo-100/30 transition-all duration-200" open>
-        <summary className="cursor-pointer font-semibold text-sm text-slate-800 mb-3 flex items-center gap-2">
-          <Filter className="w-4 h-4" />
-          Departman Filtreleri
+      <details className="enterprise-card mb-5 overflow-hidden" open>
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-slate-400" strokeWidth={1.8} />
+            <span>Departman filtresi</span>
+          </div>
+          <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            {selectedDepartments.length}/{allDepartments.length} seçili
+          </span>
         </summary>
-        <div className="mt-3">
-          <label className="block text-xs font-medium text-slate-600 mb-2 uppercase tracking-wider">
-            Departmanları Filtrele
-          </label>
+        <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-800">
           <div className="flex flex-wrap gap-1.5">
             {allDepartments.map((dept) => (
               <label
                 key={dept}
-                className="flex items-center gap-1.5 px-2.5 py-1 bg-white/60 hover:bg-indigo-50 rounded cursor-pointer transition-all duration-200 border border-indigo-100 active:scale-95"
+                className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11px] font-medium ${
+                  selectedDepartments.includes(dept)
+                    ? "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-300"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+                }`}
               >
                 <input
                   type="checkbox"
@@ -737,97 +748,118 @@ export default function DashboardPage() {
                     if (e.target.checked) {
                       setSelectedDepartments([...selectedDepartments, dept]);
                     } else {
-                      setSelectedDepartments(
-                        selectedDepartments.filter((d) => d !== dept)
-                      );
+                      setSelectedDepartments(selectedDepartments.filter((d) => d !== dept));
                     }
                   }}
-                  className="rounded w-3 h-3"
+                  className="h-3 w-3 rounded border-slate-300 accent-indigo-600"
                 />
-                <span className="text-xs text-slate-700">{dept}</span>
+                <span>{dept}</span>
               </label>
             ))}
           </div>
           {selectedDepartments.length === 0 && (
-            <p className="text-red-600 text-xs mt-2">
-              Lütfen en az bir departman seçin.
-            </p>
+            <p className="mt-2 text-xs font-medium text-red-600">En az bir departman seçin.</p>
           )}
         </div>
       </details>
 
       {/* KPI Cards */}
       <motion.div
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"
+        className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4"
         initial="hidden"
         animate="visible"
-        variants={{
-          visible: {
-            transition: {
-              staggerChildren: 0.1,
-            },
-          },
-        }}
+        variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
       >
-        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-          <GlassCard className="border-l-4 border-indigo-500">
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-1">Ekip</p>
-            <p className="text-2xl font-semibold text-slate-800 font-mono">
-              <CountUp value={filteredData.length} />
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5">Personel</p>
-            <p className="text-xs text-green-600 mt-1 font-medium flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              Geçen aya göre +2
-            </p>
+        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+          <GlassCard className="h-full p-4">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <p className="enterprise-eyebrow">Toplam ekip</p>
+                <p className="mt-1 text-[11px] text-slate-400">Aktif çalışanlar</p>
+              </div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300">
+                <Users className="h-4 w-4" strokeWidth={1.8} />
+              </div>
+            </div>
+            <div className="flex items-end justify-between gap-2">
+              <p className="text-[28px] font-semibold leading-none tracking-[-0.04em] text-slate-900 dark:text-slate-100"><CountUp value={filteredData.length} /></p>
+              <p className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                <TrendingUp className="h-3 w-3" /> +2 bu ay
+              </p>
+            </div>
           </GlassCard>
         </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-          <GlassCard className="border-l-4 border-green-500">
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-1">Ort. Perf.</p>
-            <p className="text-2xl font-semibold text-slate-800 font-mono">
-              <CountUp value={avgPerformance} decimals={1} />
-            </p>
-            <p
-              className={`text-xs mt-0.5 font-medium ${
-                avgPerformance >= TARGET_SCORE
-                  ? "text-green-600"
-                  : "text-red-600"
-              }`}
-            >
-              {avgPerformance >= TARGET_SCORE ? "+" : ""}
-              <CountUp value={avgPerformance - TARGET_SCORE} decimals={1} />
-            </p>
+
+        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+          <GlassCard className="h-full p-4">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <p className="enterprise-eyebrow">Ort. performans</p>
+                <p className="mt-1 text-[11px] text-slate-400">Hedef {TARGET_SCORE}</p>
+              </div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                <BarChart3 className="h-4 w-4" strokeWidth={1.8} />
+              </div>
+            </div>
+            <div className="flex items-end justify-between gap-2">
+              <p className="text-[28px] font-semibold leading-none tracking-[-0.04em] text-slate-900 dark:text-slate-100"><CountUp value={avgPerformance} decimals={1} /></p>
+              <p className={`text-[10px] font-semibold ${avgPerformance >= TARGET_SCORE ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                {avgPerformance >= TARGET_SCORE ? "+" : ""}<CountUp value={avgPerformance - TARGET_SCORE} decimals={1} /> hedef farkı
+              </p>
+            </div>
           </GlassCard>
         </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-          <GlassCard className="border-l-4 border-red-500">
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-1">Riskli</p>
-            <p className="text-2xl font-semibold text-slate-800 font-mono">
-              <CountUp value={riskyCount} />
-            </p>
-            <p className="text-xs text-red-600 mt-0.5 font-medium">Aksiyon Gerekli</p>
+
+        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+          <GlassCard className="h-full p-4">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <p className="enterprise-eyebrow">Riskli çalışan</p>
+                <p className="mt-1 text-[11px] text-slate-400">Performans &lt; 3.5</p>
+              </div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300">
+                <AlertTriangle className="h-4 w-4" strokeWidth={1.8} />
+              </div>
+            </div>
+            <div className="flex items-end justify-between gap-2">
+              <p className="text-[28px] font-semibold leading-none tracking-[-0.04em] text-slate-900 dark:text-slate-100"><CountUp value={riskyCount} /></p>
+              <span className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700 dark:bg-red-950/30 dark:text-red-300">Aksiyon gerekli</span>
+            </div>
           </GlassCard>
         </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-          <GlassCard className="border-l-4 border-yellow-500">
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-1">Yıldızlar</p>
-            <p className="text-2xl font-semibold text-slate-800 font-mono">
-              <CountUp value={starsCount || 0} />
-            </p>
-            <p className="text-xs text-yellow-600 mt-0.5 font-medium">Top Performans</p>
+
+        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+          <GlassCard className="h-full p-4">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <p className="enterprise-eyebrow">Yıldız çalışan</p>
+                <p className="mt-1 text-[11px] text-slate-400">Yüksek performans & potansiyel</p>
+              </div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                <Star className="h-4 w-4" strokeWidth={1.8} />
+              </div>
+            </div>
+            <div className="flex items-end justify-between gap-2">
+              <p className="text-[28px] font-semibold leading-none tracking-[-0.04em] text-slate-900 dark:text-slate-100"><CountUp value={starsCount || 0} /></p>
+              <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">Üst segment</span>
+            </div>
           </GlassCard>
         </motion.div>
       </motion.div>
 
       {/* Şirket Mutluluk Grafiği (Pulse Trends) */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-pink-500" />
-            <h3 className="text-lg font-semibold text-slate-800">
-              {isAdmin ? "Şirket Mutluluk Grafiği" : `${user?.dept || user?.department || ""} Mutluluk Grafiği`}
-            </h3>
+      <div className="enterprise-card mb-5 p-5">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300">
+              <Heart className="h-4 w-4" strokeWidth={1.8} />
+            </div>
+            <div>
+              <p className="enterprise-eyebrow mb-0.5">Çalışan deneyimi</p>
+              <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+                {isAdmin ? "Şirket Mutluluk Trendi" : `${user?.dept || user?.department || ""} Mutluluk Trendi`}
+              </h3>
+            </div>
           </div>
           {isAdmin && (
             <div className="flex items-center gap-2">
@@ -835,7 +867,7 @@ export default function DashboardPage() {
               <select
                 value={selectedPulseDepartment || ""}
                 onChange={(e) => setSelectedPulseDepartment(e.target.value || null)}
-                className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 outline-none hover:border-slate-300 focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
               >
                 <option value="">Tüm Şirket</option>
                 {allDepartments.map((dept) => (
@@ -860,34 +892,36 @@ export default function DashboardPage() {
             <LineChart data={pulseTrends}>
               <defs>
                 <linearGradient id="pulseAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#fbcfe8" stopOpacity={0.28} />
-                  <stop offset="70%" stopColor="#fbcfe8" stopOpacity={0.06} />
-                  <stop offset="95%" stopColor="#fbcfe8" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.14} />
+                  <stop offset="70%" stopColor="#6366f1" stopOpacity={0.035} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="2 4" />
               <XAxis 
                 dataKey="week" 
-                stroke="#6b7280"
-                tick={{ fontSize: 12 }}
-                angle={-45}
-                textAnchor="end"
-                height={80}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                tickMargin={10}
+                height={36}
+                tickFormatter={(value: string) => `H${String(value).split("W").pop() || value}`}
               />
               <YAxis 
                 domain={[0, 10]}
-                stroke="#6b7280"
-                tick={{ fontSize: 12 }}
-                label={{ value: "Ortalama Puan", angle: -90, position: "insideLeft", style: { fontSize: 12 } }}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                width={28}
               />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: "white", 
-                  border: "1px solid #e5e7eb", 
-                  borderRadius: "6px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
                   fontSize: "12px",
-                  padding: "8px",
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+                  padding: "10px 12px",
+                  boxShadow: "0 12px 28px rgba(15, 23, 42, 0.10)"
                 }}
                 formatter={(value: any) => [`${value.toFixed(2)} / 10`, "Ortalama Puan"]}
                 labelFormatter={(label) => `Hafta: ${label}`}
@@ -904,13 +938,13 @@ export default function DashboardPage() {
               <Line 
                 type="monotone" 
                 dataKey="average_score" 
-                stroke="#ec4899" 
-                strokeWidth={3}
-                dot={{ fill: "#ec4899", r: 5 }}
-                activeDot={{ r: 7 }}
+                stroke="#4f46e5"
+                strokeWidth={2.25}
+                dot={{ fill: "#ffffff", stroke: "#4f46e5", strokeWidth: 2, r: 3.5 }}
+                activeDot={{ fill: "#4f46e5", stroke: "#ffffff", strokeWidth: 2, r: 5 }}
                 name="Ortalama Mutluluk"
               />
-              <ReferenceLine y={7} stroke="#10b981" strokeDasharray="3 3" label={{ value: "Hedef (7)", position: "right" }} />
+              <ReferenceLine y={7} stroke="#16a34a" strokeDasharray="4 4" label={{ value: "Hedef 7.0", position: "insideTopRight", fill: "#16a34a", fontSize: 10 }} />
             </LineChart>
           </ResponsiveContainer>
         ) : (
@@ -926,11 +960,16 @@ export default function DashboardPage() {
 
       {/* AI Insights */}
       {avgPerformance > 0 && (
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-4">
-          <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Stratejik Analiz
-          </h3>
+        <div className="enterprise-card mb-5 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+              <TrendingUp className="h-3.5 w-3.5" />
+            </div>
+            <div>
+              <p className="enterprise-eyebrow">Karar desteği</p>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Stratejik Analiz</h3>
+            </div>
+          </div>
           <div className="grid md:grid-cols-3 gap-3">
             <div className="md:col-span-2 space-y-2">
               {avgPerformance >= TARGET_SCORE ? (
@@ -1212,8 +1251,8 @@ function OverviewTab({ filteredData, user }: { filteredData: OrgChartEntry[]; us
   return (
     <div className="space-y-4">
       {/* Performans Analizi Bölümü */}
-      <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-        <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
           <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-indigo-600" />
             Performans Analizi
@@ -1315,8 +1354,8 @@ function OverviewTab({ filteredData, user }: { filteredData: OrgChartEntry[]; us
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-          <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+          <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
             <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
               <Star className="w-4 h-4" />
               Top 10 Yetenek
@@ -1325,7 +1364,7 @@ function OverviewTab({ filteredData, user }: { filteredData: OrgChartEntry[]; us
           {top10.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 sticky top-0">
+                <thead className="bg-slate-50 sticky top-0 dark:bg-slate-800/60">
                   <tr>
                     <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium uppercase tracking-wider">Ad Soyad</th>
                     <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium uppercase tracking-wider">Departman</th>
@@ -1378,8 +1417,8 @@ function OverviewTab({ filteredData, user }: { filteredData: OrgChartEntry[]; us
           )}
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-          <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+          <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
             <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
               Riskli Grup (Top 10)
@@ -1389,7 +1428,7 @@ function OverviewTab({ filteredData, user }: { filteredData: OrgChartEntry[]; us
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 sticky top-0">
+                  <thead className="bg-slate-50 sticky top-0 dark:bg-slate-800/60">
                     <tr>
                       <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium uppercase tracking-wider">Ad Soyad</th>
                       <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium uppercase tracking-wider">Departman</th>
@@ -1545,7 +1584,7 @@ function DepartmentsTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
           <>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="2 4" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 5]} tick={{ fontSize: 11 }} />
                 <Tooltip 
@@ -1576,7 +1615,7 @@ function DepartmentsTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
             </ResponsiveContainer>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 sticky top-0">
+                <thead className="bg-slate-50 sticky top-0 dark:bg-slate-800/60">
                   <tr>
                     <th className="text-left px-3 py-2 text-xs text-slate-500 font-medium uppercase tracking-wider">Departman</th>
                     <th className="text-right px-3 py-2 text-xs text-slate-500 font-medium uppercase tracking-wider">Performans</th>
@@ -1679,8 +1718,8 @@ function ChartsTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
   return (
     <div className="space-y-4">
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-          <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+          <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
             <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Talent Matrix
@@ -1690,7 +1729,7 @@ function ChartsTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
           {plotData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <ScatterChart>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="2 4" />
                 <XAxis
                   type="number"
                   dataKey="Performans"
@@ -1747,8 +1786,8 @@ function ChartsTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
           </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-          <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+          <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
             <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               Maaş vs Performans
@@ -1758,7 +1797,7 @@ function ChartsTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
           {plotData.length > 0 && plotData.some((p) => p.Maaş > 0) ? (
             <ResponsiveContainer width="100%" height={300}>
               <ScatterChart>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="2 4" />
                 <XAxis type="number" dataKey="Performans" name="Performans" domain={[0, 5]} tick={{ fontSize: 11 }} />
                 <YAxis type="number" dataKey="Maaş" name="Maaş (TL)" tick={{ fontSize: 11 }} />
                 <Tooltip
@@ -2298,8 +2337,8 @@ function CompetenciesTab({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-2xl shadow-xl shadow-indigo-100/20 overflow-hidden">
-        <div className="px-6 py-4 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-violet-50/80 to-purple-50/80">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
               <Target className="w-5 h-5 text-indigo-600" />
@@ -2321,7 +2360,7 @@ function CompetenciesTab({
             </div>
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-br from-white via-indigo-50/20 to-violet-50/20">
+        <div className="p-6 bg-white dark:bg-slate-900">
         {closedRadarData.length > 1 ? (
           <ResponsiveContainer width="100%" height={400}>
             <RadarChart data={closedRadarData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -2431,8 +2470,8 @@ function CompetenciesTab({
       </div>
 
       {deptCompData.length > 0 && (
-        <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-          <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+          <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
             <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               Departman Bazlı Yetkinlik
@@ -2811,8 +2850,8 @@ function PerformanceTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
   return (
     <div className="space-y-6">
       {/* Genel Performans Özeti */}
-      <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-        <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
           <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-indigo-600" />
             Genel Performans Özeti
@@ -2892,8 +2931,8 @@ function PerformanceTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
       </div>
 
       {/* Departman Bazlı Performans */}
-      <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-        <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
           <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
             <Building2 className="w-4 h-4 text-indigo-600" />
             Departman Bazlı Performans Analizi
@@ -2901,7 +2940,7 @@ function PerformanceTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-indigo-50/50 to-violet-50/50 sticky top-0">
+            <thead className="bg-slate-50 sticky top-0 dark:bg-slate-800/60">
               <tr>
                 <th className="text-left px-4 py-3 text-xs text-slate-500 font-medium uppercase tracking-wider">Departman</th>
                 <th className="text-right px-4 py-3 text-xs text-slate-500 font-medium uppercase tracking-wider">Ort. Perf.</th>
@@ -2959,8 +2998,8 @@ function PerformanceTab({ filteredData }: { filteredData: OrgChartEntry[] }) {
       </div>
 
       {/* Kişi Bazlı Performans Detayı */}
-      <div className="bg-white/80 backdrop-blur-sm border border-indigo-50 rounded-lg shadow-lg shadow-indigo-100/20">
-        <div className="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-slate-900 dark:border-slate-800">
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
           <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
             <Users className="w-4 h-4 text-indigo-600" />
             Kişi Bazlı Performans Detayı
@@ -3125,10 +3164,10 @@ function UpcomingBirthdaysWidget({ user }: { user: any }) {
             return (
               <div
                 key={idx}
-                className="flex items-center justify-between p-3 bg-gradient-to-r from-pink-50/50 to-purple-50/50 rounded-lg border border-pink-100 hover:border-pink-300 transition-all duration-200"
+                className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800 transition-all duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center text-white font-semibold text-sm">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
                     {person.name.charAt(0)}
                   </div>
                   <div>

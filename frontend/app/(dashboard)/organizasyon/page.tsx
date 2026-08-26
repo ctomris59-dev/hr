@@ -1028,7 +1028,7 @@ export default function OrganizasyonPage() {
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <div className="bg-white rounded-xl p-6 shadow-sm">
             <SkeletonTable rows={6} cols={8} />
           </div>
         ) : filteredData.length === 0 ? (

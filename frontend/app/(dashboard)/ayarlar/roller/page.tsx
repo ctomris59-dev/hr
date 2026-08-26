@@ -204,7 +204,7 @@ export default function RolYonetimiPage() {
 
   if (loading) return (
     <div className="h-screen flex items-center justify-center">
-      <div className="w-full max-w-3xl bg-white rounded-2xl p-8 shadow-sm">
+      <div className="w-full max-w-3xl bg-white rounded-xl p-8 shadow-sm">
         <Skeleton className="h-6 w-1/3" />
         <div className="mt-4">
           <SkeletonTable rows={6} cols={4} />
@@ -338,7 +338,7 @@ export default function RolYonetimiPage() {
       </div>
       
       {/* BİLGİ KUTUSU */}
-      <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl text-amber-800 text-sm flex gap-3 items-start max-w-4xl">
+      <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-xl text-amber-800 text-sm flex gap-3 items-start max-w-4xl">
         <Info className="w-5 h-5 mt-0.5 flex-shrink-0 text-amber-600"/>
         <div>
             <strong className="block mb-1 text-amber-900">Nasıl Çalışır?</strong>

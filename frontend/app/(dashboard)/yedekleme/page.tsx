@@ -249,7 +249,7 @@ export default function YedeklemePage() {
 
 if (loading) return (
   <div className="flex h-screen items-center justify-center bg-[#FAFAFA]">
-    <div className="w-full max-w-3xl bg-white rounded-2xl p-8 shadow-sm">
+    <div className="w-full max-w-3xl bg-white rounded-xl p-8 shadow-sm">
       <Skeleton className="h-6 w-1/3" />
       <div className="mt-4">
         <SkeletonTable rows={6} cols={5} />
@@ -264,7 +264,7 @@ if (loading) return (
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-2">
         <div>
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-orange-600 flex items-center gap-3">
+          <h2 className="text-2xl font-semibold text-slate-900 flex items-center gap-3">
             <ShieldCheck className="w-8 h-8 text-orange-600" /> Yedekleme ve Risk Analizi
           </h2>
           <p className="text-zinc-500 mt-1">Kritik pozisyonların risk analizi ve yedekleme planlaması.</p>

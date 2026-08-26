@@ -794,7 +794,7 @@ export default function EkipYonetimiPage() {
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-[#F8FAFC]">
-      <div className="w-full max-w-3xl bg-white rounded-2xl p-8 shadow-sm">
+      <div className="w-full max-w-3xl bg-white rounded-xl p-8 shadow-sm">
         <div className="mb-6">
           <Skeleton className="h-6 w-1/3" />
           <Skeleton className="h-4 w-1/4 mt-3" />
@@ -879,7 +879,7 @@ export default function EkipYonetimiPage() {
       </div>
 
       {/* --- FİLTRE ÇUBUĞU --- */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 mb-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"/>
             <input 
@@ -1043,7 +1043,7 @@ export default function EkipYonetimiPage() {
       {/* Yeni Personel Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -1159,7 +1159,7 @@ export default function EkipYonetimiPage() {
       {/* Kullanıcı Atama Modal */}
       {showAssignModal && selectedEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">

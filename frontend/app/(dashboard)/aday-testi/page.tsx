@@ -334,7 +334,7 @@ function AdayTestiPageContent() {
     if (!testQuestions || testQuestions.length === 0) {
       return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <div className="bg-white rounded-xl p-6 shadow-sm">
             <SkeletonTable rows={5} cols={4} />
           </div>
         </div>
@@ -646,7 +646,7 @@ export default function AdayTestiPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white rounded-xl p-6 shadow-sm">
           <SkeletonTable rows={5} cols={4} />
         </div>
       </div>

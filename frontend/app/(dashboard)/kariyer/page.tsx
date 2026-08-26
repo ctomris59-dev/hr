@@ -523,7 +523,7 @@ export default function KariyerPage() {
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-[#FAFAFA]">
-      <div className="w-full max-w-3xl bg-white rounded-2xl p-8 shadow-sm">
+      <div className="w-full max-w-3xl bg-white rounded-xl p-8 shadow-sm">
         <Skeleton className="h-6 w-1/3" />
         <div className="mt-4">
           <SkeletonTable rows={6} cols={5} />
@@ -547,7 +547,7 @@ export default function KariyerPage() {
       
       {/* HEADER */}
       <div className="flex flex-col gap-2 mb-6">
-        <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center gap-3">
+        <h2 className="text-2xl font-semibold text-slate-900 flex items-center gap-3">
           <Map className="w-8 h-8 text-indigo-600" /> Kariyer Yolu ve Terfi Planlama
         </h2>
         <p className="text-zinc-500">Mevcut çalışanların yetkinlikleri ile <strong>organizasyondaki hedef pozisyonlar</strong> arasındaki fark analizi.</p>
@@ -993,7 +993,7 @@ export default function KariyerPage() {
           onClick={closeAnalysisModal}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl border border-zinc-200 w-full max-w-lg mx-4 p-6"
+            className="bg-white rounded-xl shadow-xl border border-zinc-200 w-full max-w-lg mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

@@ -466,7 +466,7 @@ export default function YetenekMatrisiPage() {
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-[#FAFAFA]">
-      <div className="w-full max-w-3xl bg-white rounded-2xl p-8 shadow-sm">
+      <div className="w-full max-w-3xl bg-white rounded-xl p-8 shadow-sm">
         <Skeleton className="h-6 w-1/3" />
         <div className="mt-4">
           <SkeletonTable rows={6} cols={5} />
@@ -498,11 +498,11 @@ export default function YetenekMatrisiPage() {
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row justify-between items-end gap-6 mb-4">
         <div>
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">📊 Yetenek Matrisi</h2>
+          <h2 className="text-2xl font-semibold text-slate-900">📊 Yetenek Matrisi</h2>
           <p className="text-zinc-500 mt-1">Sistemdeki <strong className="text-indigo-600">{employees.length} Personelin</strong> Canlı Analizi</p>
         </div>
         <div className="w-full lg:w-96 space-y-3">
-          <div className="bg-white p-3 rounded-2xl shadow-sm border border-zinc-200">
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-zinc-200">
              <label className="text-xs font-semibold text-zinc-400 mb-2 block flex items-center gap-1"><Filter className="w-3 h-3" /> Personel Filtrele</label>
              <div className="space-y-2">
                <input data-testid="dqi-person-search" type="text" placeholder="İsim ara..." className="w-full p-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-indigo-500" value={filterText} onChange={(e) => setFilterText(e.target.value)} />
@@ -511,7 +511,7 @@ export default function YetenekMatrisiPage() {
                </select>
              </div>
           </div>
-          <div className="bg-white p-3 rounded-2xl shadow-sm border border-zinc-200">
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-zinc-200">
             <p className="text-xs font-semibold text-zinc-400 mb-2">Sonraki Adım</p>
             <div className="flex flex-wrap gap-2">
               <Link href={`/yetenek-matrisi${quickEmployeeQuery}`} className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-1 text-[11px] text-indigo-700 hover:bg-indigo-100">
