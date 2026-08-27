@@ -1,11 +1,18 @@
 import { JOB_PROFILES as LEGACY_JOB_PROFILES } from "../../app/data/jobData";
-import { buildJobProfilesV2, JOB_PROFILE_METADATA, JOB_PROFILE_WEIGHTS, JOB_COMPETENCY_MODEL_VERSION } from "./jobCompetencyArchitecture";
+import {
+  buildJobProfilesV2,
+  JOB_PROFILE_METADATA,
+  JOB_PROFILE_WEIGHTS,
+  JOB_COMPETENCY_MODEL_VERSION,
+  resolveBenchmarkPosition,
+} from "./jobCompetencyArchitecture";
 import { calculatePotentialIndex, extractCompetencyMap } from "./talentPotential";
 
 export type JobLevel = "L1" | "L2" | "L3" | "L4" | "L5" | "L6" | "L7";
 
 export interface CareerRole {
   title: string;
+  canonicalTitle: string;
   family: string;
   level: JobLevel;
   levelRank: number;
@@ -18,6 +25,9 @@ export interface TargetProfileResolution {
   referenceCount: number;
   modelVersion?: string;
   evidenceConfidence?: "A" | "B" | "C";
+  canonicalPosition?: string;
+  aliasMatched?: boolean;
+  aliasVia?: "canonical" | "alias" | "normalized" | "none";
 }
 
 const JOB_PROFILES = buildJobProfilesV2(LEGACY_JOB_PROFILES);
@@ -33,8 +43,16 @@ const LEVEL_LABELS: Record<JobLevel, string> = {
 };
 export const JOB_LEVELS = LEVEL_LABELS;
 
+function canonicalFor(position: string): string {
+  const resolution = resolveBenchmarkPosition(position);
+  return resolution.matched ? resolution.canonical : String(position || "").trim();
+}
+
 export function inferJobLevel(position: string): JobLevel {
-  const p = String(position || "").toLocaleLowerCase("tr-TR");
+  const canonical = canonicalFor(position);
+  const p = String(canonical || "").toLocaleLowerCase("tr-TR");
+  const metadata = JOB_PROFILE_METADATA[canonical];
+  if (metadata?.level) return metadata.level;
   if (/\b(cfo|chro|cpo|coo|cco|cmo|cio|cto|cdo|clo)\b|chief audit executive|chief corporate affairs officer|ceo|genel sekreter$/.test(p)) return "L7";
   if (/başkan yardımcısı|bölgesel cfo|regional cfo/.test(p)) return "L6";
   if (/direktör|director|genel sekreter yardımcısı/.test(p)) return "L5";
@@ -45,8 +63,9 @@ export function inferJobLevel(position: string): JobLevel {
 }
 
 export function inferJobFamily(position: string): string {
-  const p = String(position || "").toLocaleLowerCase("tr-TR");
-  const metadata = JOB_PROFILE_METADATA[position];
+  const canonical = canonicalFor(position);
+  const p = String(canonical || "").toLocaleLowerCase("tr-TR");
+  const metadata = JOB_PROFILE_METADATA[canonical];
   if (metadata?.family) return metadata.family;
   const rules: Array<[RegExp, string]> = [
     [/insan kaynak|\bik\b|human resources|talent|bordro|ücret/, "İnsan Kaynakları"],
@@ -81,35 +100,73 @@ function averageProfiles(entries: Array<[string, Record<string, number>]>): Reco
 }
 
 export function resolveTargetProfile(position: string): TargetProfileResolution {
-  const exact = JOB_PROFILES[position];
+  const aliasResolution = resolveBenchmarkPosition(position);
+  const canonicalPosition = aliasResolution.matched ? aliasResolution.canonical : String(position || "").trim();
+  const exact = JOB_PROFILES[canonicalPosition];
+
   if (exact && Object.keys(exact).length) {
-    const metadata = JOB_PROFILE_METADATA[position];
+    const metadata = JOB_PROFILE_METADATA[canonicalPosition];
     return {
       profile: exact,
       source: "exact",
       referenceCount: 1,
       modelVersion: metadata?.modelVersion || JOB_COMPETENCY_MODEL_VERSION,
       evidenceConfidence: metadata?.confidence,
+      canonicalPosition,
+      aliasMatched: aliasResolution.matched && canonicalPosition !== String(position || "").trim(),
+      aliasVia: aliasResolution.via,
     };
   }
 
-  const level = inferJobLevel(position);
-  const family = inferJobFamily(position);
+  const level = inferJobLevel(canonicalPosition);
+  const family = inferJobFamily(canonicalPosition);
   const all = Object.entries(JOB_PROFILES) as Array<[string, Record<string, number>]>;
   const sameFamilyLevel = all.filter(([title]) => inferJobLevel(title) === level && inferJobFamily(title) === family);
-  if (sameFamilyLevel.length) return { profile: averageProfiles(sameFamilyLevel), source: "family-level", referenceCount: sameFamilyLevel.length, modelVersion: JOB_COMPETENCY_MODEL_VERSION };
+  if (sameFamilyLevel.length) return {
+    profile: averageProfiles(sameFamilyLevel),
+    source: "family-level",
+    referenceCount: sameFamilyLevel.length,
+    modelVersion: JOB_COMPETENCY_MODEL_VERSION,
+    canonicalPosition,
+    aliasMatched: false,
+    aliasVia: aliasResolution.via,
+  };
 
   const sameLevel = all.filter(([title]) => inferJobLevel(title) === level);
-  if (sameLevel.length) return { profile: averageProfiles(sameLevel), source: "level", referenceCount: sameLevel.length, modelVersion: JOB_COMPETENCY_MODEL_VERSION };
+  if (sameLevel.length) return {
+    profile: averageProfiles(sameLevel),
+    source: "level",
+    referenceCount: sameLevel.length,
+    modelVersion: JOB_COMPETENCY_MODEL_VERSION,
+    canonicalPosition,
+    aliasMatched: false,
+    aliasVia: aliasResolution.via,
+  };
 
   const generic = averageProfiles(all);
-  return { profile: generic, source: "generic", referenceCount: all.length, modelVersion: JOB_COMPETENCY_MODEL_VERSION };
+  return {
+    profile: generic,
+    source: "generic",
+    referenceCount: all.length,
+    modelVersion: JOB_COMPETENCY_MODEL_VERSION,
+    canonicalPosition,
+    aliasMatched: false,
+    aliasVia: aliasResolution.via,
+  };
 }
 
 export function getCareerRole(position: string): CareerRole {
   const resolution = resolveTargetProfile(position);
-  const level = inferJobLevel(position);
-  return { title: position, family: inferJobFamily(position), level, levelRank: Number(level.slice(1)), targetProfile: resolution.profile };
+  const canonicalTitle = resolution.canonicalPosition || position;
+  const level = inferJobLevel(canonicalTitle);
+  return {
+    title: position,
+    canonicalTitle,
+    family: inferJobFamily(canonicalTitle),
+    level,
+    levelRank: Number(level.slice(1)),
+    targetProfile: resolution.profile,
+  };
 }
 
 export function buildCareerArchitecture(positions: string[]): Record<string, CareerRole[]> {
@@ -137,12 +194,14 @@ const COMPETENCY_LABEL_TO_CODE: Record<string, string> = {
 };
 
 function competencyFit(person: any, targetPosition: string): number {
-  const target = resolveTargetProfile(targetPosition).profile;
+  const resolution = resolveTargetProfile(targetPosition);
+  const target = resolution.profile;
   const current = extractCompetencyMap(person);
   const keys = Object.keys(target);
   if (!keys.length) return 50;
 
-  const roleWeights = JOB_PROFILE_WEIGHTS[targetPosition];
+  const weightKey = resolution.canonicalPosition || targetPosition;
+  const roleWeights = JOB_PROFILE_WEIGHTS[weightKey];
   let weightedScore = 0;
   let usedWeight = 0;
   keys.forEach((label) => {
@@ -197,9 +256,13 @@ export function calculateCareerReadiness(person: any, targetPosition: string): C
   index = Math.round(Math.min(100, Math.max(0, index)));
   const band = index >= 80 ? "Hazır" : index >= 65 ? "Yakın" : index >= 45 ? "Gelişim Gerekli" : "Uzun Vadeli";
   const notes: string[] = [];
+  if (targetResolution.aliasMatched && targetResolution.canonicalPosition) {
+    notes.push(`Pozisyon adı FutureHR kanonik rolüne eşlendi: ${targetPosition} → ${targetResolution.canonicalPosition}.`);
+  }
   if (targetResolution.source !== "exact") notes.push(`Pozisyona özel profil bulunmadığı için hedef, ${targetResolution.referenceCount} benzer rol profilinden türetildi.`);
   if (targetResolution.evidenceConfidence) notes.push(`FutureHR rol benchmark güveni: ${targetResolution.evidenceConfidence} · ${targetResolution.modelVersion}.`);
-  if (JOB_PROFILE_WEIGHTS[targetPosition]) notes.push("Rol uyumu, FHR-COMP-JOB-2.0 kritik yetkinlik ağırlıklarıyla hesaplandı.");
+  const weightKey = targetResolution.canonicalPosition || targetPosition;
+  if (JOB_PROFILE_WEIGHTS[weightKey]) notes.push("Rol uyumu, FHR-COMP-JOB-2.1 kritik yetkinlik ağırlıklarıyla hesaplandı.");
   if (levelDistance > 1) notes.push(`Hedef rol mevcut seviyenin ${levelDistance} kademe üzerinde.`);
   if (fit < 70) notes.push("Hedef rol yetkinliklerinde anlamlı gelişim alanı var.");
   if (potentialResult.missingInputs.length) notes.push(`Potansiyel güveni için eksik: ${potentialResult.missingInputs.join(", ")}.`);
