@@ -1,5 +1,6 @@
 /* FutureHR — shared premium data-table system
-   Applied after module-viz.css so legacy tables inherit the same SaaS quality bar. */
+   Loaded after module-viz.css. It upgrades every application data table while
+   preserving page-specific business logic and semantic status colors. */
 
 :root {
   --table-border: #e2e8f0;
@@ -23,12 +24,15 @@
   --table-strong: #f8fafc;
 }
 
-/* Table containers should hug their content instead of stretching to the
-   height of a neighbouring form/card in CSS grid layouts. */
+/* Tables that sit next to tall forms must hug their own content. This removes
+   the large empty white panels that appeared in Training and similar grids. */
+main .overflow-hidden:has(> .overflow-x-auto > table),
+main .premium-table-card,
 .module-native-content .overflow-hidden:has(> .overflow-x-auto > table),
 .module-native-content .premium-table-card {
   align-self: start;
   min-height: 0 !important;
+  height: auto !important;
 }
 
 .premium-table-card {
@@ -82,9 +86,9 @@
   white-space: nowrap;
 }
 
-/* Global fallback: every data table inside a module gets premium spacing,
-   hierarchy, sticky headers and interaction states. */
-.module-native-content table:not(.no-premium-table),
+/* All application data tables. `no-premium-table` remains an escape hatch for
+   special layouts that should deliberately opt out. */
+:where(main, .module-native-content) table:not(.no-premium-table),
 .premium-data-table {
   width: 100%;
   border-collapse: separate !important;
@@ -94,7 +98,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.module-native-content table:not(.no-premium-table) thead th,
+:where(main, .module-native-content) table:not(.no-premium-table) thead th,
 .premium-data-table thead th {
   position: sticky;
   top: 0;
@@ -111,12 +115,12 @@
   white-space: nowrap;
 }
 
-.dark .module-native-content table:not(.no-premium-table) thead th,
+.dark :where(main, .module-native-content) table:not(.no-premium-table) thead th,
 .dark .premium-data-table thead th {
   background: linear-gradient(180deg, #111827 0%, #0f172a 100%) !important;
 }
 
-.module-native-content table:not(.no-premium-table) tbody td,
+:where(main, .module-native-content) table:not(.no-premium-table) tbody td,
 .premium-data-table tbody td {
   border-bottom: 1px solid var(--table-border-soft) !important;
   background: var(--table-row);
@@ -126,56 +130,55 @@
   vertical-align: middle;
 }
 
-.module-native-content table:not(.no-premium-table) tbody tr:nth-child(even) td,
+:where(main, .module-native-content) table:not(.no-premium-table) tbody tr:nth-child(even) td,
 .premium-data-table tbody tr:nth-child(even) td {
   background: var(--table-row-alt);
 }
 
-.module-native-content table:not(.no-premium-table) tbody tr:last-child td,
+:where(main, .module-native-content) table:not(.no-premium-table) tbody tr:last-child td,
 .premium-data-table tbody tr:last-child td {
   border-bottom: 0 !important;
 }
 
-.module-native-content table:not(.no-premium-table) tbody td:first-child,
+:where(main, .module-native-content) table:not(.no-premium-table) tbody td:first-child,
 .premium-data-table tbody td:first-child {
   color: var(--table-strong);
   font-weight: 650;
 }
 
-.module-native-content table:not(.no-premium-table) tbody tr,
+:where(main, .module-native-content) table:not(.no-premium-table) tbody tr,
 .premium-data-table tbody tr {
   position: relative;
-  transition: background-color .16s ease, box-shadow .16s ease, transform .16s ease;
+  transition: background-color .16s ease, box-shadow .16s ease;
 }
 
-.module-native-content table:not(.no-premium-table) tbody tr:hover td,
+:where(main, .module-native-content) table:not(.no-premium-table) tbody tr:hover td,
 .premium-data-table tbody tr:hover td {
   background: color-mix(in srgb, var(--module-soft, #eef2ff) 58%, var(--table-row)) !important;
 }
 
-.module-native-content table:not(.no-premium-table) tbody tr:hover td:first-child,
+:where(main, .module-native-content) table:not(.no-premium-table) tbody tr:hover td:first-child,
 .premium-data-table tbody tr:hover td:first-child {
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--module-accent, #4f46e5) 78%, transparent);
 }
 
-/* Legacy tables that already use p-5/p-6 receive a denser enterprise rhythm. */
-.module-native-content table:not(.no-premium-table) th[class*="p-5"],
-.module-native-content table:not(.no-premium-table) th[class*="p-6"],
-.module-native-content table:not(.no-premium-table) td[class*="p-5"],
-.module-native-content table:not(.no-premium-table) td[class*="p-6"] {
+/* Dense enterprise rhythm even on older tables with Tailwind p-5/p-6 cells. */
+:where(main, .module-native-content) table:not(.no-premium-table) th[class*="p-5"],
+:where(main, .module-native-content) table:not(.no-premium-table) th[class*="p-6"],
+:where(main, .module-native-content) table:not(.no-premium-table) td[class*="p-5"],
+:where(main, .module-native-content) table:not(.no-premium-table) td[class*="p-6"] {
   padding: 13px 15px !important;
 }
 
-/* Numeric columns look like reporting data, not body copy. */
-.module-native-content table .text-right,
+:where(main, .module-native-content) table .text-right,
 .premium-data-table .text-right,
 .premium-number {
   font-variant-numeric: tabular-nums;
 }
 
-/* Inputs/selects inside editable tables. */
-.module-native-content table input:not([type="checkbox"]):not([type="radio"]),
-.module-native-content table select,
+/* Editable tables: salary requests, permissions, status changes. */
+:where(main, .module-native-content) table input:not([type="checkbox"]):not([type="radio"]),
+:where(main, .module-native-content) table select,
 .premium-data-table input:not([type="checkbox"]):not([type="radio"]),
 .premium-data-table select {
   min-height: 34px;
@@ -188,8 +191,8 @@
   box-shadow: inset 0 1px 1px rgba(15,23,42,.025);
 }
 
-.dark .module-native-content table input:not([type="checkbox"]):not([type="radio"]),
-.dark .module-native-content table select,
+.dark :where(main, .module-native-content) table input:not([type="checkbox"]):not([type="radio"]),
+.dark :where(main, .module-native-content) table select,
 .dark .premium-data-table input:not([type="checkbox"]):not([type="radio"]),
 .dark .premium-data-table select {
   border-color: #334155 !important;
@@ -197,13 +200,30 @@
   color: #e2e8f0;
 }
 
-.module-native-content table input:focus,
-.module-native-content table select:focus,
+:where(main, .module-native-content) table input:focus,
+:where(main, .module-native-content) table select:focus,
 .premium-data-table input:focus,
 .premium-data-table select:focus {
   border-color: color-mix(in srgb, var(--module-accent, #4f46e5) 52%, #cbd5e1) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--module-accent, #4f46e5) 10%, transparent) !important;
   outline: none !important;
+}
+
+/* Existing table shells receive the same premium card treatment even if a
+   screen has not yet migrated to the explicit premium-table-card component. */
+:where(main, .module-native-content) .overflow-hidden:has(> .overflow-x-auto > table:not(.no-premium-table)),
+:where(main, .module-native-content) .rounded-2xl:has(> .overflow-x-auto > table:not(.no-premium-table)) {
+  border-color: var(--table-border) !important;
+  border-radius: 18px !important;
+  background: var(--table-row) !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,.025), 0 12px 32px rgba(15,23,42,.05) !important;
+}
+
+/* A plain overflow-x-auto containing a table (e.g. salary simulation) gets a
+   subtle internal boundary without changing its parent card hierarchy. */
+:where(main, .module-native-content) .overflow-x-auto:has(> table:not(.no-premium-table)) {
+  border-radius: 13px;
+  scrollbar-gutter: stable;
 }
 
 /* Shared premium cell patterns. */
@@ -332,12 +352,18 @@
   color: var(--module-accent, #4f46e5);
 }
 
-/* Global table-card polish for existing wrappers. */
-.module-native-content .overflow-hidden:has(> .overflow-x-auto > table:not(.no-premium-table)) {
-  border-color: var(--table-border) !important;
-  border-radius: 18px !important;
-  background: var(--table-row) !important;
-  box-shadow: 0 1px 2px rgba(15,23,42,.025), 0 12px 32px rgba(15,23,42,.05) !important;
+/* Legacy role-permission matrix: retain functional toggles, remove the old
+   oversized report-table look. */
+main table.text-left.border-collapse thead th {
+  vertical-align: middle;
+}
+
+main table.text-left.border-collapse tbody td {
+  vertical-align: middle;
+}
+
+main table.text-left.border-collapse tbody tr:hover {
+  transform: none;
 }
 
 @media (max-width: 768px) {
@@ -346,9 +372,9 @@
     flex-direction: column;
   }
 
-  .module-native-content table:not(.no-premium-table) thead th,
+  :where(main, .module-native-content) table:not(.no-premium-table) thead th,
   .premium-data-table thead th,
-  .module-native-content table:not(.no-premium-table) tbody td,
+  :where(main, .module-native-content) table:not(.no-premium-table) tbody td,
   .premium-data-table tbody td {
     padding-left: 12px !important;
     padding-right: 12px !important;
