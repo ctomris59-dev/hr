@@ -2,20 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { BookOpen, CheckCircle2, Clock3, Plus, Users } from "lucide-react";
+import PremiumTrainingTable, { type PremiumTrainingRow } from "../../../components/PremiumTrainingTable";
 import { getManageableEmployees } from "../../utils/hierarchy";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
 import { useNotifications } from "../../../context/NotificationContext";
 
-interface TrainingAssignment {
-  id: string;
-  employee: string;
-  trainingId: string;
-  trainingName: string;
-  source?: string;
-  assignedBy?: string;
-  assignedAt: string;
-  dueDate?: string;
-  status: "Atandı" | "Devam Ediyor" | "Tamamlandı";
+interface TrainingAssignment extends PremiumTrainingRow {
   completedAt?: string;
 }
 
@@ -38,12 +30,13 @@ export default function EgitimPage() {
 
   const reload=()=>{setUser(getStorageData(STORAGE_KEYS.CURRENT_USER,null));setOrgData(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART,[]));setAssignments(getStorageData<TrainingAssignment[]>(STORAGE_KEYS.TRAINING_ASSIGNMENTS,[]));};
   useEffect(()=>{reload();const h=()=>reload();window.addEventListener("dataUpdated",h);return()=>window.removeEventListener("dataUpdated",h)},[]);
+
   const name=user?.name||user?.username||"";
   const role=String(user?.role||"").toUpperCase();
   const manageable=useMemo(()=>{if(!user)return[];if(role==="CEO"||role==="IK")return orgData;try{return getManageableEmployees(user,orgData)}catch{return[]}},[user,orgData,role]);
   const myAssignments=assignments.filter((a)=>a.employee===name);
   const teamAssignments=assignments.filter((a)=>manageable.some((e:any)=>e["Ad Soyad"]===a.employee));
-  const overdue=(a:TrainingAssignment)=>a.status!=="Tamamlandı"&&Boolean(a.dueDate)&&new Date(a.dueDate!)<new Date();
+  const overdue=(a:PremiumTrainingRow)=>a.status!=="Tamamlandı"&&Boolean(a.dueDate)&&new Date(a.dueDate!)<new Date();
 
   const saveAssignments=(next:TrainingAssignment[])=>{setAssignments(next);setStorageData(STORAGE_KEYS.TRAINING_ASSIGNMENTS,next);window.dispatchEvent(new CustomEvent("dataUpdated"));};
   const assign=(event:FormEvent)=>{event.preventDefault();const training=CATALOG.find((item)=>item.id===form.trainingId);if(!training||!form.employee)return;const item:TrainingAssignment={id:`training-${Date.now()}`,employee:form.employee,trainingId:training.id,trainingName:training.name,assignedBy:name,assignedAt:new Date().toISOString(),dueDate:form.dueDate||undefined,status:"Atandı"};saveAssignments([item,...assignments]);addNotification(`${training.name} eğitimi atandı.`,"info",{targetUser:form.employee,link:"/egitim",source:"training"});setForm({employee:"",trainingId:"",dueDate:""});};
@@ -60,30 +53,14 @@ export default function EgitimPage() {
     <div className="grid gap-3 sm:grid-cols-3"><Metric label="Bana atanan" value={myAssignments.length} icon={BookOpen}/><Metric label="Devam eden" value={myAssignments.filter(a=>a.status!=="Tamamlandı").length} icon={Clock3}/><Metric label="Tamamlanan" value={myAssignments.filter(a=>a.status==="Tamamlandı").length} icon={CheckCircle2}/></div>
 
     <div className="rounded-2xl border border-violet-200/80 bg-white p-2 shadow-[0_8px_30px_rgba(76,29,149,0.08)] dark:border-violet-900/50 dark:bg-slate-900">
-      <div className="flex flex-col gap-1 px-2 pb-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-600">Görünüm seçin</p>
-          <p className="mt-0.5 text-xs text-slate-500">Katalog ile size atanan eğitimler arasında buradan geçiş yapabilirsiniz.</p>
-        </div>
-        <span className="hidden rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 sm:inline-flex dark:bg-violet-950/50 dark:text-violet-300">Aktif görünüm: {tabItems.find((item)=>item.key===tab)?.label}</span>
-      </div>
-      <div className={`grid gap-2 ${tabItems.length===3?"md:grid-cols-3":"sm:grid-cols-2"}`}>
-        {tabItems.map(({key,label,description,icon:Icon,count})=>{
-          const active=tab===key;
-          return <button key={key} type="button" onClick={()=>setTab(key)} aria-pressed={active} className={`group flex min-h-[76px] items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 ${active?"border-violet-600 bg-violet-600 text-white shadow-[0_8px_24px_rgba(124,58,237,0.24)] ring-1 ring-violet-500":"border-slate-200 bg-slate-50/70 text-slate-700 hover:border-violet-300 hover:bg-violet-50/70 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:hover:border-violet-700 dark:hover:bg-violet-950/30"}`}>
-            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active?"bg-white/15 text-white":"bg-white text-violet-600 shadow-sm ring-1 ring-slate-200 group-hover:ring-violet-200 dark:bg-slate-900 dark:ring-slate-700"}`}><Icon className="h-5 w-5"/></span>
-            <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><strong className="text-sm">{label}</strong><span className={`inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active?"bg-white/15 text-white":"bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300"}`}>{count}</span></span><span className={`mt-1 block text-[11px] leading-4 ${active?"text-violet-100":"text-slate-500 dark:text-slate-400"}`}>{description}</span></span>
-            <span className={`h-2.5 w-2.5 shrink-0 rounded-full border-2 ${active?"border-white bg-white":"border-slate-300 bg-transparent group-hover:border-violet-400"}`}/>
-          </button>
-        })}
-      </div>
+      <div className="flex flex-col gap-1 px-2 pb-2 pt-1 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-600">Görünüm seçin</p><p className="mt-0.5 text-xs text-slate-500">Katalog ile size atanan eğitimler arasında buradan geçiş yapabilirsiniz.</p></div><span className="hidden rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 sm:inline-flex dark:bg-violet-950/50 dark:text-violet-300">Aktif görünüm: {tabItems.find((item)=>item.key===tab)?.label}</span></div>
+      <div className={`grid gap-2 ${tabItems.length===3?"md:grid-cols-3":"sm:grid-cols-2"}`}>{tabItems.map(({key,label,description,icon:Icon,count})=>{const active=tab===key;return <button key={key} type="button" onClick={()=>setTab(key)} aria-pressed={active} className={`group flex min-h-[76px] items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 ${active?"border-violet-600 bg-violet-600 text-white shadow-[0_8px_24px_rgba(124,58,237,0.24)] ring-1 ring-violet-500":"border-slate-200 bg-slate-50/70 text-slate-700 hover:border-violet-300 hover:bg-violet-50/70 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200"}`}><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active?"bg-white/15 text-white":"bg-white text-violet-600 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700"}`}><Icon className="h-5 w-5"/></span><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><strong className="text-sm">{label}</strong><span className={`inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active?"bg-white/15 text-white":"bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300"}`}>{count}</span></span><span className={`mt-1 block text-[11px] leading-4 ${active?"text-violet-100":"text-slate-500 dark:text-slate-400"}`}>{description}</span></span><span className={`h-2.5 w-2.5 shrink-0 rounded-full border-2 ${active?"border-white bg-white":"border-slate-300 bg-transparent"}`}/></button>})}</div>
     </div>
 
-    {tab==="mine"&&<AssignmentTable rows={myAssignments} editable onStatus={setStatus} overdue={overdue}/>} 
+    {tab==="mine"&&<PremiumTrainingTable title="Atanan Eğitimler" description="Size atanan eğitimlerin son tarih ve tamamlanma durumunu yönetin." rows={myAssignments} editable onStatus={setStatus} overdue={overdue}/>} 
     {tab==="catalog"&&<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{CATALOG.map((training)=><div key={training.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><span className="rounded-full bg-violet-50 px-2 py-1 text-[10px] font-semibold text-violet-700">{training.category}</span><h3 className="mt-3 text-sm font-semibold">{training.name}</h3><p className="mt-1 text-xs text-slate-500">Süre: {training.duration}</p></div>)}</div>}
-    {tab==="manage"&&<div className="grid gap-5 xl:grid-cols-[360px_1fr]"><form onSubmit={assign} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-2"><Plus className="h-4 w-4 text-violet-600"/><h2 className="text-sm font-semibold">Eğitim ata</h2></div><div className="mt-4 space-y-3"><select value={form.employee} onChange={(e)=>setForm({...form,employee:e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Çalışan seçin</option>{manageable.map((e:any)=><option key={e.id??e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select><select value={form.trainingId} onChange={(e)=>setForm({...form,trainingId:e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Eğitim seçin</option>{CATALOG.map((t)=><option key={t.id} value={t.id}>{t.name}</option>)}</select><label className="block text-xs font-medium text-slate-600">Son tarih<input type="date" value={form.dueDate} onChange={(e)=>setForm({...form,dueDate:e.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm"/></label><button className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white">Ata</button></div></form><AssignmentTable rows={teamAssignments} overdue={overdue}/></div>}
+    {tab==="manage"&&<div className="grid items-start gap-5 xl:grid-cols-[360px_1fr]"><form onSubmit={assign} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-2"><Plus className="h-4 w-4 text-violet-600"/><h2 className="text-sm font-semibold">Eğitim ata</h2></div><div className="mt-4 space-y-3"><select value={form.employee} onChange={(e)=>setForm({...form,employee:e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Çalışan seçin</option>{manageable.map((e:any)=><option key={e.id??e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select><select value={form.trainingId} onChange={(e)=>setForm({...form,trainingId:e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Eğitim seçin</option>{CATALOG.map((t)=><option key={t.id} value={t.id}>{t.name}</option>)}</select><label className="block text-xs font-medium text-slate-600">Son tarih<input type="date" value={form.dueDate} onChange={(e)=>setForm({...form,dueDate:e.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm"/></label><button className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white">Ata</button></div></form><PremiumTrainingTable title="Ekip Eğitim Takibi" description="Ekibe atanmış eğitimleri, son tarihleri ve ilerleme durumunu izleyin." rows={teamAssignments} overdue={overdue}/></div>}
   </div>
 }
 
 function Metric({label,value,icon:Icon}:{label:string;value:number;icon:any}){return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex justify-between"><p className="text-xs text-slate-500">{label}</p><Icon className="h-4 w-4 text-violet-600"/></div><p className="mt-3 text-2xl font-semibold">{value}</p></div>}
-function AssignmentTable({rows,editable=false,onStatus,overdue}:{rows:TrainingAssignment[];editable?:boolean;onStatus?:(id:string,status:TrainingAssignment["status"])=>void;overdue:(a:TrainingAssignment)=>boolean}){return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="overflow-x-auto"><table className="w-full"><thead><tr><th>Çalışan</th><th>Eğitim</th><th>Atama</th><th>Son Tarih</th><th>Durum</th>{editable&&<th></th>}</tr></thead><tbody>{rows.length?rows.map((a)=><tr key={a.id}><td>{a.employee}</td><td>{a.trainingName}</td><td className="text-xs">{new Date(a.assignedAt).toLocaleDateString("tr-TR")}</td><td className={overdue(a)?"font-semibold text-red-600":""}>{a.dueDate||"—"}</td><td><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${a.status==="Tamamlandı"?"bg-emerald-50 text-emerald-700":overdue(a)?"bg-red-50 text-red-700":"bg-violet-50 text-violet-700"}`}>{overdue(a)?"Gecikti":a.status}</span></td>{editable&&<td><select value={a.status} onChange={(e)=>onStatus?.(a.id,e.target.value as any)} className="rounded-lg border border-slate-200 px-2 py-1 text-xs"><option>Atandı</option><option>Devam Ediyor</option><option>Tamamlandı</option></select></td>}</tr>):<tr><td colSpan={editable?6:5} className="py-8 text-center text-sm text-slate-500">Eğitim kaydı bulunmuyor.</td></tr>}</tbody></table></div></div>}
