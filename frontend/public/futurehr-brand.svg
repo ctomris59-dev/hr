@@ -1,0 +1,6 @@
+<svg width="300" height="84" viewBox="0 0 300 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="6" width="56" height="56" rx="16" fill="#2637C5"/>
+  <path d="M18 20H42V28H27V34H39V42H27V55H18V20Z" fill="white"/>
+  <text x="70" y="42" fill="#2637C5" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="750" letter-spacing="-1.5">future hr</text>
+  <text x="70" y="62" fill="#64748B" font-family="Inter, Arial, sans-serif" font-size="10.5" font-weight="600">potansiyeli performansa dönüştürün</text>
+</svg>
