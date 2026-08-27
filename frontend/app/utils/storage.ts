@@ -17,6 +17,7 @@ export const STORAGE_KEYS = {
   COMPENSATION_CYCLES: "hr_compensation_cycles",
   MARKET_BENCHMARKS: "hr_market_benchmarks",
   PULSE_ANSWERS: "hr_pulse_answers",
+  ACCESS_POLICY: "hr_access_policy_v2",
 };
 
 export function getStorageData(key: string, defaultValue: null): any;
@@ -45,15 +46,16 @@ export function clearStorage(): void {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
 }
 
-// Merkezi demo veri temizleme fonksiyonu. Kimlik bilgilerini korur.
+// Merkezi demo veri temizleme fonksiyonu. Kimlik bilgilerini ve firma yetki politikasını korur.
 export function clearAllHRData(): void {
   if (typeof window === "undefined") return;
 
   const currentUserHr = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
   const currentUser = localStorage.getItem("user");
+  const accessPolicy = localStorage.getItem(STORAGE_KEYS.ACCESS_POLICY);
 
   const allHrKeys = Object.keys(localStorage).filter(
-    (key) => key.startsWith("hr_") && key !== STORAGE_KEYS.CURRENT_USER && key !== "hr_data_cleared"
+    (key) => key.startsWith("hr_") && key !== STORAGE_KEYS.CURRENT_USER && key !== STORAGE_KEYS.ACCESS_POLICY && key !== "hr_data_cleared"
   );
   allHrKeys.forEach((key) => localStorage.removeItem(key));
 
@@ -80,6 +82,7 @@ export function clearAllHRData(): void {
 
   if (currentUserHr) localStorage.setItem(STORAGE_KEYS.CURRENT_USER, currentUserHr);
   if (currentUser) localStorage.setItem("user", currentUser);
+  if (accessPolicy) localStorage.setItem(STORAGE_KEYS.ACCESS_POLICY, accessPolicy);
 
   localStorage.setItem("hr_data_cleared", "true");
   window.dispatchEvent(new CustomEvent("storageCleared"));
