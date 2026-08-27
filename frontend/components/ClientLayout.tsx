@@ -34,6 +34,7 @@ import ThemeToggle from "./ThemeToggle";
 import CommandPalette from "./CommandPalette";
 import DemoRoleSwitcher from "./DemoRoleSwitcher";
 import ModuleWorkspace from "./ModuleWorkspace";
+import GuidedOnboarding from "./GuidedOnboarding";
 
 const menuItems = [
   { href: "/dashboard", label: "Yönetici Özeti", icon: LayoutDashboard, section: "Genel" },
@@ -98,7 +99,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
       </button>
 
-      <aside data-testid="app-sidebar" className={`${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-[248px] flex-shrink-0 border-r border-slate-800 bg-[#101722] text-slate-300 transition-transform duration-200 ease-out`}>
+      <aside data-testid="app-sidebar" data-tour="sidebar" className={`${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-[248px] flex-shrink-0 border-r border-slate-800 bg-[#101722] text-slate-300 transition-transform duration-200 ease-out`}>
         <div className="flex h-screen flex-col overflow-hidden">
           <div className="flex h-16 flex-shrink-0 items-center border-b border-white/[0.07] px-5">
             <Image src="/logo.png" alt="FutureHR" width={500} height={500} className="h-10 w-auto origin-left object-contain brightness-0 invert" priority />
@@ -111,7 +112,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               const showSection = index === 0 || filteredMenuItems[index - 1]?.section !== item.section;
               return <div key={item.href}>
                 {showSection && <div className={`${index === 0 ? "mt-0" : "mt-5"} mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600`}>{item.section}</div>}
-                <Link href={item.href} onClick={() => setSidebarOpen(false)} className={`group relative mb-0.5 flex h-9 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition-all ${isActive ? "bg-white/[0.095] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.035)]" : "text-slate-400 hover:bg-white/[0.055] hover:text-slate-200"}`}>
+                <Link data-tour-route={item.href} href={item.href} onClick={() => setSidebarOpen(false)} className={`group relative mb-0.5 flex h-9 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition-all ${isActive ? "bg-white/[0.095] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.035)]" : "text-slate-400 hover:bg-white/[0.055] hover:text-slate-200"}`}>
                   {isActive && <span className="absolute left-0 h-5 w-0.5 rounded-r-full bg-indigo-400" />}
                   <Icon size={16} strokeWidth={1.8} className={isActive ? "text-indigo-300" : "text-slate-500 group-hover:text-slate-300"} />
                   <span className="truncate">{item.label}</span>
@@ -128,15 +129,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       {sidebarOpen && <div className="lg:hidden fixed inset-0 z-30 bg-slate-950/45 backdrop-blur-[1px]" onClick={() => setSidebarOpen(false)} />}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200/90 bg-white/95 px-5 backdrop-blur lg:px-6 dark:border-slate-800 dark:bg-slate-900/95">
+        <header data-tour="topbar" className="flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200/90 bg-white/95 px-5 backdrop-blur lg:px-6 dark:border-slate-800 dark:bg-slate-900/95">
           <WelcomeWidget />
           <div className="flex items-center gap-2">
+            <GuidedOnboarding />
             <DemoRoleSwitcher />
             <button type="button" onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }))} className="hidden sm:flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-500 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"><SearchIcon className="h-3.5 w-3.5" /><span>Ctrl + K</span></button>
             <ThemeToggle /><NotificationBell />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
+        <main data-tour="workspace" className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
           <ModuleWorkspace pathname={normalizedPathname}>{children}</ModuleWorkspace>
         </main>
       </div>
