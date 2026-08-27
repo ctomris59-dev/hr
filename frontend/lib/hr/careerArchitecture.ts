@@ -2,7 +2,7 @@ import { JOB_PROFILES as LEGACY_JOB_PROFILES } from "../../app/data/jobData";
 import { buildJobProfilesV2, JOB_PROFILE_METADATA, JOB_PROFILE_WEIGHTS, JOB_COMPETENCY_MODEL_VERSION } from "./jobCompetencyArchitecture";
 import { calculatePotentialIndex, extractCompetencyMap } from "./talentPotential";
 
-export type JobLevel = "L1" | "L2" | "L3" | "L4" | "L5" | "L6";
+export type JobLevel = "L1" | "L2" | "L3" | "L4" | "L5" | "L6" | "L7";
 
 export interface CareerRole {
   title: string;
@@ -23,32 +23,40 @@ export interface TargetProfileResolution {
 const JOB_PROFILES = buildJobProfilesV2(LEGACY_JOB_PROFILES);
 
 const LEVEL_LABELS: Record<JobLevel, string> = {
-  L1: "Başlangıç / Destek", L2: "Uzman", L3: "Kıdemli Uzman / Sorumlu",
-  L4: "Müdür / Takım Lideri", L5: "Direktör / Fonksiyon Lideri", L6: "Üst Yönetim",
+  L1: "Başlangıç / Destek",
+  L2: "Uzman / Profesyonel",
+  L3: "Kıdemli Uzman / Sorumlu / Süpervizör",
+  L4: "Müdür / Takım Lideri",
+  L5: "Direktör / Fonksiyon Lideri",
+  L6: "Başkan Yardımcısı / Üst Fonksiyon Yönetimi",
+  L7: "C-Level / Tepe Yönetim",
 };
 export const JOB_LEVELS = LEVEL_LABELS;
 
 export function inferJobLevel(position: string): JobLevel {
   const p = String(position || "").toLocaleLowerCase("tr-TR");
-  if (/ceo|cfo|coo|chro|cto|cio|başkan|genel sekreter$|genel müdür|başkan yardımcısı/.test(p)) return "L6";
+  if (/\b(cfo|chro|cpo|coo|cco|cmo|cio|cto|cdo|clo)\b|chief audit executive|chief corporate affairs officer|ceo|genel sekreter$/.test(p)) return "L7";
+  if (/başkan yardımcısı|bölgesel cfo|regional cfo/.test(p)) return "L6";
   if (/direktör|director|genel sekreter yardımcısı/.test(p)) return "L5";
-  if (/müdür|manager|lider|lead|head|servis sorumlusu/.test(p)) return "L4";
-  if (/kıdemli|senior|sorumlu|chief|yetkili/.test(p)) return "L3";
-  if (/uzman|analist|mühendis|danışman|temsilci|specialist|engineer/.test(p)) return "L2";
+  if (/müdür|manager/.test(p)) return "L4";
+  if (/kıdemli|senior|lider|lead|süpervizör|supervisor|sorumlu|yetkili|key account manager|kilit müşteri yöneticisi/.test(p)) return "L3";
+  if (/uzman|analist|mühendis|danışman|temsilci|denetçi|specialist|engineer|consultant/.test(p)) return "L2";
   return "L1";
 }
 
 export function inferJobFamily(position: string): string {
   const p = String(position || "").toLocaleLowerCase("tr-TR");
+  const metadata = JOB_PROFILE_METADATA[position];
+  if (metadata?.family) return metadata.family;
   const rules: Array<[RegExp, string]> = [
-    [/insan kaynak|ik |human resources|talent|bordro|ücret/, "İnsan Kaynakları"],
-    [/finans|muhasebe|bütçe|hazine|cfo/, "Finans"],
-    [/yazılım|bilgi işlem| bt | it |data|veri|dijital|siber|cto|cio/, "Teknoloji & Dijital"],
-    [/satış|sales|pazarlama|marketing|crm|müşteri/, "Satış & Pazarlama"],
-    [/operasyon|üretim|fabrika|süreç|saha|coo/, "Operasyon"],
-    [/satın alma|tedarik|procurement/, "Satın Alma & Tedarik"],
-    [/hukuk|uyum|legal|kvkk|compliance/, "Hukuk & Uyum"],
-    [/iletişim|basın|marka|sürdürülebilirlik|kurumsal ilişkiler/, "Kurumsal İletişim"],
+    [/insan kaynak|\bik\b|human resources|talent|bordro|ücret/, "İnsan Kaynakları"],
+    [/finans|muhasebe|bütçe|hazine|cfo/, "Finans & Muhasebe"],
+    [/yazılım|bilgi işlem|\bbt\b|\bit\b|data|veri|dijital|siber|cto|cio|cdo/, "BT & Dijital"],
+    [/satış|sales|pazarlama|marketing|crm|müşteri|cco|cmo/, "Satış & Pazarlama"],
+    [/operasyon|üretim|fabrika|süreç|saha|coo/, "Operasyon & Üretim"],
+    [/satın alma|tedarik|procurement|cpo/, "Satın Alma & Tedarik Zinciri"],
+    [/hukuk|uyum|legal|kvkk|compliance|clo/, "Hukuk & Uyum"],
+    [/iletişim|basın|marka|sürdürülebilirlik|kurumsal ilişkiler|corporate affairs/, "Kurumsal İletişim & Sürdürülebilirlik"],
     [/denetim|risk|kalite|audit/, "Denetim, Risk & Kalite"],
     [/ticaret sicil|kapasite|proje|arge|araştırma|oda|borsa/, "TSO / Meslek Kuruluşu"],
   ];
@@ -100,7 +108,8 @@ export function resolveTargetProfile(position: string): TargetProfileResolution 
 
 export function getCareerRole(position: string): CareerRole {
   const resolution = resolveTargetProfile(position);
-  return { title: position, family: inferJobFamily(position), level: inferJobLevel(position), levelRank: Number(inferJobLevel(position).slice(1)), targetProfile: resolution.profile };
+  const level = inferJobLevel(position);
+  return { title: position, family: inferJobFamily(position), level, levelRank: Number(level.slice(1)), targetProfile: resolution.profile };
 }
 
 export function buildCareerArchitecture(positions: string[]): Record<string, CareerRole[]> {
@@ -115,10 +124,16 @@ export function buildCareerArchitecture(positions: string[]): Record<string, Car
 }
 
 const COMPETENCY_LABEL_TO_CODE: Record<string, string> = {
-  "Dijital Okuryazarlık": "DIG", "Analitik Düşünme": "ANA", "Sonuç Odaklılık": "RES",
-  "Detaylara Özen": "DET", "Sürekli Öğrenme": "LRN", "Etik ve Uyum": "ETH",
-  "Öz-Disiplin": "DIS", "Dayanıklılık & Stres Yönetimi": "STR", "Stratejik Bakış": "STR",
-  "Takım Çalışması": "TEA", "İletişim Becerileri": "COM",
+  "Dijital Okuryazarlık": "DIG",
+  "Analitik Düşünme": "ANA",
+  "Sonuç Odaklılık": "RES",
+  "Detaylara Özen": "DET",
+  "Sürekli Öğrenme": "LRN",
+  "Etik ve Uyum": "ETH",
+  "Öz-Disiplin": "DIS",
+  "Dayanıklılık & Stres Yönetimi": "STR",
+  "Takım Çalışması": "TEA",
+  "İletişim Becerileri": "COM",
 };
 
 function competencyFit(person: any, targetPosition: string): number {
