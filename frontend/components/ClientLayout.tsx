@@ -23,10 +23,11 @@ import {
   FileText,
   Search as SearchIcon,
   ShieldCheck,
+  SlidersHorizontal,
 } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useAuth } from "../context/AuthContext";
-import { hasAccess } from "../app/data/roles";
+import { canAccessRoute } from "../lib/hr/accessControl";
 import WelcomeWidget from "./WelcomeWidget";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
@@ -37,18 +38,19 @@ import ModuleWorkspace from "./ModuleWorkspace";
 const menuItems = [
   { href: "/dashboard", label: "Yönetici Özeti", icon: LayoutDashboard, section: "Genel" },
   { href: "/izinler", label: "İzin Yönetimi", icon: Plane, section: "Genel" },
-  { href: "/organizasyon", label: "Çalışanlar & Organizasyon", icon: Building2, adminOnly: true, section: "Genel" },
+  { href: "/organizasyon", label: "Çalışanlar & Organizasyon", icon: Building2, section: "Genel" },
   { href: "/degerlendirme", label: "Performans & Yetkinlik", icon: RefreshCw, section: "Performans & Yetenek" },
   { href: "/yetenek-matrisi", label: "Yetenek Matrisi", icon: BarChart3, section: "Performans & Yetenek" },
   { href: "/egitim", label: "Eğitim", icon: BookOpen, section: "Gelişim" },
   { href: "/gelisim", label: "Gelişim Planı", icon: Clock, section: "Gelişim" },
   { href: "/kariyer", label: "Kariyer Yolu", icon: MapPin, section: "Gelişim" },
   { href: "/yedekleme", label: "Yedekleme", icon: Crown, section: "Gelişim" },
-  { href: "/maas", label: "Maaş Simülasyonu", icon: DollarSign, adminOnly: true, section: "Operasyon" },
-  { href: "/ise-alim", label: "İşe Alım", icon: UserPlus, adminOnly: true, section: "Operasyon" },
+  { href: "/maas", label: "Maaş Simülasyonu", icon: DollarSign, section: "Operasyon" },
+  { href: "/ise-alim", label: "İşe Alım", icon: UserPlus, section: "Operasyon" },
   { href: "/aday-testi", label: "Yetkinlik Testi", icon: FileText, section: "Operasyon" },
   { href: "/ekip-yonetimi", label: "Ekip", icon: Users, section: "Yönetim" },
-  { href: "/admin", label: "Kullanıcı & Yetki", icon: ShieldCheck, adminOnly: true, section: "Yönetim" },
+  { href: "/admin", label: "Kullanıcı & Yetki", icon: ShieldCheck, section: "Yönetim" },
+  { href: "/ayarlar/yetki-mimarisi", label: "Yetki Mimarisi", icon: SlidersHorizontal, section: "Yönetim" },
 ];
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -56,6 +58,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const normalizedPathname = decodeURIComponent(pathname || "/");
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [, setPolicyRevision] = useState(0);
   const router = useRouter();
   const { currentUserRole } = useAuth();
 
@@ -63,16 +66,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const loadUser = () => setUser(getStorageData(STORAGE_KEYS.CURRENT_USER, null) || null);
     loadUser();
     const handleStorageChange = (e: StorageEvent) => { if (e.key === STORAGE_KEYS.CURRENT_USER) loadUser(); };
-    const handleCustomStorageChange = () => loadUser();
-    const handleUserChanged = () => loadUser();
+    const refresh = () => loadUser();
+    const refreshPolicy = () => setPolicyRevision((value) => value + 1);
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("storageCleared", handleCustomStorageChange);
-    window.addEventListener("userChanged", handleUserChanged);
+    window.addEventListener("storageCleared", refresh);
+    window.addEventListener("userChanged", refresh);
+    window.addEventListener("accessPolicyUpdated", refreshPolicy);
     const interval = setInterval(loadUser, 2000);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("storageCleared", handleCustomStorageChange);
-      window.removeEventListener("userChanged", handleUserChanged);
+      window.removeEventListener("storageCleared", refresh);
+      window.removeEventListener("userChanged", refresh);
+      window.removeEventListener("accessPolicyUpdated", refreshPolicy);
       clearInterval(interval);
     };
   }, [pathname]);
@@ -84,11 +89,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     router.refresh();
   };
 
-  const filteredMenuItems = menuItems.filter((item) => {
-    if (item.adminOnly && currentUserRole !== "admin") return false;
-    return hasAccess(currentUserRole, item.href);
-  });
-
+  const filteredMenuItems = menuItems.filter((item) => canAccessRoute(currentUserRole, item.href));
   const userInitials = (user?.name || "FH").split(" ").filter(Boolean).slice(0, 2).map((part: string) => part[0]?.toUpperCase()).join("");
 
   return (
