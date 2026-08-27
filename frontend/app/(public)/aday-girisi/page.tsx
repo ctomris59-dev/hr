@@ -7,18 +7,16 @@ import Image from "next/image";
 import { ArrowRight, CheckCircle2, Users, Rocket, Target, Sparkles } from "lucide-react";
 import { POSITIONS } from "../../data/jobData";
 
-// Logo Component
-function Logo() {
+function Logo({ dark = false }: { dark?: boolean }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <Image 
-        src="/logo.png" 
-        alt="Logo" 
-        width={200} 
-        height={200} 
-        className="h-auto w-auto object-contain max-w-[200px]" 
-      />
-    </div>
+    <Image
+      src={dark ? "/futurehr-brand-dark.svg" : "/futurehr-brand.svg"}
+      alt="FutureHR"
+      width={300}
+      height={84}
+      className="h-auto w-[230px] object-contain"
+      priority
+    />
   );
 }
 
@@ -35,8 +33,7 @@ export default function CandidateLoginPage() {
       setError("Lütfen tüm alanları doldurunuz.");
       return;
     }
-    
-    // Store candidate info in sessionStorage to pass to test page
+
     const candidateInfo = {
       name: candidateName,
       role: candidateRole,
@@ -44,28 +41,24 @@ export default function CandidateLoginPage() {
       phone: candidatePhone,
       mode: "candidate" as const,
     };
-    
+
     sessionStorage.setItem("candidateInfo", JSON.stringify(candidateInfo));
     router.push("/aday-sinavi");
   };
 
   return (
     <div className="min-h-screen flex">
-      {/* SOL TARAF - Vitrin */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-900 via-purple-950 to-pink-950 relative overflow-hidden">
-        {/* Dekoratif Elementler */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-72 h-72 bg-indigo-500 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500 rounded-full blur-3xl"></div>
         </div>
 
         <div className="relative z-10 w-full flex flex-col p-12">
-          {/* Logo */}
           <div className="mb-8">
-            <Logo />
+            <Logo dark />
           </div>
 
-          {/* Ana İçerik - Dikeyde Ortalanmış */}
           <div className="flex-1 flex flex-col justify-center max-w-md">
             <h1 className="text-3xl font-bold text-white tracking-tight mb-4">
               Kariyerinize İlk Adımı Atın
@@ -74,7 +67,6 @@ export default function CandidateLoginPage() {
               İşe alım sürecine başlamak için bilgilerinizi girin. Yetkinlik testi ile potansiyelinizi keşfedin.
             </p>
 
-            {/* Özellikler */}
             <div className="space-y-4 mb-12">
               {[
                 { icon: Rocket, text: "Hızlı ve Kolay Başvuru" },
@@ -93,7 +85,6 @@ export default function CandidateLoginPage() {
               })}
             </div>
 
-            {/* Güvenilirlik Rozeti */}
             <div className="border-t border-indigo-800 pt-8">
               <p className="text-xs text-indigo-400 mb-4 uppercase tracking-wider">
                 Güvenli Süreç
@@ -117,21 +108,12 @@ export default function CandidateLoginPage() {
         </div>
       </div>
 
-      {/* SAĞ TARAF - İşlem Merkezi */}
       <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-8 lg:p-12">
         <div className="w-full max-w-lg flex flex-col justify-center">
-          {/* Logo (Mobil için) */}
           <div className="lg:hidden mb-8 flex justify-center">
-            <Image 
-              src="/logo.png" 
-              alt="Logo" 
-              width={200} 
-              height={200} 
-              className="h-auto w-auto object-contain max-w-[200px]" 
-            />
+            <Logo />
           </div>
 
-          {/* Başlık */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">
               Aday Girişi
@@ -141,7 +123,6 @@ export default function CandidateLoginPage() {
             </p>
           </div>
 
-          {/* Form İçeriği */}
           <div className="space-y-5">
             <div className="p-7 bg-indigo-50 border border-indigo-200 rounded-lg">
               <div className="flex items-start gap-3">
@@ -161,10 +142,7 @@ export default function CandidateLoginPage() {
 
             <div className="space-y-4">
               <div>
-                <label
-                  htmlFor="candidateName"
-                  className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider"
-                >
+                <label htmlFor="candidateName" className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider">
                   Ad Soyad
                 </label>
                 <input
@@ -179,10 +157,7 @@ export default function CandidateLoginPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="candidateRole"
-                  className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider"
-                >
+                <label htmlFor="candidateRole" className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider">
                   Başvurulan Pozisyon
                 </label>
                 <select
@@ -202,10 +177,7 @@ export default function CandidateLoginPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="candidateEmail"
-                  className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider"
-                >
+                <label htmlFor="candidateEmail" className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider">
                   E-Posta Adresi
                 </label>
                 <input
@@ -220,10 +192,7 @@ export default function CandidateLoginPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="candidatePhone"
-                  className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider"
-                >
+                <label htmlFor="candidatePhone" className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider">
                   Telefon Numarası
                 </label>
                 <input
@@ -258,12 +227,8 @@ export default function CandidateLoginPage() {
               </p>
             </div>
 
-            {/* Personel Girişi Linki */}
             <div className="pt-4 border-t border-slate-200">
-              <Link
-                href="/"
-                className="block text-center text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-              >
+              <Link href="/" className="block text-center text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
                 Personel girişi için tıklayın
               </Link>
             </div>
@@ -273,4 +238,3 @@ export default function CandidateLoginPage() {
     </div>
   );
 }
-
