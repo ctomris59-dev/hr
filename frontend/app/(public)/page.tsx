@@ -1,58 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  ArrowRight,
-  BarChart3,
-  BriefcaseBusiness,
-  CheckCircle2,
-  GraduationCap,
-  LockKeyhole,
-  ShieldCheck,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { USERS } from "../data/users";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../utils/storage";
 
-function Logo() {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <Image src="/logo.png" alt="FutureHR" width={28} height={28} className="h-7 w-7 object-contain" />
-      </div>
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-indigo-600">FutureHR</p>
-        <p className="text-sm font-semibold text-slate-900">Kurumsal İnsan Yönetimi</p>
-      </div>
-    </div>
-  );
-}
-
 const demoUsers = [
-  { label: "CEO Demo", username: "ceo", password: "123" },
+  { label: "CEO", username: "ceo", password: "123" },
   { label: "İK Direktörü", username: "ik_dir", password: "123" },
-];
-
-const capabilityCards = [
-  {
-    icon: BriefcaseBusiness,
-    title: "Performans & Yetkinlik",
-    text: "Hedef başarısı, yönetici değerlendirmesi ve yetkinlik verisini tek akışta yönetin.",
-  },
-  {
-    icon: BarChart3,
-    title: "Ücret & Karar Senaryoları",
-    text: "Maaş kararlarını senaryo bazlı kurgulayın, bütçe etkisini görün, kontrollü onay süreci kurun.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Eğitim, Gelişim & Kariyer",
-    text: "Yetkinlik açıklarını eğitim, gelişim planı ve kariyer akışıyla somut aksiyonlara dönüştürün.",
-  },
 ];
 
 export default function LoginPage() {
@@ -64,8 +22,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const existingUsers = getStorageData(STORAGE_KEYS.USERS, {});
-    const mergedUsers = { ...USERS, ...existingUsers };
-    setStorageData(STORAGE_KEYS.USERS, mergedUsers);
+    setStorageData(STORAGE_KEYS.USERS, { ...USERS, ...existingUsers });
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -93,213 +50,134 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  const applyDemoUser = (user: (typeof demoUsers)[number]) => {
-    setUsername(user.username);
-    setPassword(user.password);
+  const useDemo = (item: (typeof demoUsers)[number]) => {
+    setUsername(item.username);
+    setPassword(item.password);
     setError("");
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f5f7fb] text-slate-900">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.10),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(79,70,229,0.12),transparent_32%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(255,255,255,0))]" />
+    <main className="min-h-screen bg-[#f7f8fa] text-slate-950">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1240px] flex-col px-5 py-6 sm:px-8 lg:px-10 lg:py-8">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm">
+              <Image src="/logo.png" alt="FutureHR" width={24} height={24} className="h-6 w-6 object-contain" priority />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold tracking-[-0.01em] text-slate-950">FutureHR</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400">Human Resources Platform</p>
+            </div>
+          </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-7xl items-center px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid w-full gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-          <section className="rounded-[32px] border border-slate-200/80 bg-white px-6 py-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-            <div className="flex flex-col gap-8">
-              <div className="flex items-start justify-between gap-4">
-                <Logo />
-                <div className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:inline-flex sm:items-center sm:gap-2">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Kurumsal SaaS Deneyimi
+          <div className="hidden items-center gap-2 text-[11px] font-medium text-slate-500 sm:flex">
+            <ShieldCheck className="h-4 w-4 text-slate-400" />
+            Rol bazlı güvenli erişim
+          </div>
+        </header>
+
+        <div className="grid flex-1 items-center gap-12 py-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-20 lg:py-14">
+          <section className="max-w-2xl">
+            <div className="mb-6 h-px w-12 bg-indigo-500" />
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">FutureHR</p>
+            <h1 className="mt-4 max-w-[650px] text-[42px] font-semibold leading-[1.04] tracking-[-0.045em] text-slate-950 sm:text-[52px] lg:text-[62px]">
+              İnsan yönetiminin daha net hali.
+            </h1>
+            <p className="mt-6 max-w-xl text-[16px] leading-7 text-slate-600 sm:text-[17px]">
+              Performans, yetenek, gelişim, kariyer ve ücret kararlarını tek bir kurumsal çalışma alanında yönetin.
+            </p>
+
+            <div className="mt-10 grid max-w-xl gap-0 border-y border-slate-200 sm:grid-cols-3">
+              {["Rol bazlı erişim", "Karar destek akışları", "Tek merkezden yönetim"].map((item) => (
+                <div key={item} className="flex items-center gap-2 border-b border-slate-200 py-4 text-sm font-medium text-slate-700 last:border-b-0 sm:border-b-0 sm:border-r sm:px-5 sm:first:pl-0 sm:last:border-r-0">
+                  <Check className="h-4 w-4 flex-shrink-0 text-indigo-600" />
+                  {item}
                 </div>
-              </div>
-
-              <div className="max-w-2xl">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  İnsan kaynakları süreçleri için bütünleşik yönetim platformu
-                </div>
-                <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-5xl lg:text-[56px] lg:leading-[1.02]">
-                  Profesyonel ekipler için
-                  <span className="block text-indigo-600">ölçeklenebilir HR operating system</span>
-                </h1>
-                <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                  Organizasyon, performans, yetenek, eğitim, kariyer, ücret ve halefiyet akışlarını tek platformda daha açıklanabilir, daha kontrollü ve daha kurumsal şekilde yönetin.
-                </p>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                {capabilityCards.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.title}
-                      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-[0_14px_30px_rgba(15,23,42,0.06)]"
-                    >
-                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-                        <Icon className="h-5 w-5 text-indigo-600" />
-                      </div>
-                      <h2 className="text-sm font-semibold text-slate-900">{item.title}</h2>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">{item.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Neden FutureHR?</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {[
-                      "CEO, İK, yönetici ve çalışan için rol bazlı görünüm",
-                      "Senaryo tabanlı ücret yönetimi ve kontrollü karar akışı",
-                      "Yetenek matrisi, halefiyet ve gelişim bağlantısı",
-                      "Demo anlatımı için hazır, canlı sunuma uygun kurgu",
-                    ].map((text) => (
-                      <div key={text} className="flex items-start gap-3 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-100">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-600" />
-                        <span className="text-sm leading-6 text-slate-700">{text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_24px_48px_rgba(15,23,42,0.18)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Güven & Uyum</p>
-                  <div className="mt-5 space-y-4">
-                    <div className="flex items-start gap-3">
-                      <LockKeyhole className="mt-0.5 h-5 w-5 text-indigo-300" />
-                      <div>
-                        <p className="text-sm font-semibold">Güvenli erişim mantığı</p>
-                        <p className="mt-1 text-sm leading-6 text-slate-300">Rol bazlı erişim, hassas veri segmentasyonu ve kurallı görünürlük yaklaşımıyla tasarlanmıştır.</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-2xl font-semibold">13</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">Ana Modül</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-2xl font-semibold">360°</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">HR Görünümü</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </section>
 
-          <section className="flex items-center">
-            <div className="w-full rounded-[32px] border border-slate-200/90 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.12)] sm:p-8 lg:p-10">
-              <div className="mb-8 flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Kurumsal Giriş</p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Hesabınıza giriş yapın</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    FutureHR çalışma alanınıza güvenli şekilde erişin ve organizasyon yönetimini kaldığınız yerden sürdürün.
-                  </p>
-                </div>
-                <div className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 sm:flex">
-                  <Users className="h-6 w-6" />
-                </div>
+          <section>
+            <div className="rounded-[22px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-8">
+              <div className="mb-7">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Personel Girişi</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-slate-950">Hesabınıza giriş yapın</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">FutureHR çalışma alanınıza devam edin.</p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="username" className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Kullanıcı adı
-                  </label>
+                  <label htmlFor="username" className="mb-2 block text-xs font-semibold text-slate-600">Kullanıcı adı</label>
                   <input
                     id="username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                    placeholder="Örn. ceo"
+                    autoComplete="username"
+                    placeholder="Kullanıcı adınız"
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Şifre
-                  </label>
+                  <label htmlFor="password" className="mb-2 block text-xs font-semibold text-slate-600">Şifre</label>
                   <input
                     id="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                    placeholder="Şifrenizi girin"
+                    autoComplete="current-password"
+                    placeholder="Şifreniz"
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
                   />
                 </div>
 
-                {error && (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {error}
-                  </div>
-                )}
+                {error && <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-xs font-medium text-red-700">{error}</div>}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
                 >
-                  {loading ? (
-                    "Giriş yapılıyor..."
-                  ) : (
-                    <>
-                      Sisteme giriş yap
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
+                  {loading ? "Giriş yapılıyor..." : <>Giriş yap <ArrowRight className="h-4 w-4" /></>}
                 </button>
               </form>
 
-              <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mt-6 border-t border-slate-100 pt-5">
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Demo erişimi</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">Sunum sırasında hızlı giriş için aşağıdaki hazır kullanıcıları kullanabilirsiniz.</p>
-                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Demo kullanıcıları</p>
+                  <span className="text-[10px] text-slate-400">Tek tıkla doldur</span>
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {demoUsers.map((item) => (
                     <button
-                      key={item.label}
+                      key={item.username}
                       type="button"
-                      onClick={() => applyDemoUser(item)}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-indigo-300 hover:shadow-sm"
+                      onClick={() => useDemo(item)}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-slate-300 hover:bg-white"
                     >
-                      <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                      <p className="mt-1 text-xs font-mono text-slate-500">
-                        {item.username} / {item.password}
-                      </p>
+                      <span className="block text-xs font-semibold text-slate-700">{item.label}</span>
+                      <span className="mt-0.5 block font-mono text-[10px] text-slate-400">{item.username} / {item.password}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  Demo erişimi güvenli kurgu ve rol bazlı görünüm mantığı ile sunulur.
-                </div>
-                <Link
-                  href="/aday-girisi"
-                  className="text-sm font-medium text-indigo-600 transition hover:text-indigo-700"
-                >
-                  Aday girişi →
-                </Link>
+              <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-5 text-xs">
+                <span className="text-slate-400">FutureHR demo ortamı</span>
+                <Link href="/aday-girisi" className="font-medium text-indigo-600 transition hover:text-indigo-700">Aday girişi</Link>
               </div>
             </div>
           </section>
         </div>
+
+        <footer className="flex flex-col gap-2 border-t border-slate-200 py-4 text-[11px] text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <span>© 2026 FutureHR</span>
+          <span>Kurumsal insan kaynakları yönetim platformu</span>
+        </footer>
       </div>
-    </div>
+    </main>
   );
 }
