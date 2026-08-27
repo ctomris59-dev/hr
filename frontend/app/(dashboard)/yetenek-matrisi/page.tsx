@@ -3,17 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Brain, CheckCircle2, Sparkles, Target, Users } from "lucide-react";
-import { JOB_PROFILES } from "../../data/jobData";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
 import { calculatePotentialIndex, extractCompetencyMap, getNineBox } from "../../../lib/hr/talentPotential";
+import { resolveTargetProfile } from "../../../lib/hr/careerArchitecture";
 import { CartesianGrid, ReferenceArea, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "@/components/charts/recharts";
 
 const LABEL_TO_CODE: Record<string, string> = {
   "Dijital Okuryazarlık": "DIG", "Analitik Düşünme": "ANA", "Sonuç Odaklılık": "RES", "Detaylara Özen": "DET", "Sürekli Öğrenme": "LRN", "Etik ve Uyum": "ETH", "Öz-Disiplin": "DIS", "Dayanıklılık & Stres Yönetimi": "STR", "Stratejik Bakış": "STR", "Takım Çalışması": "TEA", "İletişim Becerileri": "COM",
 };
-
-const displayCompetencyLabel = (label: string) =>
-  label === "Stratejik Bakış" ? "Dayanıklılık & Stres Yönetimi" : label;
+const displayCompetencyLabel = (label: string) => label === "Stratejik Bakış" ? "Dayanıklılık & Stres Yönetimi" : label;
+const recordTime = (item:any) => { const value=item?.date||item?.Tarih||item?.createdAt||item?.timestamp; const time=value?new Date(value).getTime():0; return Number.isFinite(time)?time:0; };
 
 export default function YetenekMatrisiPage() {
   const [orgData, setOrgData] = useState<any[]>([]);
@@ -38,7 +37,6 @@ export default function YetenekMatrisiPage() {
     } catch {}
     setTalentData(talent);
   };
-
   useEffect(() => { void reload(); }, []);
 
   const people = useMemo(() => {
@@ -48,12 +46,10 @@ export default function YetenekMatrisiPage() {
     return Array.from(names).filter(Boolean).map((name) => {
       const org = orgData.find((item) => item["Ad Soyad"] === name) || {};
       const talent = talentData.find((item) => (item.name || item["Ad Soyad"] || item.Personel || item.target) === name) || {};
-      const evaluations = history.filter((item) => (item.Personel || item.target) === name);
+      const evaluations = history.filter((item) => (item.Personel || item.target) === name).sort((a,b)=>recordTime(b)-recordTime(a));
       const latest = evaluations[0] || {};
       const person = {
-        ...org,
-        ...latest,
-        ...talent,
+        ...org, ...talent, ...latest,
         "Ad Soyad": name,
         Pozisyon: org.Pozisyon || talent.position || talent.Pozisyon || "",
         Departman: org.Departman || talent.department || talent.Departman || "",
@@ -69,30 +65,41 @@ export default function YetenekMatrisiPage() {
   useEffect(() => { if (!selectedName && people.length) setSelectedName(people[0]["Ad Soyad"]); }, [people, selectedName]);
   const selected = useMemo(() => people.find((person) => person["Ad Soyad"] === selectedName), [people, selectedName]);
   const plotData = people.filter((p) => p.Performans > 0).map((p) => ({ name:p["Ad Soyad"], department:p.Departman, position:p.Pozisyon, performance:p.Performans, potential:p.calculatedPotential.score, confidence:p.calculatedPotential.confidence, box:p.box }));
-
   const boxCounts = useMemo(() => people.reduce((acc:Record<string,number>, p) => { acc[p.box] = (acc[p.box] || 0) + 1; return acc; }, {}), [people]);
+
   const competencies = selected ? extractCompetencyMap(selected) : {};
-  const target = selected ? JOB_PROFILES[selected.Pozisyon] || {} : {};
-  const gapData = Object.entries(target).map(([label, expected]) => {
+  const targetResolution = selected ? resolveTargetProfile(selected.Pozisyon) : { profile:{}, source:"generic" as const, referenceCount:0 };
+  const gapData = Object.entries(targetResolution.profile).map(([label, expected]) => {
     const code = LABEL_TO_CODE[label] || label;
-    const actual = Number(competencies[code] || 0);
-    const gap = Number(expected) - actual;
-    return { label: displayCompetencyLabel(label), actual, expected:Number(expected), gap };
-  }).filter((item)=>item.actual > 0).sort((a,b)=>b.gap-a.gap);
+    const rawActual = competencies[code];
+    const hasActual = Number.isFinite(rawActual);
+    const actual = hasActual ? Number(rawActual) : 0;
+    const gap = hasActual ? Number(expected) - actual : Number.NaN;
+    return { label: displayCompetencyLabel(label), actual, expected:Number(expected), gap, hasActual };
+  }).sort((a,b) => {
+    if (a.hasActual !== b.hasActual) return a.hasActual ? -1 : 1;
+    return (Number.isFinite(b.gap)?b.gap:-99) - (Number.isFinite(a.gap)?a.gap:-99);
+  });
+
+  const targetSourceText = targetResolution.source === "exact"
+    ? "Pozisyona özel kurum rol profili"
+    : targetResolution.source === "family-level"
+      ? `${targetResolution.referenceCount} benzer job family + seviye rolünden türetildi`
+      : targetResolution.source === "level"
+        ? `${targetResolution.referenceCount} aynı seviye rolünden türetildi`
+        : "Genel rol havuzundan türetilmiş geçici hedef";
 
   const updateProfileSignal = (field:"career_aspiration"|"mobility_willingness", value:number) => {
     if (!selected) return;
     const next = orgData.map((item) => item["Ad Soyad"] === selectedName ? { ...item, [field]: value } : item);
-    setOrgData(next);
-    setStorageData(STORAGE_KEYS.ORG_CHART, next);
-    window.dispatchEvent(new CustomEvent("dataUpdated"));
+    setOrgData(next); setStorageData(STORAGE_KEYS.ORG_CHART, next); window.dispatchEvent(new CustomEvent("dataUpdated"));
   };
 
   const requestAI = async () => {
     if (!selected) return;
     setAiLoading(true); setAi(null);
     try {
-      const response = await fetch("/api/ai/hr-recommendation", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ kind:"talent", context:{ employee:{ name:selected["Ad Soyad"], position:selected.Pozisyon, department:selected.Departman, performance:selected.Performans, nineBox:selected.box }, potential:selected.calculatedPotential, topGaps:gapData.slice(0,4), strengths:[...gapData].sort((a,b)=>a.gap-b.gap).slice(0,3) } }) });
+      const response = await fetch("/api/ai/hr-recommendation", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ kind:"talent", context:{ employee:{ name:selected["Ad Soyad"], position:selected.Pozisyon, department:selected.Departman, performance:selected.Performans, nineBox:selected.box }, potential:selected.calculatedPotential, roleTargetSource:targetSourceText, topGaps:gapData.filter(item=>item.hasActual).slice(0,4), strengths:gapData.filter(item=>item.hasActual).sort((a,b)=>a.gap-b.gap).slice(0,3) } }) });
       setAi(await response.json());
     } catch { setAi({mode:"rules",recommendation:"AI servisine ulaşılamadı. Potansiyel faktörleri ve yetkinlik açıklarını birlikte değerlendirerek ölçülebilir gelişim aksiyonları tanımlayın."}); }
     finally { setAiLoading(false); }
@@ -100,7 +107,7 @@ export default function YetenekMatrisiPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-600">Yetenek karar desteği</p><h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">Yetenek Matrisi</h1><p className="mt-1 max-w-4xl text-sm text-slate-500">Potansiyel Endeksi: öğrenme çevikliği %30, analitik/karmaşıklık kapasitesi %20, dayanıklılık & stres yönetimi %15, iletişim & işbirliği %15, kariyer isteği %10 ve mobilite/yeni sorumluluk isteği %10. Temel envanter liderliği doğrudan ölçmediği için “liderlik kapasitesi” bu endeksten çıkarıldı.</p></div><div className="flex gap-2"><Link href="/kariyer" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Kariyer mimarisi</Link><Link href="/yedekleme" className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white">Halefiyet</Link></div></div>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-600">Yetenek karar desteği</p><h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">Yetenek Matrisi</h1><p className="mt-1 max-w-4xl text-sm text-slate-500">Potansiyel Endeksi: öğrenme çevikliği %30, analitik/karmaşıklık kapasitesi %20, dayanıklılık & stres yönetimi %15, iletişim & işbirliği %15, kariyer isteği %10 ve mobilite/yeni sorumluluk isteği %10.</p></div><div className="flex gap-2"><Link href="/kariyer" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Kariyer mimarisi</Link><Link href="/yedekleme" className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white">Halefiyet</Link></div></div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Toplam çalışan" value={people.length}/><Metric label="Yıldız Oyuncu" value={boxCounts["Yıldız Oyuncu"] || 0}/><Metric label="Yüksek Potansiyel" value={(boxCounts["Yüksek Potansiyel"] || 0)+(boxCounts["Potansiyel Yatırımı"] || 0)}/><Metric label="Kritik Risk" value={boxCounts["Kritik Risk"] || 0}/></div>
 
@@ -111,7 +118,10 @@ export default function YetenekMatrisiPage() {
         {selected&&<div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h3 className="text-sm font-semibold">Potansiyel girdileri</h3><p className="mt-1 text-xs text-slate-500">Öz-bildirim alanları girilmezse nötr 3,0 kullanılır ve güven skoru düşer.</p><Signal label="Kariyer isteği" value={Number(selected.career_aspiration ?? 3)} onChange={(v)=>updateProfileSignal("career_aspiration",v)}/><Signal label="Mobilite / yeni sorumluluk isteği" value={Number(selected.mobility_willingness ?? 3)} onChange={(v)=>updateProfileSignal("mobility_willingness",v)}/></div>}</div>
       </div>
 
-      {selected&&<div className="grid gap-5 lg:grid-cols-2"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-2"><Brain className="h-4 w-4 text-indigo-600"/><h2 className="text-sm font-semibold">Potansiyel faktörleri</h2></div><div className="mt-4 space-y-3">{selected.calculatedPotential.factors.map((factor:any)=><div key={factor.key}><div className="flex justify-between text-xs"><span>{factor.label} <span className="text-slate-400">%{Math.round(factor.weight*100)}</span></span><strong>{factor.score.toFixed(1)}</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{width:`${factor.score/5*100}%`}}/></div></div>)}</div>{selected.calculatedPotential.missingInputs.length>0&&<p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">Eksik veri: {selected.calculatedPotential.missingInputs.join(", ")}</p>}</div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-2"><Target className="h-4 w-4 text-indigo-600"/><h2 className="text-sm font-semibold">Rol yetkinlik farkı</h2></div><div className="mt-4 space-y-2">{gapData.slice(0,6).map((item)=><div key={item.label} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 text-xs"><span>{item.label}</span><span className={item.gap>0.5?"font-semibold text-red-600":item.gap>0?"font-semibold text-amber-600":"font-semibold text-emerald-600"}>{item.actual.toFixed(1)} / {item.expected.toFixed(1)} · {item.gap>0?`-${item.gap.toFixed(1)}`:"uyumlu"}</span></div>)}</div></div></div>}
+      {selected&&<div className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-2"><Brain className="h-4 w-4 text-indigo-600"/><h2 className="text-sm font-semibold">Potansiyel faktörleri</h2></div><div className="mt-4 space-y-3">{selected.calculatedPotential.factors.map((factor:any)=><div key={factor.key}><div className="flex justify-between text-xs"><span>{factor.label} <span className="text-slate-400">%{Math.round(factor.weight*100)}</span></span><strong>{factor.score.toFixed(1)}</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{width:`${factor.score/5*100}%`}}/></div></div>)}</div>{selected.calculatedPotential.missingInputs.length>0&&<p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">Eksik veri: {selected.calculatedPotential.missingInputs.join(", ")}</p>}</div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-2"><Target className="h-4 w-4 text-indigo-600"/><h2 className="text-sm font-semibold">Rol yetkinlik farkı</h2></div><span className={`rounded-full px-2 py-1 text-[9px] font-bold ${targetResolution.source==="exact"?"bg-emerald-50 text-emerald-700":"bg-amber-50 text-amber-700"}`}>{targetResolution.source==="exact"?"ROL PROFİLİ":"TÜRETİLMİŞ HEDEF"}</span></div><p className="mt-1 text-[10px] leading-4 text-slate-400">{targetSourceText}</p><div className="mt-4 space-y-2">{gapData.slice(0,10).map((item)=><div key={item.label} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-800/60"><span>{item.label}</span>{item.hasActual?<span className={item.gap>0.5?"font-semibold text-red-600":item.gap>0?"font-semibold text-amber-600":"font-semibold text-emerald-600"}>{item.actual.toFixed(1)} / {item.expected.toFixed(1)} · {item.gap>0?`-${item.gap.toFixed(1)}`:"uyumlu"}</span>:<span className="font-semibold text-slate-400">Ölçüm yok · hedef {item.expected.toFixed(1)}</span>}</div>)}</div>{!gapData.length&&<div className="mt-4 rounded-xl bg-amber-50 p-4 text-xs text-amber-800">Bu rol için hedef yetkinlik profili üretilemedi. Pozisyon adı ve job level eşleşmesini kontrol edin.</div>}</div>
+      </div>}
 
       {selected&&<div className="rounded-2xl border border-violet-200 bg-violet-50/40 p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-violet-700"/><h2 className="text-sm font-semibold text-violet-950">Karar Desteği</h2></div><p className="mt-1 text-xs text-violet-800">Gerçek AI yalnızca sunucuda OPENAI_API_KEY tanımlıysa kullanılır; aksi halde ekran bunu açıkça kural bazlı olarak etiketler.</p></div><button onClick={requestAI} disabled={aiLoading} className="rounded-xl bg-violet-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">{aiLoading?"Analiz ediliyor...":"Öneri oluştur"}</button></div>{ai&&<div className="mt-4 rounded-xl bg-white p-4 text-sm text-slate-700 shadow-sm"><div className="mb-2 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-violet-600"/><span className="text-xs font-semibold uppercase tracking-wide text-violet-700">{ai.mode==="ai"?"AI Karar Desteği":"Kural Bazlı Öneri"}</span></div><div className="whitespace-pre-wrap leading-6">{ai.recommendation}</div>{ai.note&&<p className="mt-2 text-xs text-slate-400">{ai.note}</p>}</div>}</div>}
     </div>
@@ -119,5 +129,5 @@ export default function YetenekMatrisiPage() {
 }
 
 function Metric({label,value}:{label:string;value:string|number}){return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-medium text-slate-500">{label}</p><p className="mt-3 text-2xl font-semibold">{value}</p></div>}
-function Mini({label,value}:{label:string;value:string|number}){return <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>}
+function Mini({label,value}:{label:string;value:string|number}){return <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60"><p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>}
 function Signal({label,value,onChange}:{label:string;value:number;onChange:(value:number)=>void}){return <div className="mt-4"><div className="flex justify-between text-xs"><span>{label}</span><strong>{value.toFixed(1)} / 5</strong></div><input type="range" min="1" max="5" step="0.5" value={value} onChange={(e)=>onChange(Number(e.target.value))} className="mt-2 w-full"/></div>}
