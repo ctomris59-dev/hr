@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import SalaryScenarioStudio from "../../../components/salary/SalaryScenarioStudio";
+import SalaryDecisionTools from "../../../components/salary/SalaryDecisionTools";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
 import {
   calculateMarketAverages,
@@ -46,6 +47,22 @@ const SCENARIO_NAMES: Record<ScenarioKey, string> = {
   D: "Yönetici Talepleri",
 };
 
+function latestEvaluationPerEmployee(history: any[]) {
+  const map = new Map<string, any>();
+  const timestamp = (item: any) => {
+    const value = item?.date || item?.Tarih || item?.createdAt || item?.timestamp;
+    const parsed = value ? new Date(value).getTime() : 0;
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  history.forEach((item) => {
+    const name = item?.Personel || item?.target || item?.["Ad Soyad"];
+    if (!name) return;
+    const existing = map.get(name);
+    if (!existing || timestamp(item) >= timestamp(existing)) map.set(name, item);
+  });
+  return Array.from(map.values());
+}
+
 export default function MaasPage() {
   const { showToast } = useNotifications();
   const [orgData, setOrgData] = useState<any[]>([]);
@@ -63,9 +80,15 @@ export default function MaasPage() {
     setCycles(getStorageData<CompensationCycle[]>(STORAGE_KEYS.COMPENSATION_CYCLES, []));
   };
 
-  useEffect(() => reload(), []);
+  useEffect(() => {
+    reload();
+    const refresh = () => reload();
+    window.addEventListener("dataUpdated", refresh);
+    return () => window.removeEventListener("dataUpdated", refresh);
+  }, []);
 
-  const employees = useMemo(() => processEmployeeData(orgData, history), [orgData, history]);
+  const latestHistory = useMemo(() => latestEvaluationPerEmployee(history), [history]);
+  const employees = useMemo(() => processEmployeeData(orgData, latestHistory), [orgData, latestHistory]);
   const internalRefs = useMemo(() => calculateMarketAverages(employees), [employees]);
   const effectiveRefs = useMemo(
     () =>
@@ -109,8 +132,8 @@ export default function MaasPage() {
     [employees, effectiveRefs, inflation, scenario, managerBudgetRequests]
   );
 
-  const totalCurrent = employees.reduce((sum, employee) => sum + employee["Mevcut Maaş"], 0);
   const totalNew = results.reduce((sum, employee) => sum + employee["Yeni Maaş"], 0);
+  const totalCurrent = employees.reduce((sum, employee) => sum + employee["Mevcut Maaş"], 0);
   const increase = totalNew - totalCurrent;
   const averageRaise = results.length
     ? results.reduce((sum, row) => sum + row["Zam Oranı (%)"], 0) / results.length
@@ -254,6 +277,17 @@ export default function MaasPage() {
         budgetRequests={managerBudgetRequests}
       />
 
+      <SalaryDecisionTools
+        employees={employees}
+        marketRefs={effectiveRefs}
+        results={results}
+        scenario={scenario}
+        scenarioName={SCENARIO_NAMES[scenario]}
+        managerRequestCount={managerBudgetRequests.length}
+        activeStage={activeCycle?.stage || null}
+        activeStageLabel={activeCycle ? COMPENSATION_STAGE_LABELS[activeCycle.stage] : null}
+      />
+
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -291,11 +325,9 @@ export default function MaasPage() {
             <button onClick={saveSimulation} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold">
               <Save className="mr-1 inline h-3.5 w-3.5" />Senaryo {scenario}'yı kaydet
             </button>
-            {activeCycle.stage === "MANAGER_INPUT" && (
-              <Link href="/yonetici/maas-talep" className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800">
-                Yönetici taleplerini aç
-              </Link>
-            )}
+            <Link href="/yonetici/maas-talep" className={`rounded-xl border px-3 py-2 text-xs font-semibold ${activeCycle.stage === "MANAGER_INPUT" ? "border-teal-200 bg-teal-50 text-teal-800" : "border-slate-200 bg-white text-slate-600"}`}>
+              Yönetici taleplerini aç
+            </Link>
             {activeCycle.stage !== "EFFECTIVE" && activeCycle.stage !== "FINALIZED" && (
               <button onClick={advance} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Sonraki aşama</button>
             )}
@@ -326,35 +358,18 @@ export default function MaasPage() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px]">
-              <thead>
-                <tr>
-                  <th>Çalışan</th>
-                  <th>Departman</th>
-                  <th className="text-right">Mevcut</th>
-                  <th className="text-right">Yeni</th>
-                  <th className="text-right">Zam %</th>
-                  <th>Karar Mantığı</th>
-                  <th>Referans</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Çalışan</th><th>Departman</th><th className="text-right">Mevcut</th><th className="text-right">Yeni</th><th className="text-right">Zam %</th><th>Karar Mantığı</th><th>Referans</th></tr></thead>
               <tbody>
                 {results.map((row) => {
-                  const external = benchmarks.some(
-                    (benchmark) => benchmark.Departman === row.Departman && benchmark.Pozisyon === row.Pozisyon
-                  );
+                  const external = benchmarks.some((benchmark) => benchmark.Departman === row.Departman && benchmark.Pozisyon === row.Pozisyon);
                   return (
                     <tr key={row["Ad Soyad"]}>
-                      <td>{row["Ad Soyad"]}</td>
-                      <td>{row.Departman}</td>
+                      <td>{row["Ad Soyad"]}</td><td>{row.Departman}</td>
                       <td className="text-right font-mono">{row["Mevcut Maaş"].toLocaleString("tr-TR")}</td>
                       <td className="text-right font-mono font-semibold">{row["Yeni Maaş"].toLocaleString("tr-TR")}</td>
                       <td className="text-right font-mono font-semibold text-teal-700">%{row["Zam Oranı (%)"].toFixed(1)}</td>
                       <td className="max-w-[320px] text-[11px] text-slate-600">{row["Zam Açıklaması"]}</td>
-                      <td>
-                        <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${external ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}>
-                          {external ? "Dış Piyasa Benchmarkı" : "İç Ücret Referansı"}
-                        </span>
-                      </td>
+                      <td><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${external ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{external ? "Dış Piyasa Benchmarkı" : "İç Ücret Referansı"}</span></td>
                     </tr>
                   );
                 })}
@@ -364,55 +379,15 @@ export default function MaasPage() {
         </section>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-teal-700" />
-            <h2 className="text-sm font-semibold">Dış piyasa benchmarkı</h2>
-          </div>
+          <div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-teal-700" /><h2 className="text-sm font-semibold">Dış piyasa benchmarkı</h2></div>
           <p className="mt-1 text-xs text-slate-500">Demo aşamasında araştırılmış dış veri manuel girilir. Girilmezse simülasyonda açıkça “İç Ücret Referansı” kullanılır.</p>
           <form onSubmit={addBenchmark} className="mt-4 space-y-3">
-            <select
-              value={benchmarkForm.department}
-              onChange={(event) => setBenchmarkForm({ ...benchmarkForm, department: event.target.value, position: "" })}
-              className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"
-            >
-              <option value="">Departman seçin</option>
-              {Array.from(new Set(employees.map((employee) => employee.Departman))).map((department) => (
-                <option key={department}>{department}</option>
-              ))}
-            </select>
-            <select
-              value={benchmarkForm.position}
-              onChange={(event) => setBenchmarkForm({ ...benchmarkForm, position: event.target.value })}
-              className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"
-            >
-              <option value="">Pozisyon seçin</option>
-              {Array.from(
-                new Set(
-                  employees
-                    .filter((employee) => !benchmarkForm.department || employee.Departman === benchmarkForm.department)
-                    .map((employee) => employee.Pozisyon)
-                )
-              ).map((position) => (
-                <option key={position}>{position}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              placeholder="Piyasa aylık brüt referansı"
-              value={benchmarkForm.amount}
-              onChange={(event) => setBenchmarkForm({ ...benchmarkForm, amount: event.target.value })}
-              className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"
-            />
+            <select value={benchmarkForm.department} onChange={(event) => setBenchmarkForm({ ...benchmarkForm, department: event.target.value, position: "" })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Departman seçin</option>{Array.from(new Set(employees.map((employee) => employee.Departman))).map((department) => <option key={department}>{department}</option>)}</select>
+            <select value={benchmarkForm.position} onChange={(event) => setBenchmarkForm({ ...benchmarkForm, position: event.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Pozisyon seçin</option>{Array.from(new Set(employees.filter((employee) => !benchmarkForm.department || employee.Departman === benchmarkForm.department).map((employee) => employee.Pozisyon))).map((position) => <option key={position}>{position}</option>)}</select>
+            <input type="number" placeholder="Piyasa aylık brüt referansı" value={benchmarkForm.amount} onChange={(event) => setBenchmarkForm({ ...benchmarkForm, amount: event.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" />
             <button className="w-full rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white">Benchmarkı kaydet</button>
           </form>
-          <div className="mt-4 space-y-2">
-            {benchmarks.slice(0, 6).map((benchmark) => (
-              <div key={benchmark.id} className="rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
-                <p className="font-semibold">{benchmark.Pozisyon}</p>
-                <p className="mt-1 text-slate-500">{benchmark.Departman} · {benchmark["Piyasa Ortalaması"].toLocaleString("tr-TR")} ₺</p>
-              </div>
-            ))}
-          </div>
+          <div className="mt-4 space-y-2">{benchmarks.slice(0, 6).map((benchmark) => <div key={benchmark.id} className="rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-800/60"><p className="font-semibold">{benchmark.Pozisyon}</p><p className="mt-1 text-slate-500">{benchmark.Departman} · {benchmark["Piyasa Ortalaması"].toLocaleString("tr-TR")} ₺</p></div>)}</div>
         </div>
       </div>
     </div>
@@ -420,10 +395,5 @@ export default function MaasPage() {
 }
 
 function ResultChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800/70">
-      <p className="text-[8px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-0.5 text-[11px] font-bold text-slate-800 dark:text-slate-100">{value}</p>
-    </div>
-  );
+  return <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800/70"><p className="text-[8px] font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-0.5 text-[11px] font-bold text-slate-800 dark:text-slate-100">{value}</p></div>;
 }
