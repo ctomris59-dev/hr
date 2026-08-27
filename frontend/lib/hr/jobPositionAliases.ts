@@ -1,12 +1,14 @@
 /** Conservative position-title canonicalization for role benchmark lookup. */
 export function normalizePositionTitle(value:string):string {
+  // Lowercase in Turkish first so İ→i and I→ı, then fold diacritics and ı→i.
   return String(value||"")
+    .trim()
     .toLocaleLowerCase("tr-TR")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g,"")
     .replace(/ı/g,"i")
     .replace(/&/g," and ")
-    .replace(/[^a-z0-9çğıöşü\s]/g," ")
+    .replace(/[^a-z0-9\s]/g," ")
     .replace(/\s+/g," ")
     .trim();
 }
