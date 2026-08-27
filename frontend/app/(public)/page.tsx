@@ -90,6 +90,15 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-[#f5f6f8] p-3 text-slate-950 sm:p-4">
       <div className="relative mx-auto min-h-[calc(100vh-24px)] max-w-[1580px] overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.05)] sm:min-h-[calc(100vh-32px)]">
+        <div className="absolute left-6 top-5 z-20 sm:left-10 sm:top-7">
+          <div className="select-none text-[48px] font-bold lowercase leading-[0.9] tracking-[-0.065em] text-[#2637c5] sm:text-[58px] lg:text-[68px]">
+            future hr
+          </div>
+          <p className="mt-2 text-[12px] font-semibold tracking-[-0.01em] text-slate-600 sm:text-[14px]">
+            &apos;potansiyeli performansa dönüştürün&apos;
+          </p>
+        </div>
+
         <div className="pointer-events-none absolute inset-0 opacity-80">
           <div className="absolute left-1/2 top-[46%] h-[1240px] w-[1240px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-slate-200/70" />
           <div className="absolute left-1/2 top-[46%] h-[1030px] w-[1030px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-slate-200/70" />
@@ -146,7 +155,7 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <div className="relative mt-14 w-full max-w-[430px] space-y-2.5 lg:ml-[155px] lg:mt-16">
+            <div className="relative mt-14 w-full max-w-[430px] space-y-2.5 lg:ml-[90px] lg:mt-16">
               <div className="flex min-h-[70px] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
                 <div className="h-10 w-1 rounded-full bg-blue-500" />
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700">AK</div>
