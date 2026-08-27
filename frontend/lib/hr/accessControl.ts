@@ -1,0 +1,174 @@
+import type { UserRole } from "../../app/data/roles";
+import { hasAccess, mapToUserRole } from "../../app/data/roles";
+
+export type DataScope = "NONE" | "SELF" | "DIRECT_REPORTS" | "DEPARTMENT" | "COMPANY" | "ASSIGNED";
+export type SensitiveDomain = "salary" | "talent" | "succession";
+export type ModuleKey =
+  | "dashboard" | "leave" | "organization" | "performance" | "talent" | "training"
+  | "development" | "career" | "succession" | "salary" | "recruitment" | "assessment"
+  | "team" | "admin" | "managerSalary" | "accessArchitecture";
+
+export interface CompanyAccessPolicy {
+  version: 2;
+  moduleOverrides: Partial<Record<UserRole, Partial<Record<ModuleKey, boolean>>>>;
+  performance: {
+    secondManagerCanEvaluate: boolean;
+    hrCanOverride: boolean;
+    hrOverrideRequiresReason: boolean;
+  };
+}
+
+export interface AccessUser {
+  role?: string;
+  name?: string;
+  dept?: string;
+  department?: string;
+  [key: string]: any;
+}
+
+export interface AccessEmployee {
+  "Ad Soyad"?: string;
+  Departman?: string;
+  "Yönetici 1"?: string;
+  "Yönetici 2"?: string;
+  [key: string]: any;
+}
+
+export const ACCESS_POLICY_STORAGE_KEY = "hr_access_policy_v2";
+
+export const DEFAULT_COMPANY_ACCESS_POLICY: CompanyAccessPolicy = {
+  version: 2,
+  moduleOverrides: {},
+  performance: {
+    secondManagerCanEvaluate: true,
+    hrCanOverride: false,
+    hrOverrideRequiresReason: true,
+  },
+};
+
+export const MODULE_DEFINITIONS: Array<{ key: ModuleKey; label: string; route: string; sensitive?: SensitiveDomain }> = [
+  { key: "dashboard", label: "Yönetici Özeti", route: "/dashboard" },
+  { key: "leave", label: "İzin Yönetimi", route: "/izinler" },
+  { key: "organization", label: "Çalışanlar & Organizasyon", route: "/organizasyon" },
+  { key: "performance", label: "Performans & Yetkinlik", route: "/degerlendirme" },
+  { key: "talent", label: "Yetenek Matrisi", route: "/yetenek-matrisi", sensitive: "talent" },
+  { key: "training", label: "Eğitim", route: "/egitim" },
+  { key: "development", label: "Gelişim Planı", route: "/gelisim" },
+  { key: "career", label: "Kariyer Yolu", route: "/kariyer" },
+  { key: "succession", label: "Yedekleme / Halefiyet", route: "/yedekleme", sensitive: "succession" },
+  { key: "salary", label: "Maaş Simülasyonu", route: "/maas", sensitive: "salary" },
+  { key: "managerSalary", label: "Yönetici Maaş Talepleri", route: "/yonetici/maas-talep" },
+  { key: "recruitment", label: "İşe Alım", route: "/ise-alim" },
+  { key: "assessment", label: "Yetkinlik Testi", route: "/aday-testi" },
+  { key: "team", label: "Ekip", route: "/ekip-yonetimi" },
+  { key: "admin", label: "Kullanıcı & Yetki", route: "/admin" },
+  { key: "accessArchitecture", label: "Yetki Mimarisi", route: "/ayarlar/yetki-mimarisi" },
+];
+
+export const SENSITIVE_SCOPE_BY_ROLE: Record<SensitiveDomain, Record<UserRole, DataScope>> = {
+  salary: { ceo: "COMPANY", hr_admin: "COMPANY", director: "NONE", manager: "NONE", employee: "NONE" },
+  talent: { ceo: "COMPANY", hr_admin: "COMPANY", director: "NONE", manager: "NONE", employee: "NONE" },
+  succession: { ceo: "COMPANY", hr_admin: "COMPANY", director: "NONE", manager: "NONE", employee: "NONE" },
+};
+
+export function loadCompanyAccessPolicy(): CompanyAccessPolicy {
+  if (typeof window === "undefined") return DEFAULT_COMPANY_ACCESS_POLICY;
+  try {
+    const raw = window.localStorage.getItem(ACCESS_POLICY_STORAGE_KEY);
+    if (!raw) return DEFAULT_COMPANY_ACCESS_POLICY;
+    const parsed = JSON.parse(raw) as Partial<CompanyAccessPolicy>;
+    return {
+      ...DEFAULT_COMPANY_ACCESS_POLICY,
+      ...parsed,
+      moduleOverrides: parsed.moduleOverrides || {},
+      performance: { ...DEFAULT_COMPANY_ACCESS_POLICY.performance, ...(parsed.performance || {}) },
+      version: 2,
+    };
+  } catch {
+    return DEFAULT_COMPANY_ACCESS_POLICY;
+  }
+}
+
+export function saveCompanyAccessPolicy(policy: CompanyAccessPolicy): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(ACCESS_POLICY_STORAGE_KEY, JSON.stringify({ ...policy, version: 2 }));
+  window.dispatchEvent(new CustomEvent("accessPolicyUpdated"));
+}
+
+export function moduleForPath(pathname: string): ModuleKey | null {
+  const normalized = decodeURIComponent(pathname || "/");
+  const match = [...MODULE_DEFINITIONS]
+    .sort((a, b) => b.route.length - a.route.length)
+    .find((item) => normalized === item.route || normalized.startsWith(item.route + "/"));
+  return match?.key || null;
+}
+
+export function canAccessRoute(role: UserRole | null | undefined, pathname: string): boolean {
+  if (!role) return false;
+  if (!hasAccess(role, pathname)) return false;
+  const moduleKey = moduleForPath(pathname);
+  if (!moduleKey) return hasAccess(role, pathname);
+  const policy = loadCompanyAccessPolicy();
+  const override = policy.moduleOverrides?.[role]?.[moduleKey];
+  // Firma politikası güvenliği gevşetmez; varsayılan erişimi yalnızca daraltabilir.
+  return override === false ? false : true;
+}
+
+export function canConfigureAccess(role: UserRole | null | undefined): boolean {
+  return role === "ceo";
+}
+
+export function canViewAccessArchitecture(role: UserRole | null | undefined): boolean {
+  return role === "ceo" || role === "hr_admin";
+}
+
+export function getSensitiveScope(role: UserRole | null | undefined, domain: SensitiveDomain): DataScope {
+  if (!role) return "NONE";
+  return SENSITIVE_SCOPE_BY_ROLE[domain][role] || "NONE";
+}
+
+export function getManagerRelationship(user: AccessUser | null, employee: AccessEmployee | null): "Yönetici 1" | "Yönetici 2" | null {
+  const name = String(user?.name || "").trim();
+  if (!name || !employee) return null;
+  if (String(employee["Yönetici 1"] || "").trim() === name) return "Yönetici 1";
+  if (String(employee["Yönetici 2"] || "").trim() === name) return "Yönetici 2";
+  return null;
+}
+
+export function getPerformanceViewTargets(user: AccessUser | null, employees: AccessEmployee[]): AccessEmployee[] {
+  if (!user) return [];
+  const role = mapToUserRole(String(user.role || ""));
+  if (role === "hr_admin") return employees;
+  if (role === "ceo" || role === "director" || role === "manager") {
+    return employees.filter((employee) => getManagerRelationship(user, employee) !== null);
+  }
+  return employees.filter((employee) => String(employee["Ad Soyad"] || "") === String(user.name || ""));
+}
+
+export function canEvaluateEmployee(user: AccessUser | null, employee: AccessEmployee | null): { allowed: boolean; relation: string | null; override: boolean; reason?: string } {
+  if (!user || !employee) return { allowed: false, relation: null, override: false, reason: "Kullanıcı veya çalışan bulunamadı." };
+  const role = mapToUserRole(String(user.role || ""));
+  const policy = loadCompanyAccessPolicy();
+
+  if (role === "hr_admin") {
+    return policy.performance.hrCanOverride
+      ? { allowed: true, relation: "İK Override", override: true }
+      : { allowed: false, relation: null, override: false, reason: "İK sonuçları izler; varsayılan politikada puan veremez." };
+  }
+  if (role === "employee") return { allowed: false, relation: null, override: false, reason: "Personel başka çalışanı değerlendiremez." };
+
+  const relation = getManagerRelationship(user, employee);
+  if (!relation) return { allowed: false, relation: null, override: false, reason: "Çalışan bu kullanıcının doğrudan raporu değil." };
+  if (relation === "Yönetici 2" && !policy.performance.secondManagerCanEvaluate) {
+    return { allowed: false, relation, override: false, reason: "Firma politikasında Yönetici 2 değerlendirmesi kapalı." };
+  }
+  return { allowed: true, relation, override: false };
+}
+
+export function roleLabel(role: UserRole): string {
+  return ({ ceo: "CEO / Genel Müdür", hr_admin: "İK Yöneticisi", director: "Direktör", manager: "Müdür / Yönetici", employee: "Personel" } as Record<UserRole, string>)[role];
+}
+
+export function scopeLabel(scope: DataScope): string {
+  return ({ NONE: "Erişim yok", SELF: "Kendi", DIRECT_REPORTS: "Doğrudan ekip", DEPARTMENT: "Departman", COMPANY: "Tüm şirket", ASSIGNED: "Atandığı kayıtlar" } as Record<DataScope, string>)[scope];
+}
