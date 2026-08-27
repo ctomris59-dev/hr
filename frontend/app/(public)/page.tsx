@@ -27,15 +27,15 @@ import { USERS } from "../data/users";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../utils/storage";
 
 const modules = [
-  { label: "Performans", icon: TrendingUp, side: "left", pos: "top-[18%] left-[6%]" },
-  { label: "Yetenek", icon: Users, side: "left", pos: "top-[36%] left-[4%]" },
-  { label: "Eğitim", icon: GraduationCap, side: "left", pos: "top-[55%] left-[6%]" },
-  { label: "İşe Alım", icon: BriefcaseBusiness, side: "left", pos: "top-[72%] left-[13%]" },
-  { label: "Halefiyet", icon: Network, side: "right", pos: "top-[18%] right-[6%]" },
-  { label: "İzin", icon: CalendarDays, side: "right", pos: "top-[38%] right-[5%]" },
-  { label: "Maaş", icon: WalletCards, side: "right", pos: "top-[57%] right-[7%]" },
-  { label: "Analitik", icon: PieChart, side: "right", pos: "top-[73%] right-[13%]" },
-  { label: "Kariyer", icon: Route, side: "right", pos: "bottom-[8%] right-[31%]" },
+  { label: "Performans", icon: TrendingUp, pos: "top-[18%] left-[6%]" },
+  { label: "Yetenek", icon: Users, pos: "top-[36%] left-[4%]" },
+  { label: "Eğitim", icon: GraduationCap, pos: "top-[55%] left-[6%]" },
+  { label: "İşe Alım", icon: BriefcaseBusiness, pos: "top-[72%] left-[13%]" },
+  { label: "Halefiyet", icon: Network, pos: "top-[18%] right-[6%]" },
+  { label: "İzin", icon: CalendarDays, pos: "top-[38%] right-[5%]" },
+  { label: "Maaş", icon: WalletCards, pos: "top-[57%] right-[7%]" },
+  { label: "Analitik", icon: PieChart, pos: "top-[73%] right-[13%]" },
+  { label: "Kariyer", icon: Route, pos: "bottom-[8%] right-[31%]" },
 ];
 
 export default function LoginPage() {
@@ -124,19 +124,12 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 mx-auto grid min-h-[calc(100vh-32px)] max-w-[980px] items-center gap-10 px-6 py-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-14 lg:px-0 lg:py-16">
-          <section className="lg:pl-2">
-            <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.2em] text-blue-600">FutureHR</p>
-            <h1 className="max-w-[570px] text-[42px] font-semibold leading-[1.04] tracking-[-0.05em] text-[#101d3b] sm:text-[54px] lg:text-[64px]">
-              İK süreçlerini
-              <span className="block">
-                <span className="text-blue-600">tek merkezden</span> yönetin
-              </span>
-            </h1>
-            <p className="mt-6 max-w-[540px] text-[15px] leading-7 text-slate-500 sm:text-[16px]">
-              Performans, yetenek, eğitim, maaş senaryoları ve kariyer yönetimini tek platformda birleştirerek daha güçlü ekipler ve daha iyi kararlar oluşturun.
+          <section className="lg:-translate-y-6 lg:pl-2">
+            <p className="max-w-[540px] text-[18px] font-medium leading-8 text-slate-600 sm:text-[20px] sm:leading-9">
+              Yetkinlikleri görünür kılın, kurum içindeki yetenekleri keşfedin ve doğru insanı doğru rolle eşleştirerek potansiyeli performansa dönüştürün.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={handleDemoLogin}
@@ -155,7 +148,7 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <div className="relative mt-14 w-full max-w-[430px] space-y-2.5 lg:ml-[90px] lg:mt-16">
+            <div className="relative mt-12 w-full max-w-[430px] space-y-2.5 lg:ml-[90px] lg:mt-14">
               <div className="flex min-h-[70px] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
                 <div className="h-10 w-1 rounded-full bg-blue-500" />
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700">AK</div>
@@ -188,7 +181,7 @@ export default function LoginPage() {
             </div>
           </section>
 
-          <section className="self-start lg:mt-[84px]">
+          <section className="self-center lg:-translate-y-2">
             <div className="rounded-[24px] border border-slate-200 bg-white/95 p-6 shadow-[0_22px_54px_rgba(15,23,42,0.08)] sm:p-8">
               <div className="mb-7">
                 <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue-600">Personel Girişi</p>
