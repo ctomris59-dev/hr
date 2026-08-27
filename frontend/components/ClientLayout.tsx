@@ -101,8 +101,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       <aside data-testid="app-sidebar" data-tour="sidebar" className={`${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-[248px] flex-shrink-0 border-r border-slate-800 bg-[#101722] text-slate-300 transition-transform duration-200 ease-out`}>
         <div className="flex h-screen flex-col overflow-hidden">
-          <div className="flex h-16 flex-shrink-0 items-center border-b border-white/[0.07] px-5">
-            <Image src="/logo.png" alt="FutureHR" width={500} height={500} className="h-10 w-auto origin-left object-contain brightness-0 invert" priority />
+          <div className="flex h-20 flex-shrink-0 items-center border-b border-white/[0.07] px-5">
+            <Image src="/futurehr-brand-dark.svg" alt="FutureHR" width={300} height={84} className="h-11 w-auto object-contain" priority />
           </div>
           <nav className="flex-1 overflow-y-auto px-3 py-4">
             {filteredMenuItems.map((item, index) => {
