@@ -11,15 +11,16 @@ export interface CareerRole {
   targetProfile: Record<string, number>;
 }
 
-const LEVEL_LABELS: Record<JobLevel, string> = {
-  L1: "Başlangıç / Destek",
-  L2: "Uzman",
-  L3: "Kıdemli Uzman / Sorumlu",
-  L4: "Müdür / Takım Lideri",
-  L5: "Direktör / Fonksiyon Lideri",
-  L6: "Üst Yönetim",
-};
+export interface TargetProfileResolution {
+  profile: Record<string, number>;
+  source: "exact" | "family-level" | "level" | "generic";
+  referenceCount: number;
+}
 
+const LEVEL_LABELS: Record<JobLevel, string> = {
+  L1: "Başlangıç / Destek", L2: "Uzman", L3: "Kıdemli Uzman / Sorumlu",
+  L4: "Müdür / Takım Lideri", L5: "Direktör / Fonksiyon Lideri", L6: "Üst Yönetim",
+};
 export const JOB_LEVELS = LEVEL_LABELS;
 
 export function inferJobLevel(position: string): JobLevel {
@@ -49,13 +50,57 @@ export function inferJobFamily(position: string): string {
   return rules.find(([re]) => re.test(p))?.[1] || "Genel Yönetim & Destek";
 }
 
+function averageProfiles(entries: Array<[string, Record<string, number>]>): Record<string, number> {
+  if (!entries.length) return {};
+  const buckets: Record<string, number[]> = {};
+  entries.forEach(([, profile]) => {
+    Object.entries(profile || {}).forEach(([label, value]) => {
+      const score = Number(value);
+      if (!Number.isFinite(score)) return;
+      if (!buckets[label]) buckets[label] = [];
+      buckets[label].push(score);
+    });
+  });
+  return Object.fromEntries(
+    Object.entries(buckets).map(([label, values]) => [
+      label,
+      Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 100) / 100,
+    ])
+  );
+}
+
+/**
+ * Demo veya müşteri verisindeki pozisyon adı JOB_PROFILES ile birebir eşleşmeyebilir.
+ * Bu durumda rol hedefini boş bırakmak yerine önce aynı job family + seviyedeki,
+ * ardından aynı seviyedeki tanımlı rollerin ortalamasından türetiriz.
+ * Türetilmiş hedef kullanıcıya açıkça belirtilmelidir; kurum isterse daha sonra
+ * pozisyona özel hedef profilini tanımlar ve exact kaynak otomatik devreye girer.
+ */
+export function resolveTargetProfile(position: string): TargetProfileResolution {
+  const exact = JOB_PROFILES[position];
+  if (exact && Object.keys(exact).length) return { profile: exact, source: "exact", referenceCount: 1 };
+
+  const level = inferJobLevel(position);
+  const family = inferJobFamily(position);
+  const all = Object.entries(JOB_PROFILES) as Array<[string, Record<string, number>]>;
+  const sameFamilyLevel = all.filter(([title]) => inferJobLevel(title) === level && inferJobFamily(title) === family);
+  if (sameFamilyLevel.length) return { profile: averageProfiles(sameFamilyLevel), source: "family-level", referenceCount: sameFamilyLevel.length };
+
+  const sameLevel = all.filter(([title]) => inferJobLevel(title) === level);
+  if (sameLevel.length) return { profile: averageProfiles(sameLevel), source: "level", referenceCount: sameLevel.length };
+
+  const generic = averageProfiles(all);
+  return { profile: generic, source: "generic", referenceCount: all.length };
+}
+
 export function getCareerRole(position: string): CareerRole {
+  const resolution = resolveTargetProfile(position);
   return {
     title: position,
     family: inferJobFamily(position),
     level: inferJobLevel(position),
     levelRank: Number(inferJobLevel(position).slice(1)),
-    targetProfile: JOB_PROFILES[position] || {},
+    targetProfile: resolution.profile,
   };
 }
 
@@ -71,20 +116,14 @@ export function buildCareerArchitecture(positions: string[]): Record<string, Car
 }
 
 const COMPETENCY_LABEL_TO_CODE: Record<string, string> = {
-  "Dijital Okuryazarlık": "DIG",
-  "Analitik Düşünme": "ANA",
-  "Sonuç Odaklılık": "RES",
-  "Detaylara Özen": "DET",
-  "Sürekli Öğrenme": "LRN",
-  "Etik ve Uyum": "ETH",
-  "Öz-Disiplin": "DIS",
-  "Stratejik Bakış": "STR",
-  "Takım Çalışması": "TEA",
-  "İletişim Becerileri": "COM",
+  "Dijital Okuryazarlık": "DIG", "Analitik Düşünme": "ANA", "Sonuç Odaklılık": "RES",
+  "Detaylara Özen": "DET", "Sürekli Öğrenme": "LRN", "Etik ve Uyum": "ETH",
+  "Öz-Disiplin": "DIS", "Dayanıklılık & Stres Yönetimi": "STR", "Stratejik Bakış": "STR",
+  "Takım Çalışması": "TEA", "İletişim Becerileri": "COM",
 };
 
 function competencyFit(person: any, targetPosition: string): number {
-  const target = JOB_PROFILES[targetPosition] || {};
+  const target = resolveTargetProfile(targetPosition).profile;
   const current = extractCompetencyMap(person);
   const keys = Object.keys(target);
   if (!keys.length) return 50;
@@ -122,14 +161,10 @@ export interface CareerReadiness {
   notes: string[];
 }
 
-/**
- * Bu değer bir "terfi kararı" değildir; hedef role hazır bulunuşluk endeksidir.
- * Yetkinlik uyumu %50, performans %20, potansiyel %15, deneyim %10,
- * kariyer isteği %5 ağırlık alır. Hedef rol birden fazla kademe uzaktaysa endeks düşürülür.
- */
 export function calculateCareerReadiness(person: any, targetPosition: string): CareerReadiness {
   const currentRole = getCareerRole(person?.Pozisyon || person?.position || "");
   const targetRole = getCareerRole(targetPosition);
+  const targetResolution = resolveTargetProfile(targetPosition);
   const levelDistance = Math.max(0, targetRole.levelRank - currentRole.levelRank);
   const fit = competencyFit(person, targetPosition);
   const performanceScore = Math.min(100, Math.max(0, (Number(person?.Performans ?? person?.performance ?? 0) / 5) * 100));
@@ -145,6 +180,7 @@ export function calculateCareerReadiness(person: any, targetPosition: string): C
   index = Math.round(Math.min(100, Math.max(0, index)));
   const band = index >= 80 ? "Hazır" : index >= 65 ? "Yakın" : index >= 45 ? "Gelişim Gerekli" : "Uzun Vadeli";
   const notes: string[] = [];
+  if (targetResolution.source !== "exact") notes.push(`Pozisyona özel profil bulunmadığı için hedef, ${targetResolution.referenceCount} benzer rol profilinden türetildi.`);
   if (levelDistance > 1) notes.push(`Hedef rol mevcut seviyenin ${levelDistance} kademe üzerinde.`);
   if (fit < 70) notes.push("Hedef rol yetkinliklerinde anlamlı gelişim alanı var.");
   if (potentialResult.missingInputs.length) notes.push(`Potansiyel güveni için eksik: ${potentialResult.missingInputs.join(", ")}.`);
