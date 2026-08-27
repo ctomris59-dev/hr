@@ -1,9 +1,23 @@
 # FutureHR Role Competency Benchmark — FHR-COMP-JOB-2.0
 
-## Amaç
-FutureHR rol yetkinlik profilleri; yetkinlik testi sonuçlarını pozisyon gerekleriyle karşılaştırmak, rol uyumu, gelişim alanı, kariyer hazırlığı ve yetenek analizi için kanıta dayalı bir benchmark sağlar.
+## Durum
+**178 / 178 katalog rolü FHR-COMP-JOB-2.0 mimarisine geçirilmiştir.**
 
-Bu benchmark bir klinik/psikometrik norm veya tek başına işe alma/terfi kararı değildir. Yüksek riskli kararlarda kurumun güncel iş analizi ve konu uzmanı (SME) doğrulaması gerekir.
+Katalog artık yalnızca elle yazılmış hedef puanlardan oluşmaz. Her rol için:
+- 10 kanonik yetkinlikte 0,1 hassasiyetli hedef puan,
+- toplamı %100 olan rol yetkinlik ağırlıkları,
+- rol ailesi,
+- organizasyon seviyesi (L1–L7),
+- kanıt güven seviyesi (A/B/C),
+- kullanılan occupational evidence,
+- kalibrasyon gerekçesi,
+- SME doğrulama gereksinimi
+üretilir ve saklanır.
+
+## Amaç
+FutureHR rol yetkinlik profilleri; yetkinlik testi sonuçlarını pozisyon gerekleriyle karşılaştırmak, rol uyumu, gelişim alanı, kariyer hazırlığı, yetenek analizi ve halefiyet karar desteği için kanıta dayalı bir benchmark sağlar.
+
+Bu benchmark bir klinik/psikometrik norm veya tek başına işe alma/terfi kararı değildir. Yüksek etkili insan kararlarında kurumun güncel iş analizi ve konu uzmanı (SME) doğrulaması gerekir.
 
 ## Kanonik 10 yetkinlik
 - DIG — Dijital Okuryazarlık
@@ -17,71 +31,79 @@ Bu benchmark bir klinik/psikometrik norm veya tek başına işe alma/terfi karar
 - TEA — Takım Çalışması
 - COM — İletişim Becerileri
 
-`STR` artık yalnızca Dayanıklılık & Stres Yönetimi anlamına gelir. Eski `Stratejik Bakış` etiketi geriye dönük teknik uyumluluk dışında kullanılmaz. Stratejik düşünme gelecekte ayrı bir liderlik/yönetici assessment boyutu olarak ele alınmalıdır.
+`STR` yalnızca **Dayanıklılık & Stres Yönetimi** anlamına gelir. Eski `Stratejik Bakış` etiketi yalnızca geriye dönük teknik veri uyumluluğu için gizli alias olarak korunabilir; yeni hesaplamalarda ayrı bir psikolojik yapı olarak kullanılmaz. Stratejik düşünme, mevcut FHR-COMP-1.2 testinin ölçmediği ayrı bir liderlik/yönetici assessment boyutu olarak ele alınmalıdır.
 
-## Kaynak mimarisi
-### 1. O*NET
-Mesleklerin görev, work-style ve iş karakteristiği verileri rol ailesi ve ayırt edici davranış gereklilikleri için birincil uluslararası referanstır.
+## Kanıt mimarisi
+### 1. O*NET 30.3
+O*NET meslek görevleri, occupational information ve Work Styles verileri rol ailelerinin davranışsal gerekliliklerini kalibre etmek için birincil uluslararası referanstır. Work Styles veri yapısındaki Impact ve Distinctiveness yaklaşımı, bir özelliğin yalnızca olumlu olmasını değil, ilgili mesleğin performansında ne kadar ayırt edici olduğunu değerlendirmeye yardımcı olur.
+
+Başlıca role-family referansları:
+- Chief Executives
+- Human Resources Managers / Specialists
+- Financial Managers / Accountants and Auditors / Financial Analysts
+- Purchasing Managers
+- General and Operations Managers / Industrial Engineers
+- Sales Managers / Marketing Managers
+- Computer and Information Systems Managers / Software Developers / Data Scientists / Information Security Analysts
+- Lawyers / Compliance Officers
+- Public Relations Managers / Specialists
+- Administrative Services Managers / Executive Administrative Assistants
+
+Kaynaklar:
 - https://www.onetonline.org/
-- https://www.onetcenter.org/
-
-Örnek doğrudan referanslar:
-- 11-1011.00 Chief Executives
-- 33-9032.00 Security Guards
-- 13-1111.00 Management Analysts (strateji/analiz proxy)
-- 13-1041.00 Compliance Officers (mevzuat/uyum proxy)
-- 13-2011.00 Accountants and Auditors
-- 27-3031.00 Public Relations Specialists
+- https://www.onetcenter.org/dictionary/30.3/text/work_styles.html
 
 ### 2. ESCO v1.2.1
-Avrupa meslek sınıflandırması, ISCO bağlantıları ve Skills-Occupations Matrix; O*NET eşleşmesinin doğrudan olmadığı Türkiye/Avrupa rollerinde ikinci doğrulama katmanıdır.
-- https://esco.ec.europa.eu/
+ESCO Skills–Occupations Matrix ve ISCO bağlantıları, O*NET ile bire bir eşleşmeyen Avrupa/Türkiye rolleri için ikinci referans ve crosswalk katmanıdır.
+
+Kaynak:
 - https://esco.ec.europa.eu/en/about-esco/publications/publication/skills-occupations-matrix-tables
 
 ### 3. U.S. OPM Job Analysis
-Rol görevleri ile yetkinlikler arasında açık bağlantı kurulması, önem/kritiklik değerlendirmesi ve SME doğrulaması için metodolojik çerçevedir.
-- https://www.opm.gov/policy-data-oversight/assessment-and-selection/job-analysis/
+OPM yaklaşımı rol görevleri ile yetkinlikler arasında açık bağlantı kurulmasını; önem/kritiklik değerlendirmesini; güncel SME bilgisinin kullanılmasını ve yöntemin dokümante edilmesini önerir. FutureHR'ın şirket içi kalibrasyon katmanı bu ilkelere dayanır.
 
-OPM yaklaşımındaki Importance, Need at Entry ve Distinguishing Value mantığı FutureHR'ın rol ağırlığı ve şirket kalibrasyon sürecine metodolojik temel sağlar.
+Kaynaklar:
+- https://www.opm.gov/policy-data-oversight/assessment-and-selection/job-analysis/
+- https://www.opm.gov/frequently-asked-questions/assessment-policy-faq/job-analysis/what-is-a-job-analysis/
+
+## Kalibrasyon modeli
+Kurumsal roller için hedef puanlar aşağıdaki katmanların birleşimiyle oluşturulur:
+
+1. **Occupational family benchmark** — ilgili iş ailesinin O*NET/ESCO temelli başlangıç profili
+2. **Organizasyon seviyesi** — L1–L7 sorumluluk/seviye düzeltmeleri
+3. **Role-context signals** — alt uzmanlığa ait görev karakteristiği düzeltmeleri
+4. **Sınırlı legacy expert-prior** — eski katalog yalnızca STR dışındaki alanlarda küçük bir nüans sinyali olarak kullanılabilir; ana belirleyici değildir
+5. **Şirket SME kalibrasyonu** — müşteri organizasyonundaki gerçek iş içeriği ile son doğrulama
+
+Legacy `Stratejik Bakış` puanları **Dayanıklılık & Stres Yönetimi hedefinin türetilmesinde kullanılmaz.** STR hedefi yeni occupational family + level + role-context modelinden bağımsız olarak üretilir.
 
 ## Hedef puan ölçeği
-FutureHR 1.0–5.0 ölçeğini 0.1 hassasiyetle korur.
+FutureHR 1,0–5,0 ölçeğini **0,1 hassasiyetle** korur.
 
-- 3.0–3.4: role katkı sağlar, sınırlı ayırt edicilik
-- 3.5–3.9: düzenli iş gerekliliği
-- 4.0–4.3: rol başarısı için önemli
-- 4.4–4.6: çok önemli / güçlü beklenti
-- 4.7–4.8: kritik yetkinlik
-- 4.9: rolün ayırt edici çekirdek gereklerinden biri
-- 5.0: istisnai; hata/uyumsuzluk/güvenlik maliyetinin çok yüksek olduğu temel gereklilik
+- 3,0–3,4: role katkı sağlar, sınırlı ayırt edicilik
+- 3,5–3,9: düzenli iş gerekliliği
+- 4,0–4,3: rol başarısı için önemli
+- 4,4–4,6: çok önemli / güçlü beklenti
+- 4,7–4,8: kritik yetkinlik
+- 4,9: rolün ayırt edici çekirdek gereklerinden biri
+- 5,0: istisnai; hata/uyumsuzluk/güvenlik maliyetinin çok yüksek olduğu temel gereklilik
 
-Ondalık değerler ampirik olarak '4.7 kesin bilimsel gerçek' anlamına gelmez. Bunlar occupational evidence + rol ailesi + kıdem/seviye + görev bağlamının FutureHR kalibrasyonuyla üretilmiş benchmark değerleridir.
+Ondalık değerler “4,7 bilimsel olarak kesin gerçek” anlamına gelmez. Değerler; occupational evidence + seviye + rol bağlamı + FutureHR kalibrasyon mantığı ile üretilen referans benchmark'lardır. Bu nedenle 0,1 hassasiyet korunurken sahte kesinlik iddiasından kaçınılır.
 
-## Ağırlıklandırma
-Her rol yalnızca 10 hedef puan tutmaz; rolün ayırt edici yetkinlikleri için toplamı %100 olan ağırlık seti de bulunur.
+## Seviyeler
+- L1 — Başlangıç / Destek
+- L2 — Uzman / Profesyonel
+- L3 — Kıdemli Uzman / Sorumlu / Süpervizör
+- L4 — Müdür / Takım Lideri
+- L5 — Direktör / Fonksiyon Lideri
+- L6 — Başkan Yardımcısı / Üst Fonksiyon Yönetimi
+- L7 — C-Level / Tepe Yönetim
 
-Bu nedenle örneğin bir strateji analistinde ANA/DET açığı ile COM açığı aynı etkiyi yaratmak zorunda değildir. Rol uyumu FHR-COMP-JOB-2.0 ağırlıklarıyla hesaplanır; recalibre edilmemiş roller geçiş sürecinde eşit ağırlıklı davranışı korur.
+Seviye arttıkça tüm yetkinlikler otomatik yükselmez. Örneğin bir uzman rolde DET veya ANA, üst yöneticiden daha yüksek olabilir; üst yönetimde ise RES, STR, TEA ve COM gibi geniş sorumluluk alanları daha baskın hale gelebilir.
 
-## Kanıt güveni
-- A: güçlü/doğrudan occupational eşleşme
-- B: güçlü composite/proxy eşleşme
-- C: yerel veya kuruma özgü rol; SME doğrulaması daha önemlidir
-
-Örneğin CEO için O*NET doğrudan eşleşmesi güçlüdür (A). Ticaret Sicil veya Kapasite Servisi gibi TSO-özel rollerde composite benchmark ve yerel iş analizi gerekir (B/C).
-
-## Şirket kalibrasyonu
-FutureHR benchmark şirket için başlangıç profilidir. Kurum aşağıdaki yöntemle kendi rol hedefini kalibre edebilir:
-1. Güncel görev ve sorumlulukların doğrulanması
-2. Rol sahibi + yönetici + İK/OD temsilcisinden SME puanlaması
-3. Yetkinlik önem ve ayırt edicilik değerlendirmesi
-4. FutureHR benchmark ile fark analizi
-5. Anlamlı sapmalarda gerekçe kaydı
-6. Belirli periyotlarda yeniden doğrulama
-
-Benchmark ile şirket hedefi arasındaki sapma audit edilebilir olmalıdır.
-
-## Batch planı
-1. TSO + CEO / Strateji — **v2 recalibrated**
+## Rol aileleri
+Tamamlanan katalog aileleri:
+1. TSO + Yönetim Kurulu + CEO / Strateji
 2. İnsan Kaynakları
 3. Finans & Muhasebe
 4. Satın Alma & Tedarik Zinciri
@@ -93,5 +115,46 @@ Benchmark ile şirket hedefi arasındaki sapma audit edilebilir olmalıdır.
 10. Denetim / Risk / Kalite
 11. İdari İşler & Destek
 
+TSO'ya özgü `Ticaret Sicil`, `Kapasite`, `Proje ve Sanayi` vb. roller doğrudan tek bir uluslararası mesleğe zorla eşlenmez; composite benchmark + ESCO crosswalk + yerel SME doğrulaması yaklaşımı kullanılır.
+
+## Ağırlıklandırma
+Her rol için 10 yetkinliğin toplamı %100 olan bir **criticality/weight** seti bulunur.
+
+Bu nedenle örneğin:
+- Data Scientist için ANA/DIG/DET/LRN,
+- Satış Müdürü için RES/COM/STR,
+- Muhasebe için DET/ETH/ANA,
+- Uyum için ETH/DET/ANA,
+- Üretim için RES/DET/DIS/STR
+aynı ağırlıkta değildir.
+
+Rol uyumu ve kariyer hazırlığı, düz 10'lu ortalama yerine rolün kritik yetkinlik ağırlıklarıyla hesaplanır.
+
+## Kanıt güveni
+- **A:** güçlü/doğrudan occupational eşleşme
+- **B:** güçlü composite/proxy eşleşme
+- **C:** yerel, jenerik veya kuruma özgü rol; SME doğrulaması daha önemlidir
+
+Confidence skoru, bir kişinin işe uygunluğunun güven skoru değildir; **rol benchmark'ının dış kaynaklarla eşleşme gücünü** ifade eder.
+
+## Şirket kalibrasyonu
+FutureHR benchmark şirket için başlangıç profilidir. Kurum aşağıdaki yöntemle kendi rol hedefini kalibre etmelidir:
+1. Güncel görev ve sorumlulukları doğrula
+2. Rol sahibi + yönetici + İK/OD temsilcisinden SME girdisi al
+3. Yetkinlik önem/kritiklik değerlendirmesi yap
+4. FutureHR benchmark ile fark analizi yap
+5. Anlamlı sapmalarda gerekçe kaydet
+6. Organizasyon veya iş değiştiğinde profili yeniden doğrula
+
+Benchmark ile şirket hedefi arasındaki sapma audit edilebilir olmalıdır.
+
+## Kullanım sınırları
+- Tek başına işe alma, işten çıkarma, terfi veya ücret kararı üretmez.
+- Test sonucu bir kişinin “potansiyelini kesin tahmin eden” doğrulanmış prediktif model olarak sunulmaz.
+- Kritik kararlar insan değerlendirmesi, performans verisi, iş analizi ve organizasyon bağlamı ile birlikte ele alınır.
+- Gerçek müşteri verisi biriktikçe kriter geçerliği, performans korelasyonu ve rol bazlı norm çalışmaları ayrıca yürütülmelidir.
+
 ## Sürümleme
-Model değişiklikleri `FHR-COMP-JOB-x.y` ile sürümlenir. Her rol profili için model sürümü, aile, seviye, evidence confidence, kaynaklar, gerekçe ve SME doğrulama durumu saklanır.
+Model değişiklikleri `FHR-COMP-JOB-x.y` ile sürümlenir. Her rol için model sürümü, aile, seviye, evidence confidence, kaynaklar, gerekçe ve SME doğrulama bilgisi saklanır.
+
+Mevcut katalog sürümü: **FHR-COMP-JOB-2.0 — 178/178 rol recalibrated.**
