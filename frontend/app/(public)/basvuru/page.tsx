@@ -6,18 +6,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, CheckCircle2, Rocket, Target, Sparkles } from "lucide-react";
 
-// Logo Component
-function Logo() {
+function Logo({ dark = false }: { dark?: boolean }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <Image 
-        src="/logo.png" 
-        alt="Logo" 
-        width={180} 
-        height={60} 
-        className="object-contain" 
-      />
-    </div>
+    <Image
+      src={dark ? "/futurehr-brand-dark.svg" : "/futurehr-brand.svg"}
+      alt="FutureHR"
+      width={300}
+      height={84}
+      className="h-auto w-[230px] object-contain"
+      priority
+    />
   );
 }
 
@@ -38,10 +36,8 @@ export default function BasvuruPage() {
       return;
     }
 
-    // Store exam code in sessionStorage
     sessionStorage.setItem("examCode", examCode);
-    
-    // Redirect to exam page
+
     setTimeout(() => {
       router.push("/aday-testi?mode=candidate&code=" + encodeURIComponent(examCode));
       setLoading(false);
@@ -50,9 +46,7 @@ export default function BasvuruPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* SOL TARAF - Vitrin (Yeşil/Turkuaz Tema) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-900 via-teal-950 to-cyan-950 relative overflow-hidden">
-        {/* Dekoratif Elementler */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-500 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-teal-500 rounded-full blur-3xl"></div>
@@ -60,12 +54,10 @@ export default function BasvuruPage() {
         </div>
 
         <div className="relative z-10 w-full flex flex-col p-12">
-          {/* Logo */}
           <div className="mb-12">
-            <Logo />
+            <Logo dark />
           </div>
 
-          {/* Ana İçerik - Dikeyde Ortalanmış */}
           <div className="flex-1 flex flex-col justify-center max-w-md">
             <h1 className="text-4xl font-bold text-white tracking-tight mb-4">
               Kariyerinize İlk Adımı Atın
@@ -74,7 +66,6 @@ export default function BasvuruPage() {
               Geleceği birlikte tasarlayalım. Yeteneklerinizi keşfedin ve potansiyelinizi ortaya çıkarın.
             </p>
 
-            {/* Özellikler */}
             <div className="space-y-4 mb-12">
               {[
                 { icon: Rocket, text: "Hızlı ve Kolay Başvuru" },
@@ -93,7 +84,6 @@ export default function BasvuruPage() {
               })}
             </div>
 
-            {/* Güvenilirlik Rozeti */}
             <div className="border-t border-emerald-800 pt-8">
               <p className="text-xs text-emerald-400 mb-4 uppercase tracking-wider">
                 Güvenli Süreç
@@ -117,21 +107,12 @@ export default function BasvuruPage() {
         </div>
       </div>
 
-      {/* SAĞ TARAF - İşlem Merkezi */}
       <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          {/* Logo (Mobil için) */}
           <div className="lg:hidden mb-8">
-            <Image 
-              src="/logo.png" 
-              alt="Logo" 
-              width={180} 
-              height={60} 
-              className="object-contain" 
-            />
+            <Logo />
           </div>
 
-          {/* Başlık */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">
               Aday Sınav Girişi
@@ -141,13 +122,9 @@ export default function BasvuruPage() {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label
-                htmlFor="examCode"
-                className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider"
-              >
+              <label htmlFor="examCode" className="block text-xs font-medium text-slate-700 mb-1.5 uppercase tracking-wider">
                 Sınav Giriş Kodu / T.C. Kimlik No
               </label>
               <input
@@ -185,12 +162,8 @@ export default function BasvuruPage() {
               )}
             </button>
 
-            {/* Personel Girişi Linki */}
             <div className="pt-4 border-t border-slate-200">
-              <Link
-                href="/"
-                className="block text-center text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-              >
+              <Link href="/" className="block text-center text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors">
                 Personel girişi için tıklayın
               </Link>
             </div>
@@ -198,8 +171,7 @@ export default function BasvuruPage() {
             <div className="pt-2">
               <div className="p-4 bg-gradient-to-r from-emerald-50/80 to-teal-50/80 backdrop-blur-sm border border-emerald-200 rounded-lg shadow-sm">
                 <p className="text-xs text-emerald-800 leading-relaxed">
-                  <strong>Bilgi:</strong> Sınav yaklaşık 45 dakika sürmektedir ve 130 sorudan oluşmaktadır. 
-                  Başladıktan sonra durdurulamaz. Lütfen sessiz bir ortamda ve yeterli zamanınız olduğundan emin olun.
+                  <strong>Bilgi:</strong> Sınav yaklaşık 45 dakika sürmektedir ve 130 sorudan oluşmaktadır. Başladıktan sonra durdurulamaz. Lütfen sessiz bir ortamda ve yeterli zamanınız olduğundan emin olun.
                 </p>
               </div>
             </div>
@@ -209,4 +181,3 @@ export default function BasvuruPage() {
     </div>
   );
 }
-
