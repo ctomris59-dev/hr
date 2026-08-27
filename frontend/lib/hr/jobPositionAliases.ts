@@ -1,6 +1,14 @@
 /** Conservative position-title canonicalization for role benchmark lookup. */
 export function normalizePositionTitle(value:string):string {
-  return String(value||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").toLocaleLowerCase("tr-TR").replace(/&/g," and ").replace(/[^a-z0-9çğıöşü\s]/g," ").replace(/\s+/g," ").trim();
+  return String(value||"")
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/ı/g,"i")
+    .replace(/&/g," and ")
+    .replace(/[^a-z0-9çğıöşü\s]/g," ")
+    .replace(/\s+/g," ")
+    .trim();
 }
 
 const RAW_ALIASES: Record<string,string> = {
