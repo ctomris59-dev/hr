@@ -129,7 +129,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       {sidebarOpen && <div className="lg:hidden fixed inset-0 z-30 bg-slate-950/45 backdrop-blur-[1px]" onClick={() => setSidebarOpen(false)} />}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header data-tour="topbar" className="flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200/90 bg-white/95 px-5 backdrop-blur lg:px-6 dark:border-slate-800 dark:bg-slate-900/95">
+        <header data-tour="topbar" className="flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200/90 bg-white px-5 lg:px-6 dark:border-slate-800 dark:bg-slate-900">
           <WelcomeWidget />
           <div className="flex items-center gap-2">
             <GuidedOnboarding />
