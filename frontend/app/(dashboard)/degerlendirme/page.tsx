@@ -239,7 +239,7 @@ export default function DegerlendirmePage() {
       </div>
 
       {selected && <AIDecisionSupport
-        kind="development"
+        kind="performance"
         context={aiContext}
         resetKey={selectedName}
         title="AI Performans & Yetkinlik Kalibrasyonu"
