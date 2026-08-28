@@ -27,6 +27,7 @@ import {
   Heart,
   Target,
   Scale,
+  LockKeyhole,
 } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useAuth } from "../context/AuthContext";
@@ -39,6 +40,7 @@ import DemoRoleSwitcher from "./DemoRoleSwitcher";
 import ModuleWorkspace from "./ModuleWorkspace";
 import GuidedOnboarding from "./GuidedOnboarding";
 import FutureHRCopilot from "./FutureHRCopilot";
+import AIGovernanceCapture from "./AIGovernanceCapture";
 
 const menuItems = [
   { href: "/dashboard", label: "Yönetici Özeti", icon: LayoutDashboard, section: "Genel" },
@@ -58,6 +60,7 @@ const menuItems = [
   { href: "/aday-testi", label: "Yetkinlik Testi", icon: FileText, section: "Operasyon" },
   { href: "/ekip-yonetimi", label: "Ekip", icon: Users, section: "Yönetim" },
   { href: "/admin", label: "Kullanıcı & Yetki", icon: ShieldCheck, section: "Yönetim" },
+  { href: "/admin/guven-kvkk", label: "Güven & KVKK", icon: LockKeyhole, section: "Yönetim" },
   { href: "/ayarlar/yetki-mimarisi", label: "Yetki Mimarisi", icon: SlidersHorizontal, section: "Yönetim" },
 ];
 
@@ -110,6 +113,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <div data-testid="app-shell" className="flex h-screen overflow-hidden bg-[#f4f6f9] dark:bg-slate-950">
+      <AIGovernanceCapture />
       <button onClick={() => setSidebarOpen(!sidebarOpen)} className="fixed left-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" aria-label="Menüyü aç/kapat">
         {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
       </button>
