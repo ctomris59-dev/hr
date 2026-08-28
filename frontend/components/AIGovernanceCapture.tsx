@@ -13,6 +13,12 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+function requestMethod(input: RequestInfo | URL, init?: RequestInit): string {
+  if (init?.method) return init.method.toUpperCase();
+  if (typeof Request !== "undefined" && input instanceof Request) return input.method.toUpperCase();
+  return "GET";
+}
+
 function parseBody(body: BodyInit | null | undefined): any {
   if (typeof body !== "string") return null;
   try { return JSON.parse(body); } catch { return null; }
@@ -71,9 +77,10 @@ export default function AIGovernanceCapture() {
 
     const wrappedFetch: typeof window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrl(input);
+      const method = requestMethod(input, init);
       const isRecommendation = url.includes("/api/ai/hr-recommendation");
       const isCopilot = url.includes("/api/ai/copilot");
-      if (!isRecommendation && !isCopilot) return originalFetch(input, init);
+      if ((!isRecommendation && !isCopilot) || method !== "POST") return originalFetch(input, init);
 
       let requestPayload = parseBody(init?.body);
       let nextInit = init;
