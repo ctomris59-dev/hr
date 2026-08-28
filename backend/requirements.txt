@@ -11,6 +11,15 @@ pydantic==2.12.5
 pydantic_core==2.41.5
 email-validator
 
+# PostgreSQL / SaaS persistence
+SQLAlchemy>=2.0.36,<2.1
+psycopg[binary]>=3.2.3,<4
+alembic>=1.14.0,<2
+
+# Authentication & password security
+PyJWT>=2.10.1,<3
+pwdlib[argon2]>=0.2.1,<1
+
 # HTTP and async
 starlette==0.50.0
 anyio==4.12.0
@@ -37,4 +46,3 @@ httpx==0.27.2
 # Note: Streamlit has been removed from production dependencies.
 # Legacy UI modules in legacy/ folder may require it for development.
 # Install with: pip install streamlit==1.52.2 (dev only)
-psutil
