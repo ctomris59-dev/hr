@@ -1,0 +1,81 @@
+name: Apply employee experience update
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-employee-experience.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Load validated patch recipes
+        run: |
+          git fetch origin employee-experience-compact
+          git show origin/employee-experience-compact:.github/workflows/employee-experience-patch-v3.yml > /tmp/v3.yml
+          git show origin/employee-experience-compact:.github/workflows/employee-experience-patch-v4.yml > /tmp/v4.yml
+
+      - name: Apply validated employee experience changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import textwrap
+
+          def extract_run(workflow_text: str, step_name: str) -> str:
+              pattern = re.compile(
+                  rf'^      - name: {re.escape(step_name)}\n.*?^        run: \|\n(?P<body>.*?)(?=^      - name: )',
+                  re.M | re.S,
+              )
+              match = pattern.search(workflow_text)
+              if not match:
+                  raise RuntimeError(f'Could not extract step: {step_name}')
+              return textwrap.dedent(match.group('body'))
+
+          v3 = Path('/tmp/v3.yml').read_text(encoding='utf-8')
+          for step_name in ['Update dashboard', 'Add connected check-in page and navigation']:
+              subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', extract_run(v3, step_name)], check=True)
+
+          v4 = Path('/tmp/v4.yml').read_text(encoding='utf-8')
+          backend_script = extract_run(v4, 'Connect backend with correct Python indentation')
+          backend_script = backend_script.replace("model_insert = '    ' + model_insert\n", '')
+          backend_script = backend_script.replace("endpoint_insert = '    ' + endpoint_insert\n", '')
+          subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', backend_script], check=True)
+          PY
+
+      - name: Validate backend syntax
+        run: python -m py_compile backend/routers/dashboard.py backend/utils_db.py
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Validate production build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Commit and push application changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/routers/dashboard.py backend/utils_db.py \
+            'frontend/app/(dashboard)/dashboard/page.tsx' \
+            'frontend/app/(dashboard)/calisan-deneyimi/page.tsx' \
+            frontend/components/education/WeeklyPulseCard.tsx \
+            frontend/app/data/roles.ts \
+            frontend/lib/hr/accessControl.ts \
+            frontend/components/ClientLayout.tsx
+          git commit -m "Replace happiness trend with employee experience summary"
+          git push origin HEAD:main
