@@ -5,9 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Database, ShieldCheck } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "@/app/utils/storage";
 import { buildProductHealth } from "@/lib/hr/productHealth";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ProductHealthStrip() {
+  const { currentUserRole } = useAuth();
   const [revision, setRevision] = useState(0);
+
   useEffect(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener("dataUpdated", refresh);
@@ -29,6 +32,10 @@ export default function ProductHealthStrip() {
     );
   }, [revision]);
 
+  // Veri hazırlığı şirket çapı bir yönetişim göstergesidir. Yönetici/personel
+  // dashboard'larında gereksiz şirket geneli sinyal ve erişilemeyen düzeltme linki göstermeyiz.
+  if (currentUserRole !== "ceo" && currentUserRole !== "hr_admin") return null;
+
   const topIssue = health.issues.find((issue) => issue.severity !== "bilgi") || health.issues[0];
   const tone = health.score >= 85
     ? "border-emerald-200 bg-emerald-50/80 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-200"
@@ -45,7 +52,7 @@ export default function ProductHealthStrip() {
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.1em]">FutureHR V1 Veri Hazırlığı</p>
+              <p className="text-xs font-bold uppercase tracking-[0.1em]">V1 Veri Hazırlığı</p>
               <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold dark:bg-slate-900/60">{health.score}/100 · {health.band}</span>
             </div>
             <p className="mt-1 text-[11px] leading-5 opacity-80">{topIssue?.title}: {topIssue?.detail}</p>
@@ -54,7 +61,7 @@ export default function ProductHealthStrip() {
         <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold">
           <span className="inline-flex items-center gap-1 rounded-lg bg-white/60 px-2.5 py-1.5 dark:bg-slate-900/50"><Database className="h-3 w-3" />Performans %{health.metrics.performanceCoverage}</span>
           <span className="inline-flex items-center gap-1 rounded-lg bg-white/60 px-2.5 py-1.5 dark:bg-slate-900/50"><ShieldCheck className="h-3 w-3" />Kanıt %{health.metrics.evidenceCoverage}</span>
-          {topIssue?.route && <Link href={topIssue.route} className="rounded-lg bg-slate-950 px-3 py-1.5 text-white hover:bg-indigo-700 dark:bg-white dark:text-slate-950">{topIssue.severity === "bilgi" ? "Yönetici özetini kullan" : "Eksik veriyi düzelt"}</Link>}
+          {topIssue?.route && <Link href={topIssue.route} className="rounded-lg bg-slate-950 px-3 py-1.5 text-white hover:bg-indigo-700 dark:bg-white dark:text-slate-950">{topIssue.severity === "bilgi" ? "Özeti kullan" : "Eksik veriyi düzelt"}</Link>}
         </div>
       </div>
     </section>
