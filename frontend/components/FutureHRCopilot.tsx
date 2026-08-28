@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowRight, Bot, CheckCircle2, ExternalLink, Loader2, Se
 import { getStorageData, STORAGE_KEYS } from "@/app/utils/storage";
 import { buildTalentDecisionSnapshot } from "@/lib/hr/talentDecisionChain";
 import { getCareerRole } from "@/lib/hr/careerArchitecture";
+import { employeeKey, latestEvaluationForEmployee, latestEvaluationMap, normalizeEmployeeName } from "@/lib/hr/employeeIdentity";
 import { rankSuccessors } from "@/lib/hr/succession";
 import { processEmployeeData } from "@/app/utils/salarySimulation";
 
@@ -35,23 +36,6 @@ const severityStyle: Record<Severity, string> = {
   orta: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/20 dark:text-sky-300",
   bilgi: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
 };
-
-function recordTime(item: any) {
-  const value = item?.date || item?.Tarih || item?.createdAt || item?.timestamp;
-  const time = value ? new Date(value).getTime() : 0;
-  return Number.isFinite(time) ? time : 0;
-}
-
-function latestByEmployee(history: any[]) {
-  const map = new Map<string, any>();
-  history.forEach((item) => {
-    const name = String(item?.Personel || item?.target || item?.["Ad Soyad"] || "");
-    if (!name) return;
-    const old = map.get(name);
-    if (!old || recordTime(item) >= recordTime(old)) map.set(name, item);
-  });
-  return map;
-}
 
 function numeric(value: unknown) {
   const n = Number(value);
@@ -85,7 +69,7 @@ function buildCompanyContext(question: string, pathname: string) {
   const development = getStorageData<any[]>(STORAGE_KEYS.DEVELOPMENT_PLANS, []);
   const benchmarks = getStorageData<any[]>(STORAGE_KEYS.MARKET_BENCHMARKS, []);
   const pulse = getStorageData<any[]>(STORAGE_KEYS.PULSE_ANSWERS, []);
-  const latest = latestByEmployee(history);
+  const latest = latestEvaluationMap(history);
   const snapshots = org.map((person) => buildTalentDecisionSnapshot(person, history));
   const snapshotByKey = new Map(snapshots.map((snapshot) => [snapshot.identity.employeeKey, snapshot]));
 
@@ -99,9 +83,12 @@ function buildCompanyContext(question: string, pathname: string) {
   const reportCounts: Record<string, number> = {};
   org.forEach((person) => {
     const manager = String(person?.["Yönetici 1"] || "");
-    if (manager) reportCounts[manager] = (reportCounts[manager] || 0) + 1;
+    if (manager) reportCounts[normalizeEmployeeName(manager)] = (reportCounts[normalizeEmployeeName(manager)] || 0) + 1;
   });
-  const criticalRoles = org.filter((person) => getCareerRole(person?.Pozisyon || "").levelRank >= 4 || (reportCounts[person?.["Ad Soyad"]] || 0) >= 2);
+  const criticalRoles = org.filter((person) =>
+    getCareerRole(person?.Pozisyon || "").levelRank >= 4 ||
+    (reportCounts[normalizeEmployeeName(person?.["Ad Soyad"])] || 0) >= 2
+  );
   let criticalRolesWithoutReadySuccessor = 0;
   let singleSuccessorPool = 0;
   criticalRoles.forEach((target) => {
@@ -110,7 +97,7 @@ function buildCompanyContext(question: string, pathname: string) {
     if (candidates.length <= 1) singleSuccessorPool += 1;
   });
 
-  const salaryRows = processEmployeeData(org, Array.from(latest.values()));
+  const salaryRows = processEmployeeData(org, history);
   const benchmarkKeys = new Set(benchmarks.map((item) => `${item?.Departman}|${item?.Pozisyon}`));
   const compensationDataWarnings = salaryRows.filter((row) => !row["Mevcut Maaş"] || (row.Kanıt_Güveni ?? 0) < 60 || !benchmarkKeys.has(`${row.Departman}|${row.Pozisyon}`)).length;
   const missingSalaryCount = salaryRows.filter((row) => !row["Mevcut Maaş"]).length;
@@ -121,8 +108,7 @@ function buildCompanyContext(question: string, pathname: string) {
   const departmentMap = new Map<string, { count: number; performance: number[]; evidence: number[] }>();
   org.forEach((person) => {
     const department = String(person?.Departman || "Belirtilmemiş");
-    const key = String(person?.id || person?.["Ad Soyad"] || "");
-    const snapshot = snapshotByKey.get(key);
+    const snapshot = snapshotByKey.get(employeeKey(person));
     const bucket = departmentMap.get(department) || { count: 0, performance: [], evidence: [] };
     bucket.count += 1;
     if (snapshot?.performance.score) bucket.performance.push(snapshot.performance.score);
@@ -136,14 +122,17 @@ function buildCompanyContext(question: string, pathname: string) {
     averageEvidence: safeAverage(value.evidence),
   })).slice(0, 12);
 
-  const normalized = question.toLocaleLowerCase("tr-TR");
+  const normalized = normalizeEmployeeName(question);
   const matched = [...org]
-    .filter((person) => String(person?.["Ad Soyad"] || "").length >= 3 && normalized.includes(String(person["Ad Soyad"]).toLocaleLowerCase("tr-TR")))
+    .filter((person) => {
+      const name = String(person?.["Ad Soyad"] || "");
+      return name.length >= 3 && normalized.includes(normalizeEmployeeName(name));
+    })
     .sort((a, b) => String(b["Ad Soyad"]).length - String(a["Ad Soyad"]).length)[0];
   const focusName = matched ? String(matched["Ad Soyad"]) : null;
   const redactedQuestion = focusName ? question.replace(new RegExp(focusName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "seçili çalışan") : question;
   const focusSnapshot = matched ? buildTalentDecisionSnapshot(matched, history) : null;
-  const focusEvaluation = focusName ? latest.get(focusName) : null;
+  const focusEvaluation = matched ? latestEvaluationForEmployee(matched, history) : null;
 
   return {
     focusName,
