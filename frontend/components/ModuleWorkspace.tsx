@@ -35,7 +35,9 @@ const MODULES: ModuleConfig[] = [
   { path: "/admin", id: "admin", title: "Kullanıcı & Yetki", focus: "Demo kullanıcıları, V1 sunum verisini ve rol erişimlerini merkezi yönetin.", steps: ["V1 Demo", "Kullanıcı", "Rol", "Erişim"], icon: ShieldCheck, accent: "#334155", accent2: "#d97706", soft: "#f8fafc" },
 ];
 
-function findConfig(pathname: string) { return [...MODULES].sort((a, b) => b.path.length - a.path.length).find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`)); }
+function findConfig(pathname: string) {
+  return [...MODULES].sort((a, b) => b.path.length - a.path.length).find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
+}
 
 export default function ModuleWorkspace({ pathname, children }: { pathname: string; children: ReactNode }) {
   if (pathname === "/dashboard") return <><ProductHealthStrip />{children}</>;
@@ -46,10 +48,16 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
 
   return (
     <div className={`module-workspace workspace-${config.id}`} data-module={config.id} style={style}>
-      <section className="mb-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,.03)] dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm" style={{ background: `linear-gradient(135deg, ${config.accent}, ${config.accent2})` }}><Icon className="h-4 w-4" strokeWidth={1.9} /></span><div className="min-w-0"><div className="flex items-center gap-2"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">FutureHR V1 · {config.title}</p><Activity className="h-3 w-3 text-emerald-500" /></div><p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">{config.focus}</p></div></div>
-          <div className="flex flex-wrap gap-1.5">{config.steps.map((step, index) => <span key={step} className="rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-[9px] font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-400"><b className="mr-1 text-slate-300">{index + 1}</b>{step}</span>)}</div>
+      <section className="module-hero mb-4 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,.03)] dark:border-slate-800 dark:bg-slate-900" aria-label={`${config.title} akış rehberi`}>
+        <div className="flex flex-col gap-2.5 px-3.5 py-2.5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-sm" style={{ background: `linear-gradient(135deg, ${config.accent}, ${config.accent2})` }}><Icon className="h-3.5 w-3.5" strokeWidth={1.9} /></span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5"><p className="text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Akış rehberi</p><Activity className="h-2.5 w-2.5 text-emerald-500" /></div>
+              <p className="mt-0.5 truncate text-[11px] text-slate-600 dark:text-slate-300">{config.focus}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1">{config.steps.map((step, index) => <span key={step} className="rounded-md border border-slate-100 bg-slate-50 px-2 py-1 text-[9px] font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-400"><b className="mr-1 text-slate-300">{index + 1}</b>{step}</span>)}</div>
         </div>
       </section>
       {pathname === "/organizasyon" && <div className="mb-4"><OrganizationExcelExchange /></div>}
