@@ -24,7 +24,7 @@ from core.middleware import RequestLoggingMiddleware
 from core.metrics.middleware import MetricsMiddleware
 from core.audit.middleware import AuditMiddleware
 
-from routers import recruitment, org_chart, admin, dashboard, audit, workflow, observability, auth_v1
+from routers import recruitment, org_chart, admin, dashboard, audit, workflow, observability, auth_v1, people_v1
 
 settings = get_settings()
 
@@ -65,8 +65,9 @@ app.include_router(audit.router)
 app.include_router(workflow.router)
 app.include_router(observability.router)
 
-# New versioned SaaS foundation.  It is additive and does not alter demo login.
+# New versioned SaaS foundation. These are additive and do not alter demo login.
 app.include_router(auth_v1.router)
+app.include_router(people_v1.router)
 
 
 @app.on_event("startup")
