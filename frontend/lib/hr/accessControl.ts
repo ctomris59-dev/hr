@@ -4,7 +4,7 @@ import { hasAccess, mapToUserRole } from "../../app/data/roles";
 export type DataScope = "NONE" | "SELF" | "DIRECT_REPORTS" | "DEPARTMENT" | "COMPANY" | "ASSIGNED";
 export type SensitiveDomain = "salary" | "talent" | "succession";
 export type ModuleKey =
-  | "dashboard" | "leave" | "organization" | "performance" | "talent" | "training"
+  | "dashboard" | "leave" | "experience" | "organization" | "performance" | "talent" | "training"
   | "development" | "career" | "succession" | "salary" | "recruitment" | "assessment"
   | "team" | "admin" | "managerSalary" | "accessArchitecture";
 
@@ -49,6 +49,7 @@ export const DEFAULT_COMPANY_ACCESS_POLICY: CompanyAccessPolicy = {
 export const MODULE_DEFINITIONS: Array<{ key: ModuleKey; label: string; route: string; sensitive?: SensitiveDomain }> = [
   { key: "dashboard", label: "Yönetici Özeti", route: "/dashboard" },
   { key: "leave", label: "İzin Yönetimi", route: "/izinler" },
+  { key: "experience", label: "Çalışan Deneyimi", route: "/calisan-deneyimi" },
   { key: "organization", label: "Çalışanlar & Organizasyon", route: "/organizasyon" },
   { key: "performance", label: "Performans & Yetkinlik", route: "/degerlendirme" },
   { key: "talent", label: "Yetenek Matrisi", route: "/yetenek-matrisi", sensitive: "talent" },

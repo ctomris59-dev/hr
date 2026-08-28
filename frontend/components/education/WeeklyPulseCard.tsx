@@ -1,267 +1,146 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { CalendarDays, CheckCircle2, Heart, Send } from "lucide-react";
 import { checkPulseStatus, submitPulseAnswer, type PulseSubmitRequest } from "../../app/services/surveyService";
-import { getStorageData, STORAGE_KEYS } from "../../app/utils/storage";
-import { Heart, Sparkles } from "lucide-react";
 
 interface WeeklyPulseCardProps {
   userName: string;
   departmentId?: string;
+  respectWindow?: boolean;
 }
 
-export default function WeeklyPulseCard({ userName, departmentId }: WeeklyPulseCardProps) {
-  const [score, setScore] = useState<number>(0);
-  const [feedback, setFeedback] = useState<string>("");
+const isPulseWindow = () => {
+  const day = new Date().getDay();
+  return day === 5 || day === 6 || day === 0;
+};
+
+export default function WeeklyPulseCard({ userName, departmentId, respectWindow = true }: WeeklyPulseCardProps) {
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [showCard, setShowCard] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [hasSubmitted, setHasSubmitted] = useState(false);
-
-  // Haftanın gününü kontrol et (Cuma, Cumartesi, Pazar)
-  const shouldShowCard = () => {
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 = Pazar, 5 = Cuma, 6 = Cumartesi
-    return dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0; // Cuma, Cumartesi, Pazar
-  };
-
-  // Hafta başlangıcını hesapla (Pazartesi)
-  const getWeekStart = (date?: Date): string => {
-    const d = date || new Date();
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Pazartesi'ye git
-    const monday = new Date(d.setDate(diff));
-    return monday.toISOString().split("T")[0];
-  };
+  const windowOpen = !respectWindow || isPulseWindow();
 
   useEffect(() => {
-    const checkStatus = async () => {
-      if (!shouldShowCard()) {
-        setShowCard(false);
+    let active = true;
+    const load = async () => {
+      if (!userName) {
+        if (active) setLoading(false);
         return;
       }
-
-      try {
-        const status = await checkPulseStatus(userName);
-        setHasSubmitted(status.hasSubmitted);
-        setShowCard(!status.hasSubmitted); // Eğer henüz cevap vermediyse göster
-      } catch (error) {
-        console.error("Status check error:", error);
-        setShowCard(shouldShowCard()); // Hata durumunda gün kontrolüne göre göster
+      const status = await checkPulseStatus(userName);
+      if (active) {
+        setHasSubmitted(Boolean(status.hasSubmitted));
+        setLoading(false);
       }
     };
-
-    checkStatus();
+    void load();
+    return () => { active = false; };
   }, [userName]);
 
   const handleSubmit = async () => {
-    if (score === 0) {
-      alert("Lütfen bir puan seçin!");
-      return;
-    }
-
+    if (!score || !userName) return;
     setSubmitting(true);
     try {
       const request: PulseSubmitRequest = {
         user_name: userName,
-        score: score,
+        score,
         feedback: feedback.trim() || undefined,
         department_id: departmentId,
       };
-
       await submitPulseAnswer(request);
-      setSubmitted(true);
-      setShowCard(false);
-      
-      // Konfeti animasyonu
-      triggerConfetti();
+      setHasSubmitted(true);
+      window.dispatchEvent(new CustomEvent("pulseUpdated"));
     } catch (error: any) {
-      alert(error.message || "Anket gönderilirken bir hata oluştu.");
+      alert(error?.message || "Check-in gönderilirken bir hata oluştu.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Basit konfeti animasyonu
-  const triggerConfetti = () => {
-    // Canvas ile basit konfeti efekti
-    const canvas = document.createElement("canvas");
-    canvas.style.position = "fixed";
-    canvas.style.top = "0";
-    canvas.style.left = "0";
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
-    canvas.style.pointerEvents = "none";
-    canvas.style.zIndex = "9999";
-    document.body.appendChild(canvas);
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const particles: Array<{
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      color: string;
-      size: number;
-    }> = [];
-
-    const colors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"];
-
-    // Partiküller oluştur
-    for (let i = 0; i < 50; i++) {
-      particles.push({
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-        vx: (Math.random() - 0.5) * 10,
-        vy: (Math.random() - 0.5) * 10 - 2,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        size: Math.random() * 5 + 3,
-      });
-    }
-
-    let animationFrame: number;
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach((particle) => {
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-        particle.vy += 0.2; // Yerçekimi
-
-        ctx.fillStyle = particle.color;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Partiküller ekrandan çıktıysa veya süre dolduysa durdur
-      const allOut = particles.every(
-        (p) => p.y > canvas.height || p.x < 0 || p.x > canvas.width
-      );
-
-      if (!allOut) {
-        animationFrame = requestAnimationFrame(animate);
-      } else {
-        setTimeout(() => {
-          document.body.removeChild(canvas);
-        }, 1000);
-      }
-    };
-
-    animate();
-  };
-
-  if (!showCard || submitted) {
-    if (submitted) {
-      return (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg shadow-sm">
-          <p className="text-sm text-green-800 font-medium flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            Teşekkürler! İyi Dersler. 🎉
-          </p>
-        </div>
-      );
-    }
-    return null;
+  if (loading) {
+    return <div className="h-32 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />;
   }
 
-  const emojiMap: Record<number, string> = {
-    1: "😡",
-    2: "😡",
-    3: "😐",
-    4: "😐",
-    5: "🙂",
-    6: "🙂",
-    7: "🙂",
-    8: "🤩",
-    9: "🤩",
-    10: "🤩",
-  };
+  if (hasSubmitted) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/10">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+        <div>
+          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Bu haftanın check-in'i tamamlandı</p>
+          <p className="mt-1 text-xs leading-5 text-emerald-700/80 dark:text-emerald-400/80">Yanıtınız haftalık çalışan deneyimi özetine dahil edildi. Yeni check-in gelecek hafta açılır.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!windowOpen) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+        <CalendarDays className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-500" />
+        <div>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Haftalık check-in Cuma–Pazar arasında açılır</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Bu pencere, yanıtların aynı haftalık dönemde toplanmasını ve trendlerin tutarlı kalmasını sağlar.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="mb-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 rounded-xl shadow-lg">
-      <div className="flex items-start gap-3 mb-4">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <Heart className="w-6 h-6 text-blue-600" />
+    <div>
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300">
+          <Heart className="h-5 w-5" />
         </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-slate-800 mb-1">
-            👋 Haftan Nasıl Geçti?
-          </h3>
-          <p className="text-sm text-slate-600">
-            Bu hafta iş yerinde kendini ne kadar mutlu ve üretken hissettin?
-          </p>
+        <div>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Bu hafta iş deneyimin nasıldı?</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Genel iş deneyimini, enerji ve üretkenlik hissini birlikte düşünerek 1–10 arasında değerlendir.</p>
         </div>
       </div>
 
-      {/* Emoji Bar - 1-10 arası puanlama */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-            <button
-              key={num}
-              onClick={() => setScore(num)}
-              className={`flex-1 p-3 rounded-lg border-2 transition-all ${
-                score === num
-                  ? "border-blue-500 bg-blue-100 scale-110"
-                  : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50"
-              }`}
-            >
-              <div className="text-2xl mb-1">{emojiMap[num]}</div>
-              <div className="text-xs font-medium text-slate-600">{num}</div>
-            </button>
-          ))}
-        </div>
-        {score > 0 && (
-          <p className="text-xs text-center text-slate-500 mt-2">
-            Seçtiğiniz puan: <span className="font-semibold">{score}/10</span> {emojiMap[score]}
-          </p>
-        )}
+      <div className="mt-5 grid grid-cols-5 gap-2 sm:grid-cols-10">
+        {[1,2,3,4,5,6,7,8,9,10].map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setScore(value)}
+            aria-pressed={score === value}
+            className={`h-11 rounded-lg border text-sm font-semibold transition-all ${score === value ? "border-indigo-600 bg-indigo-600 text-white shadow-sm" : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"}`}
+          >
+            {value}
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 flex justify-between text-[10px] font-medium text-slate-400">
+        <span>Çok düşük</span><span>Çok iyi</span>
       </div>
 
-      {/* Opsiyonel Feedback */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Bunu ne etkiledi? (Opsiyonel)
-        </label>
-        <textarea
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          placeholder="Bu haftayı etkileyen faktörleri paylaşabilirsin..."
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows={3}
-          maxLength={500}
-        />
-        <p className="text-xs text-slate-400 mt-1 text-right">
-          {feedback.length}/500
-        </p>
-      </div>
+      <label className="mt-5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+        Bunu en çok ne etkiledi? <span className="font-normal text-slate-400">(isteğe bağlı)</span>
+      </label>
+      <textarea
+        value={feedback}
+        onChange={(event) => setFeedback(event.target.value)}
+        rows={3}
+        maxLength={500}
+        placeholder="İş yükü, ekip iletişimi, odaklanma, süreçler veya başka bir etken..."
+        className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-indigo-950"
+      />
 
-      {/* Submit Button */}
-      <button
-        onClick={handleSubmit}
-        disabled={submitting || score === 0}
-        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
-      >
-        {submitting ? (
-          <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            Gönderiliyor...
-          </>
-        ) : (
-          <>
-            Gönder ve Devam Et
-            <Sparkles className="w-4 h-4" />
-          </>
-        )}
-      </button>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[10px] leading-4 text-slate-400">Yanıt, çalışan deneyimi raporlarında toplu skor ve trend üretmek için kullanılır.</p>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={submitting || score === 0}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Send className="h-3.5 w-3.5" />
+          {submitting ? "Gönderiliyor..." : "Check-in'i gönder"}
+        </button>
+      </div>
     </div>
   );
 }
-
-

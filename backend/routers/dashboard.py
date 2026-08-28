@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
 from schemas.models import *
 from routers.dependencies import get_current_user_role, get_current_user_dept, get_current_user_name
@@ -21,8 +21,23 @@ class PulseAnswerRequest(BaseModel):
     employee_name: str = Field(..., min_length=1)
     department_id: str = Field(..., min_length=1)
     department_name: str = Field(..., min_length=1)
-    score: float = Field(..., ge=1, le=5)
+    score: float = Field(..., ge=1, le=10)
     week_number: str = Field(..., min_length=1)
+
+
+class PulseSubmitRequest(BaseModel):
+    user_name: str = Field(..., min_length=1)
+    score: float = Field(..., ge=1, le=10)
+    feedback: Optional[str] = Field(default=None, max_length=500)
+    department_id: Optional[str] = None
+
+
+def _pulse_week_context():
+    now = datetime.now()
+    iso = now.isocalendar()
+    week_number = f"{iso.year}-W{iso.week:02d}"
+    week_start = (now - timedelta(days=now.weekday())).date().isoformat()
+    return week_number, week_start
 
 
 @router.post("/api/360-data")
@@ -146,6 +161,69 @@ async def save_pulse_response(request: PulseAnswerRequest):
     )
     return {"success": bool(saved)}
 
+
+@router.get("/api/pulse/status")
+async def get_pulse_status(user_name: str = Query(..., min_length=1)):
+    """Return whether the employee already submitted this week's check-in."""
+    from utils_db import load_pulse_answers
+    week_number, week_start = _pulse_week_context()
+    normalized_name = user_name.strip().casefold()
+    submitted = any(
+        str(item.get("employee_name") or item.get("user_name") or "").strip().casefold() == normalized_name
+        and item.get("week_number") == week_number
+        for item in load_pulse_answers()
+    )
+    return {"success": True, "hasSubmitted": submitted, "weekStart": week_start}
+
+
+@router.post("/api/pulse/submit")
+async def submit_pulse_response(request: PulseSubmitRequest):
+    """Persist one real 1-10 employee-experience check-in per employee/week."""
+    from utils_db import load_org_chart, load_pulse_answers, save_pulse_answer
+    week_number, _ = _pulse_week_context()
+    normalized_name = request.user_name.strip().casefold()
+    existing = any(
+        str(item.get("employee_name") or item.get("user_name") or "").strip().casefold() == normalized_name
+        and item.get("week_number") == week_number
+        for item in load_pulse_answers()
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="Bu haftanın check-in'i zaten gönderildi.")
+
+    employee = next(
+        (
+            item for item in load_org_chart()
+            if str(item.get("Ad Soyad") or item.get("name") or "").strip().casefold() == normalized_name
+        ),
+        {},
+    )
+    department = request.department_id or employee.get("Departman") or employee.get("department") or "Belirtilmemiş"
+    employee_id = str(employee.get("id") or employee.get("employee_id") or request.user_name)
+    saved = save_pulse_answer(
+        employee_id=employee_id,
+        employee_name=request.user_name.strip(),
+        department_id=str(department),
+        department_name=str(department),
+        score=request.score,
+        week_number=week_number,
+        feedback=request.feedback,
+    )
+    return {"success": bool(saved), "message": "Check-in kaydedildi."}
+
+
+@router.get("/api/pulse/data")
+async def get_pulse_data(department: Optional[str] = None):
+    """Return stored employee-experience check-ins without synthetic data."""
+    from utils_db import load_pulse_answers
+    answers = load_pulse_answers()
+    if department:
+        answers = [
+            item for item in answers
+            if item.get("department_id") == department or item.get("department_name") == department
+        ]
+    return {"success": True, "data": answers}
+
+
 @router.get("/api/metadata")
 async def get_metadata():
     """
@@ -200,139 +278,22 @@ async def get_metadata():
 async def get_pulse(
     role: str = Depends(get_current_user_role),
     dept: str = Depends(get_current_user_dept),
+    user_role: Optional[str] = None,
+    user_dept: Optional[str] = None,
     user_department: Optional[str] = None,
-    department_id: Optional[str] = None
+    department_id: Optional[str] = None,
 ):
-    """Pulse trends with RBAC filtering"""
+    """Return real weekly employee-experience trends with role/scope filtering."""
     try:
-        from utils_db import get_pulse_trends, load_org_chart
-        from datetime import datetime, timedelta
-        import random
-        
-        # Departman ID parametresini kontrol et (CEO için departman seçimi)
-        target_dept = department_id if department_id else (user_department or dept)
-        
-        # Gerçek verileri çek
-        all_trends = get_pulse_trends(target_dept)
-        
-        # Eğer veri yoksa, demo veri oluştur
-        if not all_trends or len(all_trends) == 0:
-            # Org chart'tan departman bilgisini al
-            org_data = load_org_chart()
-            departments = list(set([emp.get("Departman", "") for emp in org_data if emp.get("Departman")]))
-            
-            # Hangi departman için demo veri oluşturulacak?
-            demo_dept = target_dept if target_dept else (departments[0] if departments else "Genel")
-            
-            # Son 12 hafta için demo veri oluştur
-            demo_trends = []
-            current_date = datetime.now()
-            
-            for week_offset in range(12, 0, -1):
-                week_date = current_date - timedelta(weeks=week_offset)
-                week_number = f"{week_date.year}-W{week_date.isocalendar()[1]:02d}"
-                
-                # Departman bazlı mutluluk skorları (gerçekçi varyasyon)
-                base_scores = {
-                    "İnsan Kaynakları": (7.2, 8.5),
-                    "Bilgi Teknolojileri": (6.8, 8.2),
-                    "Finans": (7.0, 8.0),
-                    "Satış": (6.5, 7.8),
-                    "Pazarlama": (6.8, 7.9),
-                    "Operasyon": (6.8, 7.9),
-                    "AR-GE": (7.0, 8.2),
-                    "Hukuk": (7.2, 8.3),
-                    "Yönetim": (7.5, 9.0),
-                }
-                
-                score_range = base_scores.get(demo_dept, (6.5, 8.0))
-                
-                # Haftalara göre trend (başlangıçta düşük, sonra yükseliyor)
-                trend_factor = 0.85 + (12 - week_offset) * 0.012  # 0.85'ten 1.0'a
-                
-                # Baz skor + trend + rastgele varyasyon
-                base_score = score_range[0] + (score_range[1] - score_range[0]) * trend_factor
-                score = base_score + random.uniform(-0.3, 0.3)
-                score = max(5.0, min(10.0, score))  # 5-10 arası sınırla
-                
-                demo_trends.append({
-                    "week": week_number,
-                    "average_score": round(score, 2),
-                    "count": random.randint(15, 35)  # Rastgele katılım sayısı
-                })
-            
-            # CEO için tüm departmanları göster, diğerleri için sadece kendi departmanı
-            if role in ["CEO", "IK"] and not department_id:
-                # Tüm departmanlar için demo veri oluştur
-                all_dept_trends = {}
-                for dept in departments:
-                    if not dept:
-                        continue
-                    for week_offset in range(12, 0, -1):
-                        week_date = current_date - timedelta(weeks=week_offset)
-                        week_number = f"{week_date.year}-W{week_date.isocalendar()[1]:02d}"
-                        
-                        score_range = base_scores.get(dept, (6.5, 8.0))
-                        trend_factor = 0.85 + (12 - week_offset) * 0.012
-                        base_score = score_range[0] + (score_range[1] - score_range[0]) * trend_factor
-                        score = base_score + random.uniform(-0.3, 0.3)
-                        score = max(5.0, min(10.0, score))
-                        
-                        if week_number not in all_dept_trends:
-                            all_dept_trends[week_number] = {"scores": [], "counts": []}
-                        all_dept_trends[week_number]["scores"].append(score)
-                        all_dept_trends[week_number]["counts"].append(random.randint(10, 25))
-                
-                # Ortalamaları hesapla
-                final_trends = []
-                for week in sorted(all_dept_trends.keys()):
-                    scores = all_dept_trends[week]["scores"]
-                    counts = all_dept_trends[week]["counts"]
-                    final_trends.append({
-                        "week": week,
-                        "average_score": round(sum(scores) / len(scores), 2),
-                        "count": sum(counts)
-                    })
-                return {"success": True, "data": final_trends}
-            else:
-                return {"success": True, "data": demo_trends}
-        
-        # CEO sees all (if no department filter)
-        if role in ["CEO", "IK"] and not department_id:
-            return {"success": True, "data": all_trends}
-        
-        # Others see only their department
-        filtered = []
-        for trend in all_trends:
-            trend_dept = trend.get("department") or trend.get("Departman", "")
-            if not target_dept or trend_dept == target_dept:
-                filtered.append(trend)
-        
-        return {"success": True, "data": filtered if filtered else all_trends}
-    except Exception as e:
-        # Hata durumunda demo veri döndür
-        from datetime import datetime, timedelta
-        import random
-        
-        demo_trends = []
-        current_date = datetime.now()
-        
-        for week_offset in range(12, 0, -1):
-            week_date = current_date - timedelta(weeks=week_offset)
-            week_number = f"{week_date.year}-W{week_date.isocalendar()[1]:02d}"
-            
-            # Basit demo veri
-            base_score = 7.0 + (12 - week_offset) * 0.05  # Zamanla artış
-            score = base_score + random.uniform(-0.5, 0.5)
-            score = max(5.0, min(10.0, score))
-            
-            demo_trends.append({
-                "week": week_number,
-                "average_score": round(score, 2),
-                "count": random.randint(20, 40)
-            })
-        
-        return {"success": True, "data": demo_trends}
+        from utils_db import get_pulse_trends
+        effective_role = user_role or role
+        effective_dept = user_dept or user_department or dept
+        target_dept = department_id
+        if not target_dept and effective_role not in ["CEO", "IK", "admin"]:
+            target_dept = effective_dept or None
+        return {"success": True, "data": get_pulse_trends(target_dept)}
+    except Exception as exc:
+        return {"success": False, "data": [], "error": str(exc)}
 
 
 @router.get("/api/dashboard/summary")

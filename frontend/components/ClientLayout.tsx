@@ -24,6 +24,7 @@ import {
   Search as SearchIcon,
   ShieldCheck,
   SlidersHorizontal,
+  Heart,
 } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useAuth } from "../context/AuthContext";
@@ -39,6 +40,7 @@ import GuidedOnboarding from "./GuidedOnboarding";
 const menuItems = [
   { href: "/dashboard", label: "Yönetici Özeti", icon: LayoutDashboard, section: "Genel" },
   { href: "/izinler", label: "İzin Yönetimi", icon: Plane, section: "Genel" },
+  { href: "/calisan-deneyimi", label: "Çalışan Deneyimi", icon: Heart, section: "Genel" },
   { href: "/organizasyon", label: "Çalışanlar & Organizasyon", icon: Building2, section: "Genel" },
   { href: "/degerlendirme", label: "Performans & Yetkinlik", icon: RefreshCw, section: "Performans & Yetenek" },
   { href: "/yetenek-matrisi", label: "Yetenek Matrisi", icon: BarChart3, section: "Performans & Yetenek" },

@@ -248,8 +248,9 @@ def load_pulse_answers():
     """Takım nabzı cevaplarını okur (file lock)."""
     return _pulse_store.load()
 
-def save_pulse_answer(employee_id: str, employee_name: str, department_id: str, 
-                     department_name: str, score: float, week_number: str) -> bool:
+def save_pulse_answer(employee_id: str, employee_name: str, department_id: str,
+                      department_name: str, score: float, week_number: str,
+                      feedback: Optional[str] = None) -> bool:
     """Yeni takım nabzı cevabı kaydeder (atomic write + file lock)."""
     current_data = load_pulse_answers()
     new_answer = {
@@ -259,6 +260,7 @@ def save_pulse_answer(employee_id: str, employee_name: str, department_id: str,
         "department_id": department_id,
         "department_name": department_name,
         "score": score,
+        "feedback": feedback or "",
         "created_at": datetime.now().isoformat(),
         "week_number": week_number
     }

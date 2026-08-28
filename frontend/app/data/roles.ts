@@ -30,26 +30,26 @@ export const REVERSE_ROLE_MAPPING: Record<UserRole, string[]> = {
  */
 export const ROLE_ACCESS_CONFIG: Record<UserRole, string[]> = {
   ceo: [
-    "/dashboard", "/organizasyon", "/degerlendirme", "/yetenek-matrisi", "/egitim",
+    "/dashboard", "/calisan-deneyimi", "/organizasyon", "/degerlendirme", "/yetenek-matrisi", "/egitim",
     "/gelisim", "/kariyer", "/yedekleme", "/maas", "/ise-alim", "/aday-testi",
     "/ekip-yonetimi", "/admin", "/izinler", "/ayarlar/roller",
     "/ayarlar/yetki-mimarisi", "/yonetici/maas-talep",
   ],
   hr_admin: [
-    "/dashboard", "/organizasyon", "/degerlendirme", "/yetenek-matrisi", "/egitim",
+    "/dashboard", "/calisan-deneyimi", "/organizasyon", "/degerlendirme", "/yetenek-matrisi", "/egitim",
     "/gelisim", "/kariyer", "/yedekleme", "/maas", "/ise-alim", "/aday-testi",
     "/ekip-yonetimi", "/admin", "/izinler", "/ayarlar/yetki-mimarisi",
     "/yonetici/maas-talep",
   ],
   director: [
-    "/dashboard", "/degerlendirme", "/egitim", "/gelisim", "/kariyer",
+    "/dashboard", "/calisan-deneyimi", "/degerlendirme", "/egitim", "/gelisim", "/kariyer",
     "/aday-testi", "/izinler", "/ekip-yonetimi", "/yonetici/maas-talep",
   ],
   manager: [
-    "/dashboard", "/degerlendirme", "/egitim", "/gelisim", "/kariyer",
+    "/dashboard", "/calisan-deneyimi", "/degerlendirme", "/egitim", "/gelisim", "/kariyer",
     "/aday-testi", "/izinler", "/ekip-yonetimi", "/yonetici/maas-talep",
   ],
-  employee: ["/egitim", "/gelisim", "/kariyer", "/aday-testi", "/izinler"],
+  employee: ["/egitim", "/calisan-deneyimi", "/gelisim", "/kariyer", "/aday-testi", "/izinler"],
 };
 
 export const ROLE_PERMISSIONS: Record<UserRole, {

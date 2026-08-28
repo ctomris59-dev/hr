@@ -24,18 +24,6 @@ import GlassCard from "../../../components/ui/GlassCard";
 import CountUp from "../../../components/ui/CountUp";
 import Skeleton from "@/components/ui/Skeleton";
 import { toScore } from "../../../lib/score";
-import {
-  Area,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "@/components/charts/recharts";
-
 const PERFORMANCE_TARGET = 4.5;
 const PULSE_TARGET = 7.0;
 
@@ -342,6 +330,28 @@ export default function DashboardPage() {
     ? latestPulse.average_score - previousPulse.average_score
     : null;
 
+  const pulseScopeEmployeeCount = useMemo(() => {
+  const role = user?.role || "EMPLOYEE";
+  const dept = user?.dept || user?.department || "";
+  if (isAdmin && selectedPulseDepartment) {
+    return mergedData.filter((person) => person.Departman === selectedPulseDepartment).length;
+  }
+  if ((role === "DIRECTOR" || role === "MANAGER") && dept) {
+    return mergedData.filter((person) => person.Departman === dept).length;
+  }
+  return mergedData.length;
+}, [isAdmin, selectedPulseDepartment, mergedData, user]);
+
+const latestPulseResponses = latestPulse?.count ?? 0;
+const pulseParticipation = pulseScopeEmployeeCount > 0 && latestPulseResponses > 0
+  ? Math.min(100, (latestPulseResponses / pulseScopeEmployeeCount) * 100)
+  : 0;
+const pulseStatus = latestPulse
+  ? latestPulse.average_score >= PULSE_TARGET
+    ? "Hedef üstü"
+    : "Gelişim alanı"
+  : "Veri bekleniyor";
+
   if (dataLoading || !userReady) {
     return (
       <div className="space-y-4">
@@ -575,134 +585,135 @@ export default function DashboardPage() {
         </GlassCard>
       </div>
 
-      {/* Employee experience trend */}
-      <div className="enterprise-card mb-4 p-4">
-        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300">
-              <Heart className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="enterprise-eyebrow mb-0.5">Çalışan deneyimi</p>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h2 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
-                  {isAdmin
-                    ? selectedPulseDepartment || "Şirket"
-                    : user?.dept || user?.department || "Ekip"} Mutluluk Trendi
-                </h2>
-                {latestPulse && (
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    Son ölçüm {latestPulse.average_score.toFixed(1).replace(".", ",")} / 10
-                  </span>
-                )}
-                {pulseDelta !== null && (
-                  <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-semibold ${
-                      pulseDelta >= 0 ? "text-emerald-700" : "text-red-600"
-                    }`}
-                  >
-                    {pulseDelta >= 0 ? (
-                      <TrendingUp className="h-3 w-3" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3" />
-                    )}
-                    {pulseDelta >= 0 ? "+" : ""}
-                    {pulseDelta.toFixed(1).replace(".", ",")} son ölçüme göre
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* Employee experience summary */}
+<div className="enterprise-card mb-4 p-4">
+  <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+    <div className="flex items-start gap-3">
+      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300">
+        <Heart className="h-4 w-4" />
+      </div>
+      <div>
+        <p className="enterprise-eyebrow">Çalışan deneyimi</p>
+        <h2 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
+Haftalık check-in özeti
+        </h2>
+        <p className="mt-0.5 text-[11px] text-slate-400">
+{isAdmin
+  ? selectedPulseDepartment || "Tüm şirket"
+  : user?.dept || user?.department || "Ekibiniz"} · çalışanların 1–10 deneyim yanıtlarından otomatik oluşur.
+        </p>
+      </div>
+    </div>
 
-          {isAdmin && (
-            <select
-              value={selectedPulseDepartment || ""}
-              onChange={(event) => setSelectedPulseDepartment(event.target.value || null)}
-              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 outline-none hover:border-slate-300 focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-            >
-              <option value="">Tüm Şirket</option>
-              {allDepartments.map((department) => (
-                <option key={department} value={department}>
-                  {department}
-                </option>
-              ))}
-            </select>
-          )}
+    <div className="flex flex-wrap items-center gap-2">
+      {isAdmin && (
+        <select
+value={selectedPulseDepartment || ""}
+onChange={(event) => setSelectedPulseDepartment(event.target.value || null)}
+className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 outline-none hover:border-slate-300 focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+aria-label="Çalışan deneyimi departmanı"
+        >
+<option value="">Tüm Şirket</option>
+{allDepartments.map((department) => (
+  <option key={department} value={department}>
+    {department}
+  </option>
+))}
+        </select>
+      )}
+      <Link
+        href="/calisan-deneyimi"
+        className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-indigo-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-300"
+      >
+        Check-in ekranı →
+      </Link>
+    </div>
+  </div>
+
+  {latestPulse ? (
+    <>
+      <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+<p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Deneyim skoru</p>
+<div className="mt-1.5 flex items-end gap-1.5">
+  <span className="text-xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
+    {latestPulse.average_score.toFixed(1).replace(".", ",")}
+  </span>
+  <span className="pb-0.5 text-[10px] font-medium text-slate-400">/ 10</span>
+</div>
         </div>
 
-        {pulseTrends.length > 0 ? (
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={pulseTrends} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-              <defs>
-                <linearGradient id="executivePulseArea" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.14} />
-                  <stop offset="90%" stopColor="#4f46e5" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="2 5" />
-              <XAxis
-                dataKey="week"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 10, fill: "#94a3b8" }}
-                tickFormatter={(value: string) => `H${String(value).split("W").pop() || value}`}
-              />
-              <YAxis
-                domain={[0, 10]}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 10, fill: "#94a3b8" }}
-                width={28}
-              />
-              <Tooltip
-                formatter={(value: any) => [
-                  `${Number(value).toFixed(2).replace(".", ",")} / 10`,
-                  "Mutluluk",
-                ]}
-                labelFormatter={(label) => `Hafta: ${label}`}
-              />
-              <Area
-                type="monotone"
-                dataKey="average_score"
-                stroke="none"
-                fill="url(#executivePulseArea)"
-              />
-              <Line
-                type="monotone"
-                dataKey="average_score"
-                stroke="#4f46e5"
-                strokeWidth={2.25}
-                dot={{ fill: "#ffffff", stroke: "#4f46e5", strokeWidth: 2, r: 3 }}
-                activeDot={{ fill: "#4f46e5", stroke: "#ffffff", strokeWidth: 2, r: 5 }}
-              />
-              <ReferenceLine
-                y={PULSE_TARGET}
-                stroke="#16a34a"
-                strokeDasharray="4 4"
-                label={{
-                  value: "Mutluluk hedefi 7,0",
-                  position: "insideTopRight",
-                  fill: "#16a34a",
-                  fontSize: 10,
-                }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/30">
-            <div className="text-center">
-              <Heart className="mx-auto mb-2 h-8 w-8 text-slate-300" />
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                Henüz çalışan deneyimi verisi yok
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Gerçek haftalık check-in sonuçları oluştuğunda burada gösterilecek.
-              </p>
-            </div>
-          </div>
-        )}
+        <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+<p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Katılım</p>
+<div className="mt-1.5 flex items-end justify-between gap-2">
+  <span className="text-xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
+    %{pulseParticipation.toFixed(0)}
+  </span>
+  <span className="pb-0.5 text-[10px] font-medium text-slate-400">{latestPulseResponses} yanıt</span>
+</div>
+        </div>
+
+        <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+<p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Önceki haftaya göre</p>
+<div className="mt-1.5 flex items-center gap-1.5">
+  {pulseDelta !== null ? (
+    <>
+      {pulseDelta >= 0 ? (
+        <TrendingUp className="h-4 w-4 text-emerald-600" />
+      ) : (
+        <TrendingDown className="h-4 w-4 text-red-500" />
+      )}
+      <span className={`text-xl font-semibold tracking-[-0.03em] ${pulseDelta >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+        {pulseDelta >= 0 ? "+" : ""}{pulseDelta.toFixed(1).replace(".", ",")}
+      </span>
+    </>
+  ) : (
+    <span className="text-xl font-semibold text-slate-400">—</span>
+  )}
+</div>
+        </div>
+
+        <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+<p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Durum</p>
+<div className="mt-1.5 flex items-center justify-between gap-2">
+  <span className={`text-sm font-semibold ${latestPulse.average_score >= PULSE_TARGET ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+    {pulseStatus}
+  </span>
+  <span className="text-[10px] font-medium text-slate-400">Hedef {PULSE_TARGET.toFixed(1).replace(".", ",")}</span>
+</div>
+        </div>
       </div>
 
+      <div className={`mt-3 flex items-start gap-2.5 rounded-lg border px-3 py-2.5 ${latestPulse.average_score >= PULSE_TARGET ? "border-emerald-100 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/10" : "border-amber-100 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/10"}`}>
+        {latestPulse.average_score >= PULSE_TARGET ? (
+<CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+        ) : (
+<AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+        )}
+        <p className="text-[11px] leading-5 text-slate-600 dark:text-slate-300">
+Son haftada {latestPulseResponses} çalışan check-in verdi. Deneyim skoru {latestPulse.average_score.toFixed(1).replace(".", ",")} / 10
+{pulseDelta !== null ? ` ve önceki haftaya göre ${Math.abs(pulseDelta).toFixed(1).replace(".", ",")} puan ${pulseDelta >= 0 ? "yükseldi" : "geriledi"}.` : "."}
+        </p>
+      </div>
+    </>
+  ) : (
+    <div className="mt-3 flex flex-col gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/30">
+      <div className="flex items-center gap-3">
+        <Heart className="h-5 w-5 flex-shrink-0 text-slate-300" />
+        <div>
+<p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Henüz check-in verisi yok</p>
+<p className="mt-0.5 text-[11px] text-slate-400">İlk çalışan yanıtı geldiğinde skor, katılım ve haftalık değişim burada otomatik oluşacak.</p>
+        </div>
+      </div>
+      <Link
+        href="/calisan-deneyimi"
+        className="inline-flex h-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-indigo-700"
+      >
+        İlk check-in'i başlat →
+      </Link>
+    </div>
+  )}
+</div>
       {/* Decision support */}
       <div className="mb-4 grid gap-3 lg:grid-cols-3">
         <div className="enterprise-card p-4 lg:col-span-2">
