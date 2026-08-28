@@ -33,7 +33,7 @@ type DemoTeam = { department: string; manager: string; managerPosition: string; 
 
 export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
   const role = String(currentUser?.role || "").toUpperCase();
-  const executiveName = role === "CEO" && currentUser?.name ? String(currentUser.name) : "Mert Demir";
+  const executiveName = role === "CEO" && currentUser?.name ? String(currentUser.name) : "Emin Öncü";
   const hrManagerName = role === "IK" && currentUser?.name ? String(currentUser.name) : "Selin Acar";
 
   const teams: DemoTeam[] = [
@@ -45,12 +45,16 @@ export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
     { department: "Proje & İş Geliştirme", manager: "Berk Aydın", managerPosition: "Proje Müdürü", staff: [["Nehir Keskin", "Proje Uzmanı"], ["Umut Karaca", "İş Geliştirme Uzmanı"], ["Zeynep Ekin", "Sürdürülebilirlik Uzmanı"], ["Alp Tekin", "Araştırma Uzmanı"]] },
   ];
 
-  const organization: any[] = [{ id: "P001", "Ad Soyad": executiveName, Departman: "Genel Yönetim", Pozisyon: "Genel Müdür", "İşe Giriş Tarihi": "2018-01-15", "Maaş (TL)": 185000 }];
+  const organization: any[] = [{
+    id: "P001", "Ad Soyad": executiveName, Departman: "Genel Yönetim", Pozisyon: "Genel Müdür", "İşe Giriş Tarihi": "2018-01-15", "Maaş (TL)": 185000,
+    career_aspiration: 4, mobility_willingness: 4,
+  }];
   let personIndex = 2;
   teams.forEach((team, teamIndex) => {
     organization.push({
       id: `P${String(personIndex++).padStart(3, "0")}`, "Ad Soyad": team.manager, Departman: team.department, Pozisyon: team.managerPosition,
       "Yönetici 1": executiveName, "İşe Giriş Tarihi": `20${18 + (teamIndex % 4)}-0${(teamIndex % 8) + 1}-15`, "Maaş (TL)": roleSalary(team.managerPosition, teamIndex + 5),
+      career_aspiration: 4 + (teamIndex % 2) * 0.5, mobility_willingness: 3.5 + (teamIndex % 3) * 0.5,
     });
     team.staff.forEach(([name, position], staffIndex) => {
       organization.push({
@@ -58,6 +62,8 @@ export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
         "Yönetici 1": team.manager, "Yönetici 2": executiveName,
         "İşe Giriş Tarihi": `20${20 + ((teamIndex + staffIndex) % 5)}-${String(((staffIndex * 2 + teamIndex) % 11) + 1).padStart(2, "0")}-10`,
         "Maaş (TL)": roleSalary(position, teamIndex + staffIndex),
+        career_aspiration: 3 + ((teamIndex + staffIndex) % 4) * 0.5,
+        mobility_willingness: 3 + ((teamIndex + staffIndex + 1) % 4) * 0.5,
       });
     });
   });
@@ -79,8 +85,6 @@ export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
         ],
         kpi_score: perf.kpi, manager_performance_score: perf.manager, performance_weights: { kpi: 0.6, manager: 0.4 }, Performans: perf.final,
         competency_score: competency, manager_scores: scores,
-        career_aspiration: period === 0 ? 3 + ((index + 1) % 3) : undefined,
-        mobility_willingness: period === 0 ? 3 + ((index + 2) % 3) : undefined,
         note: period === 0 ? "Somut hedef çıktıları ve rol davranışlarıyla birlikte kalibrasyonda değerlendirildi." : "Önceki dönem ölçümü.",
         is_star_performer: period === 0 && perf.final >= 4.55 && index % 3 === 0,
       });
@@ -90,20 +94,53 @@ export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
   const benchmarks = organization.map((person, index) => ({
     id: `bench-${index + 1}`, Departman: person.Departman, Pozisyon: person.Pozisyon,
     "Piyasa Ortalaması": Math.round((Number(person["Maaş (TL)"]) * (1.05 + (index % 4) * 0.025)) / 500) * 500,
-    source: "FutureHR V1 demo piyasa referansı", updatedAt: new Date().toISOString(),
+    Kaynak: "FutureHR V1 demo piyasa referansı", source: "FutureHR V1 demo piyasa referansı", updatedAt: new Date().toISOString(),
   }));
 
-  const developmentPlans = organization.slice(3, 13).map((person, index) => ({
-    id: `dev-${person.id}`, employee: person["Ad Soyad"], employee_id: person.id, competency: COMP_CODES[index % COMP_CODES.length],
-    actionType: index % 3 === 0 ? "Stretch Assignment" : index % 3 === 1 ? "Mentorluk" : "Proje",
-    action: index % 3 === 0 ? "Fonksiyonlar arası iyileştirme çalışmasında sorumluluk al" : index % 3 === 1 ? "Aylık mentor görüşmesi ve saha gözlemi" : "Ölçülebilir çıktı üreten gelişim projesi",
-    progress: index < 2 ? 45 : 70 + (index % 3) * 10, status: "Devam Ediyor", dueDate: index === 0 ? isoDateMonthsAgo(1).slice(0, 10) : isoDateMonthsAgo(-2).slice(0, 10),
-  }));
+  const developmentNames = new Set(["Derya Yalçın", "Gizem Arslan", "Can Polat", "Pelin Yılmaz", "Oğuz Kılıç", "Arda Eren", "Nehir Keskin", "Umut Karaca"]);
+  const developmentPlans = organization.filter((person) => developmentNames.has(person["Ad Soyad"])).map((person, index) => {
+    const actionTypes = ["İş Üstünde", "Koçluk", "Proje", "Formal Eğitim"] as const;
+    const actionType = actionTypes[index % actionTypes.length];
+    const competency = COMP_CODES[index % COMP_CODES.length];
+    const action = actionType === "İş Üstünde"
+      ? "Fonksiyonlar arası iyileştirme çalışmasında çıktı sorumluluğu al"
+      : actionType === "Koçluk"
+        ? "Ayda iki mentor görüşmesi yap ve öğrenimleri iş örnekleriyle kaydet"
+        : actionType === "Formal Eğitim"
+          ? "Rol için seçilen uygulamalı gelişim programını tamamla"
+          : "Ölçülebilir çıktı üreten altı haftalık gelişim projesini yürüt";
+    return {
+      id: `dev-${person.id}`, employee: person["Ad Soyad"], employee_id: person.id, competency,
+      goal: `${competency} gelişim alanını mevcut rol hedefiyle daha güçlü hizalamak`,
+      actionType, action,
+      successMetric: actionType === "Koçluk" ? "3 somut davranış örneği ve yönetici geri bildirimi" : "90 gün içinde ölçülebilir çıktı ve yönetici doğrulaması",
+      status: index % 5 === 0 ? "Planlandı" : "Devam Ediyor",
+      dueDate: index === 0 ? isoDateMonthsAgo(1).slice(0, 10) : isoDateMonthsAgo(-2).slice(0, 10),
+      createdBy: person["Yönetici 1"] || hrManagerName,
+      createdAt: isoDateMonthsAgo(2),
+      transferredToTraining: false,
+    };
+  });
 
-  const trainingAssignments = organization.slice(6, 18).map((person, index) => ({
-    id: `training-${person.id}`, employee: person["Ad Soyad"], title: index % 2 ? "Veriyle Karar Verme" : "Etkili Geri Bildirim",
-    status: index % 4 === 0 ? "Tamamlandı" : "Atandı", progress: index % 4 === 0 ? 100 : 20 + (index % 3) * 25, deadline: isoDateMonthsAgo(-1).slice(0, 10),
-  }));
+  const trainingNames = ["Pelin Yılmaz", "Oğuz Kılıç", "Gizem Arslan", "Can Polat", "Arda Eren", "Elif Başar", "Nehir Keskin", "Derya Yalçın"];
+  const trainingCatalog = [
+    ["analytics", "Analitik Düşünme ve Problem Çözme"],
+    ["communication", "Etkili İletişim ve Geri Bildirim"],
+    ["digital", "Dijital Okuryazarlık ve Verimlilik"],
+    ["leadership", "Yeni Nesil Liderlik"],
+  ] as const;
+  const trainingAssignments = trainingNames.map((name, index) => {
+    const person = organization.find((item) => item["Ad Soyad"] === name);
+    const [trainingId, trainingName] = trainingCatalog[index % trainingCatalog.length];
+    return {
+      id: `training-${person?.id || index + 1}`, employee: name, trainingId, trainingName,
+      source: index % 3 === 0 ? "Gelişim Planı" : "Yetkinlik açığı",
+      assignedBy: person?.["Yönetici 1"] || hrManagerName,
+      assignedAt: isoDateMonthsAgo(1),
+      dueDate: isoDateMonthsAgo(-1).slice(0, 10),
+      status: index % 4 === 0 ? "Devam Ediyor" : index % 4 === 3 ? "Tamamlandı" : "Atandı",
+    };
+  });
 
   const candidates = [
     ["Ece Kaya", "İşe Alım Uzmanı", "Mülakat"], ["Buse Yaman", "Finans Uzmanı", "Test"], ["Ali Rıza Akın", "Yazılım Uzmanı", "Mülakat"],
