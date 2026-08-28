@@ -1,51 +1,54 @@
-// Users data - Backend'deki users.json'dan dönüştürüldü
 export interface User {
   password: string;
   name: string;
   role: string;
   dept: string;
   position: string;
-  department?: string; // Alias for dept
-  managerId?: string; // ID of the manager this user reports to
+  department?: string;
+  managerId?: string;
 }
 
+// Yalnızca demo prototipinde kullanılan hesaplar. Gerçek SaaS oturumu
+// /api/secure-auth üzerinden yönetilir; bu kayıtlar production kimlik sistemi değildir.
 export const USERS: Record<string, User> = {
   ceo: {
-    password: "123456",
+    password: "123",
     name: "Emin Öncü",
     role: "CEO",
-    dept: "Yönetim",
-    position: "Yönetim Kurulu Başkanı",
+    dept: "Genel Yönetim",
+    department: "Genel Yönetim",
+    position: "Genel Müdür",
   },
   ik_dir: {
     password: "123",
-    name: "Canan İns (Dir)",
+    name: "Selin Acar",
     role: "IK",
     dept: "İnsan Kaynakları",
-    position: "İnsan Kaynakları Direktörü",
+    department: "İnsan Kaynakları",
+    position: "İnsan Kaynakları Müdürü",
   },
-  canan8442: {
+  demo_director: {
     password: "123",
-    name: "Canan İns (Dir)",
+    name: "Deniz Şahin",
     role: "DIRECTOR",
-    dept: "İnsan Kaynakları",
-    position: "İnsan Kaynakları Direktör",
+    dept: "BT & Dijital",
+    department: "BT & Dijital",
+    position: "Bilgi Teknolojileri Müdürü",
   },
-  mehmet4852: {
+  demo_manager: {
     password: "123",
-    name: "Mehmet İns (Mdr-1)",
+    name: "Hakan Çetin",
     role: "MANAGER",
-    dept: "İnsan Kaynakları",
-    position: "İnsan Kaynakları Müdür",
+    dept: "Operasyon & Üretim",
+    department: "Operasyon & Üretim",
+    position: "Üretim Müdürü",
   },
-  ayse9314: {
+  demo_employee: {
     password: "123",
-    name: "Ayşe İns (867)",
+    name: "Pelin Yılmaz",
     role: "PERSONEL",
-    dept: "İnsan Kaynakları",
-    position: "İnsan Kaynakları Kıdemli Uzman",
+    dept: "Operasyon & Üretim",
+    department: "Operasyon & Üretim",
+    position: "Üretim Mühendisi",
   },
 };
-
-
-
