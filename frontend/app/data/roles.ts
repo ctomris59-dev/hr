@@ -25,8 +25,8 @@ export const REVERSE_ROLE_MAPPING: Record<UserRole, string[]> = {
 
 /**
  * Sıkı varsayılan erişim modeli.
- * Hassas modüller (maaş, yetenek matrisi, halefiyet) yalnızca CEO ve İK'ya açıktır.
- * Firma bazlı görünürlük ayarları accessControl.ts üzerinden bu tabanın üzerine uygulanır.
+ * Hassas modüller (ücret, yetenek matrisi, halefiyet) yalnızca CEO ve İK'ya açıktır.
+ * Personel self-service görünümünde teknik yönetim/aday modülleri gösterilmez.
  */
 export const ROLE_ACCESS_CONFIG: Record<UserRole, string[]> = {
   ceo: [
@@ -43,13 +43,15 @@ export const ROLE_ACCESS_CONFIG: Record<UserRole, string[]> = {
   ],
   director: [
     "/dashboard", "/calisan-deneyimi", "/rol-mimarisi", "/degerlendirme", "/kalibrasyon", "/egitim", "/gelisim", "/kariyer",
-    "/aday-testi", "/izinler", "/ekip-yonetimi", "/yonetici/maas-talep",
+    "/izinler", "/ekip-yonetimi", "/yonetici/maas-talep",
   ],
   manager: [
     "/dashboard", "/calisan-deneyimi", "/rol-mimarisi", "/degerlendirme", "/kalibrasyon", "/egitim", "/gelisim", "/kariyer",
-    "/aday-testi", "/izinler", "/ekip-yonetimi", "/yonetici/maas-talep",
+    "/izinler", "/ekip-yonetimi", "/yonetici/maas-talep",
   ],
-  employee: ["/egitim", "/calisan-deneyimi", "/rol-mimarisi", "/gelisim", "/kariyer", "/aday-testi", "/izinler"],
+  employee: [
+    "/kariyer", "/gelisim", "/egitim", "/izinler", "/calisan-deneyimi",
+  ],
 };
 
 export const ROLE_PERMISSIONS: Record<UserRole, {
