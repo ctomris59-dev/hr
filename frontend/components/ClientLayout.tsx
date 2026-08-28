@@ -85,10 +85,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     };
   }, [pathname]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window === "undefined") return;
+    const secure = user?.authMode === "secure";
+    if (secure) {
+      await fetch("/api/secure-auth/logout", { method: "POST" }).catch(() => null);
+    }
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
-    router.push("/");
+    window.dispatchEvent(new CustomEvent("userChanged"));
+    router.push(secure ? "/sistem-girisi" : "/");
     router.refresh();
   };
 
