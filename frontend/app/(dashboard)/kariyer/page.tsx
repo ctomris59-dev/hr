@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Map, Target, TrendingUp } from "lucide-react";
+import AIDecisionSupport from "@/components/AIDecisionSupport";
 import { POSITIONS } from "../../data/jobData";
 import { getManageableEmployees } from "../../utils/hierarchy";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
@@ -50,6 +51,7 @@ export default function KariyerPage() {
   }, [currentRole.title, currentRole.levelRank, familyRoles, targetPosition]);
 
   const readiness = targetPosition ? calculateCareerReadiness(person, targetPosition) : null;
+  const targetRole = targetPosition ? getCareerRole(targetPosition) : null;
 
   const updateAspiration = (value: number) => {
     const next = orgData.map((p) => p["Ad Soyad"] === selectedName ? { ...p, career_aspiration: value } : p);
@@ -57,6 +59,39 @@ export default function KariyerPage() {
     setStorageData(STORAGE_KEYS.ORG_CHART, next);
     window.dispatchEvent(new CustomEvent("dataUpdated"));
   };
+
+  const aiContext = readiness && targetRole ? {
+    module: "career_readiness",
+    employee: {
+      currentPosition: currentRole.title,
+      currentFamily: currentRole.family,
+      currentLevel: currentRole.level,
+      targetPosition: targetRole.title,
+      targetFamily: targetRole.family,
+      targetLevel: targetRole.level,
+    },
+    readiness: {
+      index: readiness.index,
+      band: readiness.band,
+      competencyFit: readiness.competencyFit,
+      performance: readiness.performance,
+      potential: readiness.potential,
+      experience: readiness.experience,
+      aspiration: readiness.aspiration,
+      notes: readiness.notes,
+    },
+    careerSignals: {
+      aspiration: Number(orgPerson.career_aspiration ?? 3),
+      levelDistance: targetRole.levelRank - currentRole.levelRank,
+      familyChange: targetRole.family !== currentRole.family,
+    },
+    evidence: {
+      performance: Number(assessment.Performans || assessment.performance || 0) || null,
+      competencyScore: Number(assessment.competency_score || 0) || null,
+      evaluationDate: assessment.date || assessment.Tarih || null,
+    },
+    instruction: "Hazır bulunuşluk yüzdesini tek başına karar olarak yorumlama. Hedef rol geçişindeki güçlü kanıtları, eksikleri, seviye/aile mesafesini ve gelişim gereksinimlerini açıklayarak kariyer görüşmesi için doğrulama soruları üret. Terfi kararı verme.",
+  } : {};
 
   return (
     <div className="min-w-0 space-y-4 overflow-hidden">
@@ -186,6 +221,16 @@ export default function KariyerPage() {
           </div>
         </section>
       </div>
+
+      {readiness && targetRole && <AIDecisionSupport
+        kind="career"
+        context={aiContext}
+        resetKey={`${selectedName}-${targetPosition}`}
+        title="AI Kariyer Karar Desteği"
+        description="Hazır bulunuşluk endeksini oluşturan yetkinlik uyumu, performans, potansiyel, deneyim ve kariyer isteğini birlikte yorumlar. AI terfi önermez; hedef role geçişte güçlü kanıtları, açıkları ve kariyer görüşmesinde doğrulanması gereken noktaları çıkarır."
+        buttonLabel="Kariyer analizini oluştur"
+        questionTitle="Kariyer görüşmesi soruları"
+      />}
 
       <div className="grid gap-3 md:grid-cols-3">
         <Info icon={Target} title="Job family" text="Benzer uzmanlık alanındaki roller aynı kariyer ailesinde gruplanır." />
