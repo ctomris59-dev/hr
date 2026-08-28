@@ -6,7 +6,7 @@ export type SensitiveDomain = "salary" | "talent" | "succession";
 export type ModuleKey =
   | "dashboard" | "leave" | "experience" | "organization" | "jobArchitecture" | "performance" | "calibration" | "talent" | "training"
   | "development" | "career" | "succession" | "salary" | "recruitment" | "assessment"
-  | "team" | "admin" | "managerSalary" | "accessArchitecture";
+  | "team" | "admin" | "governance" | "dataImport" | "managerSalary" | "accessArchitecture";
 
 export interface CompanyAccessPolicy {
   version: 2;
@@ -39,11 +39,7 @@ export const ACCESS_POLICY_STORAGE_KEY = "hr_access_policy_v2";
 export const DEFAULT_COMPANY_ACCESS_POLICY: CompanyAccessPolicy = {
   version: 2,
   moduleOverrides: {},
-  performance: {
-    secondManagerCanEvaluate: true,
-    hrCanOverride: false,
-    hrOverrideRequiresReason: true,
-  },
+  performance: { secondManagerCanEvaluate: true, hrCanOverride: false, hrOverrideRequiresReason: true },
 };
 
 export const MODULE_DEFINITIONS: Array<{ key: ModuleKey; label: string; route: string; sensitive?: SensitiveDomain }> = [
@@ -54,16 +50,18 @@ export const MODULE_DEFINITIONS: Array<{ key: ModuleKey; label: string; route: s
   { key: "jobArchitecture", label: "Rol & Yetkinlik Mimarisi", route: "/rol-mimarisi" },
   { key: "performance", label: "Performans & Yetkinlik", route: "/degerlendirme" },
   { key: "calibration", label: "Performans Kalibrasyonu", route: "/kalibrasyon" },
-  { key: "talent", label: "Yetenek Matrisi", route: "/yetenek-matrisi", sensitive: "talent" },
+  { key: "talent", label: "Yetenek & 9-Box", route: "/yetenek-matrisi", sensitive: "talent" },
   { key: "training", label: "Eğitim", route: "/egitim" },
   { key: "development", label: "Gelişim Planı", route: "/gelisim" },
   { key: "career", label: "Kariyer Yolu", route: "/kariyer" },
-  { key: "succession", label: "Yedekleme / Halefiyet", route: "/yedekleme", sensitive: "succession" },
-  { key: "salary", label: "Maaş Simülasyonu", route: "/maas", sensitive: "salary" },
-  { key: "managerSalary", label: "Yönetici Maaş Talepleri", route: "/yonetici/maas-talep" },
+  { key: "succession", label: "Halefiyet & Yedekleme", route: "/yedekleme", sensitive: "succession" },
+  { key: "salary", label: "Ücret Karar Merkezi", route: "/maas", sensitive: "salary" },
+  { key: "managerSalary", label: "Yönetici Ücret Talepleri", route: "/yonetici/maas-talep" },
   { key: "recruitment", label: "İşe Alım", route: "/ise-alim" },
   { key: "assessment", label: "Yetkinlik Testi", route: "/aday-testi" },
   { key: "team", label: "Ekip", route: "/ekip-yonetimi" },
+  { key: "governance", label: "Güven & KVKK", route: "/admin/guven-kvkk" },
+  { key: "dataImport", label: "Veri Aktarımı", route: "/admin/veri-aktarimi" },
   { key: "admin", label: "Kullanıcı & Yetki", route: "/admin" },
   { key: "accessArchitecture", label: "Yetki Mimarisi", route: "/ayarlar/yetki-mimarisi" },
 ];
@@ -87,9 +85,7 @@ export function loadCompanyAccessPolicy(): CompanyAccessPolicy {
       performance: { ...DEFAULT_COMPANY_ACCESS_POLICY.performance, ...(parsed.performance || {}) },
       version: 2,
     };
-  } catch {
-    return DEFAULT_COMPANY_ACCESS_POLICY;
-  }
+  } catch { return DEFAULT_COMPANY_ACCESS_POLICY; }
 }
 
 export function saveCompanyAccessPolicy(policy: CompanyAccessPolicy): void {
@@ -113,22 +109,12 @@ export function canAccessRoute(role: UserRole | null | undefined, pathname: stri
   if (!moduleKey) return hasAccess(role, pathname);
   const policy = loadCompanyAccessPolicy();
   const override = policy.moduleOverrides?.[role]?.[moduleKey];
-  // Firma politikası güvenliği gevşetmez; varsayılan erişimi yalnızca daraltabilir.
   return override === false ? false : true;
 }
 
-export function canConfigureAccess(role: UserRole | null | undefined): boolean {
-  return role === "ceo";
-}
-
-export function canViewAccessArchitecture(role: UserRole | null | undefined): boolean {
-  return role === "ceo" || role === "hr_admin";
-}
-
-export function getSensitiveScope(role: UserRole | null | undefined, domain: SensitiveDomain): DataScope {
-  if (!role) return "NONE";
-  return SENSITIVE_SCOPE_BY_ROLE[domain][role] || "NONE";
-}
+export function canConfigureAccess(role: UserRole | null | undefined): boolean { return role === "ceo"; }
+export function canViewAccessArchitecture(role: UserRole | null | undefined): boolean { return role === "ceo" || role === "hr_admin"; }
+export function getSensitiveScope(role: UserRole | null | undefined, domain: SensitiveDomain): DataScope { return role ? SENSITIVE_SCOPE_BY_ROLE[domain][role] || "NONE" : "NONE"; }
 
 export function getManagerRelationship(user: AccessUser | null, employee: AccessEmployee | null): "Yönetici 1" | "Yönetici 2" | null {
   const name = String(user?.name || "").trim();
@@ -142,9 +128,7 @@ export function getPerformanceViewTargets(user: AccessUser | null, employees: Ac
   if (!user) return [];
   const role = mapToUserRole(String(user.role || ""));
   if (role === "hr_admin") return employees;
-  if (role === "ceo" || role === "director" || role === "manager") {
-    return employees.filter((employee) => getManagerRelationship(user, employee) !== null);
-  }
+  if (role === "ceo" || role === "director" || role === "manager") return employees.filter((employee) => getManagerRelationship(user, employee) !== null);
   return employees.filter((employee) => String(employee["Ad Soyad"] || "") === String(user.name || ""));
 }
 
@@ -152,26 +136,15 @@ export function canEvaluateEmployee(user: AccessUser | null, employee: AccessEmp
   if (!user || !employee) return { allowed: false, relation: null, override: false, reason: "Kullanıcı veya çalışan bulunamadı." };
   const role = mapToUserRole(String(user.role || ""));
   const policy = loadCompanyAccessPolicy();
-
-  if (role === "hr_admin") {
-    return policy.performance.hrCanOverride
-      ? { allowed: true, relation: "İK Override", override: true }
-      : { allowed: false, relation: null, override: false, reason: "İK sonuçları izler; varsayılan politikada puan veremez." };
-  }
+  if (role === "hr_admin") return policy.performance.hrCanOverride
+    ? { allowed: true, relation: "İK Override", override: true }
+    : { allowed: false, relation: null, override: false, reason: "İK sonuçları izler; varsayılan politikada puan veremez." };
   if (role === "employee") return { allowed: false, relation: null, override: false, reason: "Personel başka çalışanı değerlendiremez." };
-
   const relation = getManagerRelationship(user, employee);
   if (!relation) return { allowed: false, relation: null, override: false, reason: "Çalışan bu kullanıcının doğrudan raporu değil." };
-  if (relation === "Yönetici 2" && !policy.performance.secondManagerCanEvaluate) {
-    return { allowed: false, relation, override: false, reason: "Firma politikasında Yönetici 2 değerlendirmesi kapalı." };
-  }
+  if (relation === "Yönetici 2" && !policy.performance.secondManagerCanEvaluate) return { allowed: false, relation, override: false, reason: "Firma politikasında Yönetici 2 değerlendirmesi kapalı." };
   return { allowed: true, relation, override: false };
 }
 
-export function roleLabel(role: UserRole): string {
-  return ({ ceo: "CEO / Genel Müdür", hr_admin: "İK Yöneticisi", director: "Direktör", manager: "Müdür / Yönetici", employee: "Personel" } as Record<UserRole, string>)[role];
-}
-
-export function scopeLabel(scope: DataScope): string {
-  return ({ NONE: "Erişim yok", SELF: "Kendi", DIRECT_REPORTS: "Doğrudan ekip", DEPARTMENT: "Departman", COMPANY: "Tüm şirket", ASSIGNED: "Atandığı kayıtlar" } as Record<DataScope, string>)[scope];
-}
+export function roleLabel(role: UserRole): string { return ({ ceo: "CEO / Genel Müdür", hr_admin: "İK Yöneticisi", director: "Direktör", manager: "Müdür / Yönetici", employee: "Personel" } as Record<UserRole, string>)[role]; }
+export function scopeLabel(scope: DataScope): string { return ({ NONE: "Erişim yok", SELF: "Kendi", DIRECT_REPORTS: "Doğrudan ekip", DEPARTMENT: "Departman", COMPANY: "Tüm şirket", ASSIGNED: "Atandığı kayıtlar" } as Record<DataScope, string>)[scope]; }
