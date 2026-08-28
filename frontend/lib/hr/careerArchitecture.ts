@@ -193,36 +193,49 @@ const COMPETENCY_LABEL_TO_CODE: Record<string, string> = {
   "İletişim Becerileri": "COM",
 };
 
-function competencyFit(person: any, targetPosition: string): number {
+function competencyFit(person: any, targetPosition: string): { score: number; coverage: number } {
   const resolution = resolveTargetProfile(targetPosition);
   const target = resolution.profile;
   const current = extractCompetencyMap(person);
   const keys = Object.keys(target);
-  if (!keys.length) return 50;
+  if (!keys.length) return { score: 0, coverage: 0 };
 
   const weightKey = resolution.canonicalPosition || targetPosition;
   const roleWeights = JOB_PROFILE_WEIGHTS[weightKey];
   let weightedScore = 0;
   let usedWeight = 0;
+  let totalPossibleWeight = 0;
   keys.forEach((label) => {
     const code = COMPETENCY_LABEL_TO_CODE[label] || label;
     const actual = current[code];
     const expected = Number(target[label]);
-    if (!Number.isFinite(actual) || !Number.isFinite(expected) || expected <= 0) return;
     const weight = Number(roleWeights?.[label] ?? 1);
+    if (!Number.isFinite(expected) || expected <= 0 || !Number.isFinite(weight) || weight <= 0) return;
+    totalPossibleWeight += weight;
+    if (!Number.isFinite(actual) || actual <= 0) return;
     weightedScore += Math.min(1, actual / expected) * 100 * weight;
     usedWeight += weight;
   });
-  return usedWeight ? weightedScore / usedWeight : 50;
+  return {
+    score: usedWeight ? weightedScore / usedWeight : 0,
+    coverage: totalPossibleWeight ? Math.round((usedWeight / totalPossibleWeight) * 100) : 0,
+  };
 }
 
-function tenureYears(person: any): number {
+function tenureInfo(person: any): { years: number; available: boolean } {
   const direct = Number(person?.["Kıdem (Yıl)"] ?? person?.Calisma_Yili ?? person?.tenure);
-  if (Number.isFinite(direct) && direct >= 0) return direct;
+  if (Number.isFinite(direct) && direct >= 0) return { years: direct, available: true };
   const start = person?.["İşe Giriş Tarihi"] || person?.hireDate;
-  if (!start) return 0;
+  if (!start) return { years: 0, available: false };
   const date = new Date(start);
-  return Number.isNaN(date.getTime()) ? 0 : Math.max(0, (Date.now() - date.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  return Number.isNaN(date.getTime())
+    ? { years: 0, available: false }
+    : { years: Math.max(0, (Date.now() - date.getTime()) / (365.25 * 24 * 60 * 60 * 1000)), available: true };
+}
+
+function fivePoint(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 1 && n <= 5 ? n : null;
 }
 
 export interface CareerReadiness {
@@ -234,6 +247,7 @@ export interface CareerReadiness {
   experience: number;
   aspiration: number;
   levelDistance: number;
+  dataCoverage: number;
   notes: string[];
 }
 
@@ -242,19 +256,37 @@ export function calculateCareerReadiness(person: any, targetPosition: string): C
   const targetRole = getCareerRole(targetPosition);
   const targetResolution = resolveTargetProfile(targetPosition);
   const levelDistance = Math.max(0, targetRole.levelRank - currentRole.levelRank);
-  const fit = competencyFit(person, targetPosition);
-  const performanceScore = Math.min(100, Math.max(0, (Number(person?.Performans ?? person?.performance ?? 0) / 5) * 100));
+  const fitResult = competencyFit(person, targetPosition);
+  const performanceRaw = fivePoint(person?.Performans ?? person?.performance);
+  const performanceScore = performanceRaw === null ? 0 : (performanceRaw / 5) * 100;
   const potentialResult = calculatePotentialIndex(person);
-  const potentialScore = (potentialResult.score / 5) * 100;
-  const years = tenureYears(person);
-  const experienceScore = Math.min(100, years >= 5 ? 100 : years * 20);
-  const aspirationRaw = Number(person?.career_aspiration ?? person?.careerAspiration ?? 3);
-  const aspirationScore = Math.min(100, Math.max(0, (aspirationRaw / 5) * 100));
-  let index = fit * 0.5 + performanceScore * 0.2 + potentialScore * 0.15 + experienceScore * 0.1 + aspirationScore * 0.05;
+  const potentialScore = potentialResult.score > 0 ? (potentialResult.score / 5) * 100 : 0;
+  const tenure = tenureInfo(person);
+  const experienceScore = tenure.available ? Math.min(100, tenure.years >= 5 ? 100 : tenure.years * 20) : 0;
+  const aspirationRaw = fivePoint(person?.career_aspiration ?? person?.careerAspiration);
+  const aspirationScore = aspirationRaw === null ? 0 : (aspirationRaw / 5) * 100;
+
+  const components = [
+    { key: "competency", score: fitResult.score, weight: 0.5 * (fitResult.coverage / 100), available: fitResult.coverage > 0 },
+    { key: "performance", score: performanceScore, weight: 0.2, available: performanceRaw !== null },
+    { key: "potential", score: potentialScore, weight: 0.15 * (potentialResult.confidence / 100), available: potentialResult.score > 0 && potentialResult.confidence > 0 },
+    { key: "experience", score: experienceScore, weight: 0.1, available: tenure.available },
+    { key: "aspiration", score: aspirationScore, weight: 0.05, available: aspirationRaw !== null },
+  ].filter((component) => component.available && component.weight > 0);
+
+  const usedWeight = components.reduce((sum, component) => sum + component.weight, 0);
+  let index = usedWeight > 0
+    ? components.reduce((sum, component) => sum + component.score * component.weight, 0) / usedWeight
+    : 0;
   if (levelDistance > 1) index -= Math.min(20, (levelDistance - 1) * 10);
   if (targetRole.family !== currentRole.family) index -= 5;
+
+  const dataCoverage = Math.round(Math.min(100, usedWeight * 100));
+  if (dataCoverage < 40) index = Math.min(index, 44);
+  else if (dataCoverage < 60) index = Math.min(index, 64);
   index = Math.round(Math.min(100, Math.max(0, index)));
   const band = index >= 80 ? "Hazır" : index >= 65 ? "Yakın" : index >= 45 ? "Gelişim Gerekli" : "Uzun Vadeli";
+
   const notes: string[] = [];
   if (targetResolution.aliasMatched && targetResolution.canonicalPosition) {
     notes.push(`Pozisyon adı FutureHR kanonik rolüne eşlendi: ${targetPosition} → ${targetResolution.canonicalPosition}.`);
@@ -264,7 +296,24 @@ export function calculateCareerReadiness(person: any, targetPosition: string): C
   const weightKey = targetResolution.canonicalPosition || targetPosition;
   if (JOB_PROFILE_WEIGHTS[weightKey]) notes.push("Rol uyumu, FHR-COMP-JOB-2.1 kritik yetkinlik ağırlıklarıyla hesaplandı.");
   if (levelDistance > 1) notes.push(`Hedef rol mevcut seviyenin ${levelDistance} kademe üzerinde.`);
-  if (fit < 70) notes.push("Hedef rol yetkinliklerinde anlamlı gelişim alanı var.");
+  if (fitResult.coverage < 70) notes.push(`Hedef rol yetkinlik veri kapsamı %${fitResult.coverage}; eksik yetkinlikler nötr puanla doldurulmadı.`);
+  if (fitResult.score > 0 && fitResult.score < 70) notes.push("Hedef rol yetkinliklerinde anlamlı gelişim alanı var.");
+  if (performanceRaw === null) notes.push("Geçerli performans ölçümü bulunmuyor.");
+  if (!tenure.available) notes.push("Deneyim/kıdem bilgisi bulunmuyor.");
+  if (aspirationRaw === null) notes.push("Kariyer isteği teyit edilmemiş; hazır bulunuşluk puanına nötr değer eklenmedi.");
   if (potentialResult.missingInputs.length) notes.push(`Potansiyel güveni için eksik: ${potentialResult.missingInputs.join(", ")}.`);
-  return { index, band, competencyFit: Math.round(fit), performance: Math.round(performanceScore), potential: Math.round(potentialScore), experience: Math.round(experienceScore), aspiration: Math.round(aspirationScore), levelDistance, notes };
+  if (dataCoverage < 60) notes.push(`Karar veri kapsamı %${dataCoverage}; düşük veriyle "Hazır" sonucu üretilmez.`);
+
+  return {
+    index,
+    band,
+    competencyFit: Math.round(fitResult.score),
+    performance: Math.round(performanceScore),
+    potential: Math.round(potentialScore),
+    experience: Math.round(experienceScore),
+    aspiration: Math.round(aspirationScore),
+    levelDistance,
+    dataCoverage,
+    notes,
+  };
 }
