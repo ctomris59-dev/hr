@@ -1,11 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { UserRole } from "../app/data/roles";
+import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { Shield } from "lucide-react";
 
 export default function DemoRoleSwitcher() {
   const { currentUserRole, switchRole } = useAuth();
+  const [secureSession, setSecureSession] = useState(false);
+
+  useEffect(() => {
+    const refresh = () => {
+      const user = getStorageData<any>(STORAGE_KEYS.CURRENT_USER, null);
+      setSecureSession(user?.authMode === "secure");
+    };
+    refresh();
+    window.addEventListener("userChanged", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("userChanged", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  if (secureSession) return null;
 
   const roles: { value: UserRole; label: string }[] = [
     { value: "ceo", label: "CEO" },
