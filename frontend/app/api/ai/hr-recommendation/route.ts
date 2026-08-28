@@ -136,6 +136,25 @@ Kurallar:
 - En fazla 4 güçlü kanıt, 4 eksik kanıt, 4 aksiyon ve 4 soru üret.`;
 }
 
+function buildGroqPrompt(kind: RecommendationKind, context: any): string {
+  return `${buildPrompt(kind, context)}
+
+YANIT FORMATI:
+Yalnızca tek bir geçerli JSON nesnesi döndür. Markdown, açıklama, kod bloğu veya JSON dışında hiçbir metin yazma.
+Tam olarak şu alanları kullan:
+{
+  "summary": "kısa özet",
+  "confidence": "düşük|orta|yüksek",
+  "confidenceReason": "güven gerekçesi",
+  "evidenceStrengths": ["kanıt"],
+  "evidenceGaps": ["eksik kanıt"],
+  "nextActions": ["aksiyon"],
+  "interviewQuestions": ["soru"],
+  "guardrail": "Bu çıktı nihai İK kararı değildir."
+}
+Tüm diziler en fazla 4 öğe içersin. Boşsa [] kullan. Tüm metinler çift tırnak içinde olsun.`;
+}
+
 function extractOpenAIResponseText(payload: any): string | null {
   if (typeof payload?.output_text === "string" && payload.output_text.trim()) return payload.output_text.trim();
   const chunks: string[] = [];
@@ -150,6 +169,24 @@ function extractOpenAIResponseText(payload: any): string | null {
 function extractGroqResponseText(payload: any): string | null {
   const text = payload?.choices?.[0]?.message?.content;
   return typeof text === "string" && text.trim() ? text.trim() : null;
+}
+
+function parseJsonLoose(text: string | null): any {
+  if (!text) return null;
+  const attempts = [text.trim(), text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim()];
+
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) attempts.push(text.slice(firstBrace, lastBrace + 1));
+
+  for (const candidate of attempts) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Try the next representation.
+    }
+  }
+  return null;
 }
 
 function normalizeAnalysis(value: any, fallback: DecisionAnalysis): DecisionAnalysis {
@@ -191,35 +228,55 @@ function providerInfo(): { provider: AIProvider; configured: boolean; model: str
   };
 }
 
-async function callGroq(kind: RecommendationKind, context: any) {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return null;
-  const model = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+async function groqRequest(apiKey: string, model: string, kind: RecommendationKind, context: any, jsonMode: boolean) {
+  const body: Record<string, any> = {
+    model,
+    messages: [
+      {
+        role: "system",
+        content: "Sen FutureHR İK karar destek motorusun. Yanıtın yalnızca geçerli JSON olmalı; markdown kullanma.",
+      },
+      { role: "user", content: buildGroqPrompt(kind, context) },
+    ],
+    temperature: 0,
+    max_completion_tokens: 1200,
+  };
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  if (jsonMode) body.response_format = { type: "json_object" };
+
+  return fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: buildPrompt(kind, context) }],
-      max_completion_tokens: 900,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "futurehr_decision_support",
-          strict: true,
-          schema: ANALYSIS_SCHEMA,
-        },
-      },
-    }),
+    body: JSON.stringify(body),
   });
+}
+
+async function callGroq(kind: RecommendationKind, context: any) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+  const model = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+
+  let response = await groqRequest(apiKey, model, kind, context, true);
+  let firstError = "";
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Groq ${response.status}: ${errorText.slice(0, 700)}`);
+    firstError = await response.text();
+    const shouldRetry = response.status === 400 || response.status === 422;
+    if (!shouldRetry) {
+      throw new Error(`Groq ${response.status}: ${firstError.slice(0, 700)}`);
+    }
+
+    // Some Groq models occasionally fail constrained JSON generation even when the
+    // prompt is valid. Retry once without response_format and parse the JSON ourselves.
+    response = await groqRequest(apiKey, model, kind, context, false);
+  }
+
+  if (!response.ok) {
+    const retryError = await response.text();
+    throw new Error(`Groq ${response.status}: ${retryError.slice(0, 500)}${firstError ? ` | İlk deneme: ${firstError.slice(0, 180)}` : ""}`);
   }
 
   const payload = await response.json();
@@ -311,11 +368,10 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      let parsed: any;
-      try {
-        parsed = JSON.parse(result.text);
-      } catch {
-        parsed = null;
+      const parsed = parseJsonLoose(result.text);
+      if (!parsed) {
+        lastError = `${provider} geçerli JSON üretemedi.`;
+        continue;
       }
 
       const analysis = normalizeAnalysis(parsed, fallback);
@@ -340,6 +396,6 @@ export async function POST(request: NextRequest) {
     model: info.model,
     analysis: fallback,
     recommendation: fallback.summary,
-    note: `AI servisine erişilemedi; kural bazlı yedek analiz gösteriliyor.${lastError ? ` (${lastError.split("\n")[0].slice(0, 120)})` : ""}`,
+    note: `AI servisine erişilemedi; kural bazlı yedek analiz gösteriliyor.${lastError ? ` (${lastError.split("\n")[0].slice(0, 160)})` : ""}`,
   });
 }
