@@ -2,9 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { UserRole } from "../app/data/roles";
+import type { UserRole } from "../app/data/roles";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
-import { Shield } from "lucide-react";
+import { DEMO_PERSONAS, PRIMARY_DEMO_ROLES } from "../lib/hr/demoPersonas";
+import { UsersRound } from "lucide-react";
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  ceo: "CEO",
+  hr_admin: "İK",
+  director: "Direktör",
+  manager: "Yönetici",
+  employee: "Personel",
+};
 
 export default function DemoRoleSwitcher() {
   const { currentUserRole, switchRole } = useAuth();
@@ -26,26 +35,19 @@ export default function DemoRoleSwitcher() {
 
   if (secureSession) return null;
 
-  const roles: { value: UserRole; label: string }[] = [
-    { value: "ceo", label: "CEO" },
-    { value: "hr_admin", label: "İK" },
-    { value: "director", label: "Direktör" },
-    { value: "manager", label: "Yönetici" },
-    { value: "employee", label: "Personel" },
-  ];
-
   return (
-    <div className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-2.5 lg:flex dark:border-slate-700 dark:bg-slate-800/70">
-      <Shield className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.8} />
-      <span className="hidden text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 2xl:inline">Demo rol</span>
+    <div className="hidden h-9 items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-2.5 lg:flex dark:border-indigo-900/40 dark:bg-indigo-950/20">
+      <UsersRound className="h-3.5 w-3.5 text-indigo-500" strokeWidth={1.8} />
+      <span className="hidden text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-500 2xl:inline">Demo persona</span>
       <select
         value={currentUserRole || ""}
         onChange={(e) => { const selectedRole = e.target.value as UserRole; if (selectedRole) switchRole(selectedRole); }}
-        aria-label="Demo rol seçimi"
-        className="min-w-[88px] cursor-pointer border-0 bg-transparent py-0 text-xs font-medium text-slate-600 outline-none dark:text-slate-300"
+        aria-label="Demo persona seçimi"
+        className="min-w-[132px] cursor-pointer border-0 bg-transparent py-0 text-xs font-semibold text-slate-700 outline-none dark:text-slate-200"
       >
-        <option value="">Rol seçin</option>
-        {roles.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
+        {PRIMARY_DEMO_ROLES.map((role) => (
+          <option key={role} value={role}>{ROLE_LABELS[role]} · {DEMO_PERSONAS[role].name}</option>
+        ))}
       </select>
     </div>
   );
