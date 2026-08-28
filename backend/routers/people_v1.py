@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -31,6 +31,8 @@ class EmployeeCreate(BaseModel):
 
 
 class EmployeeView(EmployeeCreate):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     active: bool
 
