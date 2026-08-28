@@ -157,7 +157,9 @@ const REQUIRED_BY_KIND: Record<string, Array<{ sources: EvidenceSource[]; label:
 
 export function buildEvidenceGraph(kind: string, context: Record<string, unknown>): EvidenceGraphResult {
   const nodes = flatten(context).filter((node) => node.source !== "other" || node.weight >= 0.5);
-  const sources = new Set(nodes.map((node) => node.source).filter((source) => source !== "derived" && source !== "other"));
+  const sources = new Set<EvidenceSource>(
+    nodes.map((node) => node.source).filter((source) => source !== "derived" && source !== "other")
+  );
   const directNodes = nodes.filter((node) => node.direct);
   const totalWeight = nodes.reduce((sum, node) => sum + node.weight, 0) || 1;
   const directWeight = directNodes.reduce((sum, node) => sum + node.weight, 0);
