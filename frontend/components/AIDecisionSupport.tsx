@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 
-export type AIDecisionKind = "talent" | "recruitment" | "development" | "career" | "succession";
+export type AIDecisionKind = "talent" | "recruitment" | "performance" | "development" | "career" | "succession";
 
 type Confidence = "düşük" | "orta" | "yüksek";
 
