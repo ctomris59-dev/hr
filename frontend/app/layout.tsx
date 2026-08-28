@@ -19,8 +19,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HR System - İnsan Kaynakları Yönetimi",
-  description: "Modern HR yönetim sistemi",
+  title: "FutureHR | İnsan ve Yetenek Karar Platformu",
+  description:
+    "Performans, yetenek, kariyer, halefiyet, çalışan deneyimi ve ücret kararlarını tek bir kanıt zincirinde birleştiren FutureHR insan kaynakları platformu.",
+  applicationName: "FutureHR",
 };
 
 export default function RootLayout({
@@ -28,8 +30,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Minimal root layout - only handles HTML structure and providers
-  // No UI shell, no sidebar - that's handled by route group layouts
   return (
     <html lang="tr" suppressHydrationWarning>
       <body
