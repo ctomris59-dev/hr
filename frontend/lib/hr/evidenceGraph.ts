@@ -33,14 +33,7 @@ export interface EvidenceGraphResult {
   note: string;
 }
 
-const SKIP_KEYS = new Set([
-  "instruction",
-  "module",
-  "analysisPurpose",
-  "guardrail",
-  "summary",
-  "notes",
-]);
+const SKIP_KEYS = new Set(["instruction", "module", "analysisPurpose", "guardrail", "summary", "notes"]);
 
 const SOURCE_LABELS: Record<EvidenceSource, string> = {
   kpi: "KPI / hedef sonucu",
@@ -51,7 +44,7 @@ const SOURCE_LABELS: Record<EvidenceSource, string> = {
   history: "Geçmiş trend",
   profile: "Çalışan profili / tercih",
   "role-model": "Rol hedef modeli",
-  development: "Gelişim aksiyonu",
+  development: "Gelişim / öğrenme kanıtı",
   derived: "Türetilmiş gösterge",
   other: "Diğer kanıt",
 };
@@ -75,16 +68,16 @@ function classify(path: string): { source: EvidenceSource; direct: boolean; weig
   if (/history|trend|evaluationdate|date/.test(p)) return { source: "history", direct: true, weight: 0.95 };
   if (/aspiration|mobility|career_aspiration|careeraspiration|profile/.test(p)) return { source: "profile", direct: true, weight: 0.8 };
   if (/roletarget|rolefit|role_target|targetprofile|referencecount|source$/.test(p)) return { source: "role-model", direct: false, weight: 0.7 };
-  if (/plan|development|action|successmetric/.test(p)) return { source: "development", direct: true, weight: 0.8 };
+  // Öneri/reçete geleceğe dönük bir tasarımdır; tamamlanmış kanıt gibi puanlanmamalıdır.
+  if (/prescription|recommend|öneri|reçete/.test(p)) return { source: "derived", direct: false, weight: 0.35 };
+  // Tamamlanan öğrenme, transfer görevi ve gelişim planı doğrudan gelişim kanıtıdır.
+  if (/completedlearning|learningevidence|trainingevidence|transfer(evidence|task)|reassessdue|plan|development|successmetric/.test(p)) return { source: "development", direct: true, weight: 0.8 };
   if (/readiness|potential|score|index|band|difference|fit|risk|summary/.test(p)) return { source: "derived", direct: false, weight: 0.45 };
   return { source: "other", direct: false, weight: 0.35 };
 }
 
 function humanizeKey(key: string) {
-  return key
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[_-]+/g, " ")
-    .replace(/^./, (value) => value.toUpperCase());
+  return key.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/^./, (value) => value.toUpperCase());
 }
 
 function flatten(value: unknown, path = "", nodes: EvidenceNode[] = [], depth = 0): EvidenceNode[] {
@@ -105,15 +98,7 @@ function flatten(value: unknown, path = "", nodes: EvidenceNode[] = [], depth = 
   const leaf = path.split(".").pop()?.replace(/\[\d+\]$/, "") || path;
   if (SKIP_KEYS.has(leaf)) return nodes;
   const classification = classify(path);
-  nodes.push({
-    id: `${path}-${nodes.length}`,
-    path,
-    label: humanizeKey(leaf),
-    source: classification.source,
-    direct: classification.direct,
-    value,
-    weight: classification.weight,
-  });
+  nodes.push({ id: `${path}-${nodes.length}`, path, label: humanizeKey(leaf), source: classification.source, direct: classification.direct, value, weight: classification.weight });
   return nodes;
 }
 
@@ -145,7 +130,7 @@ const REQUIRED_BY_KIND: Record<string, Array<{ sources: EvidenceSource[]; label:
   development: [
     { sources: ["assessment"], label: "Yetkinlik açığı" },
     { sources: ["role-model"], label: "Rol hedefi" },
-    { sources: ["development"], label: "Ölçülebilir gelişim aksiyonu" },
+    { sources: ["development"], label: "Ölçülebilir gelişim / öğrenme kanıtı" },
   ],
   recruitment: [
     { sources: ["assessment"], label: "Test / yetkinlik kanıtı" },
@@ -157,53 +142,22 @@ const REQUIRED_BY_KIND: Record<string, Array<{ sources: EvidenceSource[]; label:
 
 export function buildEvidenceGraph(kind: string, context: Record<string, unknown>): EvidenceGraphResult {
   const nodes = flatten(context).filter((node) => node.source !== "other" || node.weight >= 0.5);
-  const sources = new Set<EvidenceSource>(
-    nodes.map((node) => node.source).filter((source) => source !== "derived" && source !== "other")
-  );
+  const sources = new Set<EvidenceSource>(nodes.map((node) => node.source).filter((source) => source !== "derived" && source !== "other"));
   const directNodes = nodes.filter((node) => node.direct);
   const totalWeight = nodes.reduce((sum, node) => sum + node.weight, 0) || 1;
   const directWeight = directNodes.reduce((sum, node) => sum + node.weight, 0);
-
   const sourceCoverage = Math.round(Math.min(100, (sources.size / 5) * 100));
   const directEvidenceShare = Math.round(Math.min(100, (directWeight / totalWeight) * 100));
-
   const traceNodes = nodes.filter((node) => /date|version|source|reference|quality|confidence/i.test(node.path));
   const traceability = Math.round(Math.min(100, 25 + traceNodes.length * 15));
   const humanNodes = nodes.filter((node) => ["manager", "interview", "work-sample"].includes(node.source));
   const humanEvidence = Math.round(Math.min(100, humanNodes.length * 28));
   const volume = Math.min(100, nodes.reduce((sum, node) => sum + node.weight, 0) * 6);
-
   const required = REQUIRED_BY_KIND[kind] || [];
-  const missingSignals = required
-    .filter((requirement) => !requirement.sources.some((source) => sources.has(source)))
-    .map((requirement) => requirement.label);
+  const missingSignals = required.filter((requirement) => !requirement.sources.some((source) => sources.has(source))).map((requirement) => requirement.label);
   const completeness = required.length ? ((required.length - missingSignals.length) / required.length) * 100 : sourceCoverage;
-
-  const score = Math.round(
-    Math.max(
-      0,
-      Math.min(
-        100,
-        sourceCoverage * 0.24 +
-          directEvidenceShare * 0.2 +
-          traceability * 0.14 +
-          humanEvidence * 0.14 +
-          volume * 0.08 +
-          completeness * 0.2
-      )
-    )
-  );
+  const score = Math.round(Math.max(0, Math.min(100, sourceCoverage * 0.24 + directEvidenceShare * 0.2 + traceability * 0.14 + humanEvidence * 0.14 + volume * 0.08 + completeness * 0.2)));
   const band: EvidenceGraphResult["band"] = score >= 75 ? "Yüksek" : score >= 50 ? "Orta" : "Düşük";
 
-  return {
-    score,
-    band,
-    nodes,
-    sourceCoverage,
-    directEvidenceShare,
-    traceability,
-    humanEvidence,
-    missingSignals,
-    note: "Evidence Score, FutureHR içindeki kanıt kapsamı ve izlenebilirlik göstergesidir; bilimsel doğruluk olasılığı veya otomatik İK kararı değildir.",
-  };
+  return { score, band, nodes, sourceCoverage, directEvidenceShare, traceability, humanEvidence, missingSignals, note: "Evidence Score, FutureHR içindeki kanıt kapsamı ve izlenebilirlik göstergesidir; bilimsel doğruluk olasılığı veya otomatik İK kararı değildir." };
 }
