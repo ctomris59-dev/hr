@@ -116,13 +116,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         className={`${sidebarOpen ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-40 w-[248px] flex-shrink-0 border-r border-slate-800 bg-[#101722] text-slate-300 transition-transform duration-200 ease-out lg:static lg:translate-x-0`}
       >
         <div className="flex h-[100dvh] flex-col overflow-hidden">
-          <div className="futurehr-sidebar-brand flex h-16 flex-shrink-0 items-center border-b border-white/[0.07] px-4">
+          <div className="futurehr-sidebar-brand flex h-16 flex-shrink-0 items-center border-b border-white/[0.07] px-5">
             <Image
               src="/futurehr-brand-dark.svg"
               alt="FutureHR"
-              width={256}
-              height={64}
-              className="h-9 w-auto object-contain"
+              width={220}
+              height={56}
+              className="h-10 w-auto object-contain"
               priority
             />
           </div>
