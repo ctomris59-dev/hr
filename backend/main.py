@@ -2,13 +2,14 @@
 FastAPI Backend API - FutureHR
 
 The legacy/demo routes remain available while the new /api/v1 SaaS foundation is
-migrated module-by-module.  Secure auth is disabled by default and only activates
+migrated module-by-module. Secure auth is disabled by default and only activates
 when SAAS_AUTH_ENABLED=true with DATABASE_URL and a non-default SECRET_KEY.
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import JSONResponse
 
 from core.config import get_settings
 from core.database import check_database_connection, database_configured
@@ -24,12 +25,16 @@ from core.middleware import RequestLoggingMiddleware
 from core.metrics.middleware import MetricsMiddleware
 from core.audit.middleware import AuditMiddleware
 
-from routers import recruitment, org_chart, admin, dashboard, audit, workflow, observability, auth_v1, people_v1
+from routers import recruitment, org_chart, admin, dashboard, audit, workflow, observability, auth_v1, people_v1, employee_experience
 
 settings = get_settings()
 
 setup_logging()
 logger = get_logger(__name__)
+
+# Privacy bridge: the legacy /api/pulse-trends endpoint now uses the same
+# five-response anonymity threshold as Employee Experience v2.
+employee_experience.install_legacy_privacy_guard()
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -51,6 +56,22 @@ app.add_middleware(
     allow_headers=settings.CORS_ALLOW_HEADERS,
 )
 
+
+@app.middleware("http")
+async def protect_legacy_raw_pulse_endpoint(request: Request, call_next):
+    # The old endpoint exposed person-level pulse rows. Keep the route disabled
+    # so management surfaces can only consume privacy-safe aggregates.
+    if request.url.path == "/api/pulse/data":
+        return JSONResponse(
+            status_code=410,
+            content={
+                "success": False,
+                "detail": "Bireysel pulse verisi gizlilik nedeniyle kapatıldı. /api/pulse/analytics kullanın.",
+            },
+        )
+    return await call_next(request)
+
+
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(APIException, api_exception_handler)
@@ -61,6 +82,7 @@ app.include_router(recruitment.router)
 app.include_router(org_chart.router)
 app.include_router(admin.router)
 app.include_router(dashboard.router)
+app.include_router(employee_experience.router)
 app.include_router(audit.router)
 app.include_router(workflow.router)
 app.include_router(observability.router)
