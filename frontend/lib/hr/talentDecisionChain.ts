@@ -1,7 +1,7 @@
 import { buildEvidenceGraph, type EvidenceGraphResult } from "./evidenceGraph";
 import { calculateCareerReadiness, getCareerRole, type CareerReadiness, type CareerRole } from "./careerArchitecture";
-import { calculatePotentialIndex, extractCompetencyMap, type PotentialResult } from "./talentPotential";
-import { employeeKey as stableEmployeeKey, employeeName, evaluationsForEmployee } from "./employeeIdentity";
+import { calculatePotentialIndex, extractCompetencyMap, getNineBox, type PotentialResult } from "./talentPotential";
+import { employeeKey as stableEmployeeKey, evaluationsForEmployee } from "./employeeIdentity";
 
 export const TALENT_DECISION_CHAIN_VERSION = "FHR-TALENT-CHAIN-1.1" as const;
 
