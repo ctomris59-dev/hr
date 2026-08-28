@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-type RecommendationKind = "talent" | "recruitment" | "development" | "career" | "succession";
+type RecommendationKind = "talent" | "recruitment" | "performance" | "development" | "career" | "succession";
 type Confidence = "düşük" | "orta" | "yüksek";
 type AIProvider = "groq" | "openai" | "rules";
 
@@ -42,26 +42,33 @@ const ANALYSIS_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+const validNumber = (value: any) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
+
+const limitTextList = (value: any, max = 4) => Array.isArray(value)
+  ? value.filter((item) => typeof item === "string" && item.trim()).slice(0, max)
+  : [];
+
 function fallbackAnalysis(kind: RecommendationKind, context: any): DecisionAnalysis {
   if (kind === "recruitment") {
-    const test = Number(context?.testScore);
-    const roleFit = Number(context?.roleFit);
-    const strengths = Array.isArray(context?.strengths) ? context.strengths.slice(0, 3) : [];
-    const gaps = Array.isArray(context?.gaps) ? context.gaps.slice(0, 3) : [];
+    const test = validNumber(context?.testScore);
+    const roleFit = validNumber(context?.roleFit);
+    const strengths = limitTextList(context?.strengths, 3);
+    const gaps = limitTextList(context?.gaps, 3);
     const evidenceStrengths = [
-      Number.isFinite(test) ? `Yetkinlik testi ortalaması ${test.toFixed(1)}/5.` : "Yetkinlik testi verisi bulunmuyor.",
-      Number.isFinite(roleFit) ? `Rol yetkinlik uyumu yaklaşık %${Math.round(roleFit)}.` : "Rol uyumu hesaplanamadı.",
+      test !== null ? `Yetkinlik testi ortalaması ${test.toFixed(1)}/5.` : "Yetkinlik testi verisi bulunmuyor.",
+      roleFit !== null ? `Rol yetkinlik uyumu yaklaşık %${Math.round(roleFit)}.` : "Rol uyumu hesaplanamadı.",
       ...strengths,
     ].slice(0, 4);
-
     const evidenceGaps = [
       ...gaps,
       ...(context?.recruiterNote ? [] : ["Yapılandırılmış mülakat / değerlendirici notu bulunmuyor."]),
       ...(context?.workSampleAvailable ? [] : ["İş örneği veya teknik kanıt bilgisi bulunmuyor."]),
     ].slice(0, 4);
-
     return {
-      summary: "Mevcut veriler adayın rol gereksinimleriyle hangi alanlarda örtüştüğünü gösteriyor; ancak bu veri tek başına işe alım kararı için yeterli değildir.",
+      summary: "Mevcut kanıt adayın rol gereksinimleriyle örtüşen ve doğrulanması gereken alanlarını gösteriyor; tek başına kabul/red kararı için yeterli değildir.",
       confidence: evidenceGaps.length >= 3 ? "düşük" : evidenceGaps.length >= 1 ? "orta" : "yüksek",
       confidenceReason: evidenceGaps.length ? "Bazı kritik işe alım kanıtları henüz eksik." : "Birden fazla bağımsız kanıt noktası mevcut.",
       evidenceStrengths,
@@ -80,22 +87,117 @@ function fallbackAnalysis(kind: RecommendationKind, context: any): DecisionAnaly
     };
   }
 
-  const generic: Record<Exclude<RecommendationKind, "recruitment">, string> = {
-    talent: "Potansiyel, performans ve kanıt güvenini birlikte değerlendirin; tek bir skorla terfi kararı vermeyin.",
-    development: "En kritik gelişim açığını ölçülebilir aksiyon, sorumlu ve son tarihle kapatın.",
-    career: "Hedef role geçişi yetkinlik, performans, potansiyel, deneyim ve kariyer isteğiyle birlikte değerlendirin.",
-    succession: "Halefiyet kararını rol uyumu, hazır olma süresi, performans trendi, potansiyel ve kariyer isteğiyle doğrulayın.",
-  };
+  if (kind === "performance") {
+    const evaluation = context?.currentEvaluation || {};
+    const finalPerformance = validNumber(evaluation.finalPerformance);
+    const kpiScore = validNumber(evaluation.kpiScore);
+    const managerScore = validNumber(evaluation.managerObservation);
+    const competencyScore = validNumber(evaluation.competencyScore);
+    const roleFit = validNumber(evaluation.roleFit);
+    const diff = kpiScore !== null && managerScore !== null ? Math.abs(kpiScore - managerScore) : null;
+    const gaps = Array.isArray(evaluation.roleCompetencyGaps) ? evaluation.roleCompetencyGaps : [];
+    return {
+      summary: `Canlı değerlendirme${finalPerformance !== null ? ` ${finalPerformance.toFixed(2)}/5 performans` : ""}${competencyScore !== null ? ` ve ${competencyScore.toFixed(2)}/5 yetkinlik` : ""} verisi üzerinden kalibrasyon desteği sağlar.`,
+      confidence: evaluation.kpiWeightsValid === false || !context?.history?.length ? "orta" : "yüksek",
+      confidenceReason: context?.history?.length ? "Mevcut skorlar rol hedefi ve geçmiş değerlendirmelerle birlikte görülebiliyor." : "Geçmiş trend veya ek kanıt sınırlı olduğu için güven orta seviyede.",
+      evidenceStrengths: [
+        kpiScore !== null ? `KPI/Hedef skoru ${kpiScore.toFixed(2)}/5.` : "KPI skoru bulunmuyor.",
+        managerScore !== null ? `Yönetici gözlemi ${managerScore.toFixed(2)}/5.` : "Yönetici gözlemi bulunmuyor.",
+        roleFit !== null ? `Rol yetkinlik uyumu yaklaşık %${Math.round(roleFit)}.` : "Rol uyumu hesaplanamadı.",
+      ].slice(0, 4),
+      evidenceGaps: [
+        ...(diff !== null && diff >= 0.75 ? [`KPI ile yönetici gözlemi arasında ${diff.toFixed(2)} puan fark var; gerekçe kalibrasyonda doğrulanmalı.`] : []),
+        ...(gaps.length ? [`${gaps.length} rol yetkinlik farkı kalibrasyonda incelenmeli.`] : []),
+        ...(!evaluation.managerNoteAvailable ? ["Yönetici kanıt/notu belirtilmemiş."] : []),
+      ].slice(0, 4),
+      nextActions: [
+        "KPI kanıtlarını ve yönetici gözlemini aynı dönem/çıktılar üzerinden çapraz kontrol edin.",
+        "En büyük rol yetkinlik açıkları için somut davranış örnekleri isteyin.",
+        "Geçmiş trendle ani skor değişimlerini kalibrasyon görüşmesinde gerekçelendirin.",
+      ],
+      interviewQuestions: [
+        "KPI skoru ile yönetici gözlemini destekleyen somut çıktılar nelerdir?",
+        "Rol hedefinden en fazla ayrışan yetkinlik için hangi davranış kanıtı var?",
+        "Önceki döneme göre değişimi açıklayan iş koşulu veya sonuç nedir?",
+      ],
+      guardrail: "AI mevcut puanı değiştirmez ve nihai performans kararı vermez; yalnızca kalibrasyon kanıtlarını ve tutarsızlıkları görünür kılar.",
+    };
+  }
 
+  if (kind === "talent") {
+    const performance = validNumber(context?.employee?.performance);
+    const potential = validNumber(context?.potential?.score);
+    const confidence = validNumber(context?.potential?.confidence);
+    const topGaps = Array.isArray(context?.roleTarget?.topGaps) ? context.roleTarget.topGaps : [];
+    return {
+      summary: "Performans, potansiyel, veri güveni ve rol yetkinlik farkları birlikte değerlendirilmelidir; 9-box konumu tek başına karar değildir.",
+      confidence: confidence !== null && confidence >= 75 ? "yüksek" : confidence !== null && confidence >= 50 ? "orta" : "düşük",
+      confidenceReason: confidence !== null ? `Potansiyel veri güveni %${Math.round(confidence)}.` : "Potansiyel veri güveni hesaplanamadı.",
+      evidenceStrengths: [
+        performance !== null ? `Performans ${performance.toFixed(1)}/5.` : "Performans verisi eksik.",
+        potential !== null ? `Potansiyel ${potential.toFixed(2)}/5.` : "Potansiyel verisi eksik.",
+        context?.employee?.nineBox ? `9-box segmenti: ${context.employee.nineBox}.` : "9-box segmenti hesaplanmadı.",
+      ],
+      evidenceGaps: [
+        ...(topGaps.length ? [`Rol hedefinde ${topGaps.length} öncelikli yetkinlik farkı var.`] : []),
+        ...((context?.potential?.missingInputs || []).length ? [`Potansiyel hesabında eksik girdiler: ${context.potential.missingInputs.join(", ")}.`] : []),
+      ].slice(0, 4),
+      nextActions: ["Rol yetkinlik açıklarını somut gelişim aksiyonlarına bağlayın.", "Potansiyel girdilerindeki eksikleri kariyer görüşmesinde doğrulayın.", "Yetenek kararını birden fazla dönem performans kanıtıyla destekleyin."],
+      interviewQuestions: ["Bu çalışan hangi daha karmaşık sorumluluklarda kanıt üretmiştir?", "Öğrenme çevikliği hangi somut örneklerle destekleniyor?", "Kariyer isteği ve yeni sorumluluk isteği güncel mi?"],
+      guardrail: "Bu çıktı terfi, ücret veya çalışan sınıflandırması için otomatik karar değildir.",
+    };
+  }
+
+  if (kind === "development") {
+    const gaps = Array.isArray(context?.roleTarget?.topGaps) ? context.roleTarget.topGaps : [];
+    const plans = Array.isArray(context?.currentPlans) ? context.currentPlans : [];
+    return {
+      summary: "Gelişim planı en kritik rol yetkinlik açığını somut iş davranışı ve ölçülebilir başarı kriteriyle kapatmaya odaklanmalıdır.",
+      confidence: gaps.length ? "orta" : "düşük",
+      confidenceReason: gaps.length ? `${gaps.length} ölçülebilir rol yetkinlik açığı mevcut.` : "Rol hedefi veya güncel yetkinlik kanıtı sınırlı.",
+      evidenceStrengths: plans.length ? [`${plans.length} mevcut gelişim aksiyonu bağlama dahil edildi.`] : [],
+      evidenceGaps: gaps.length ? gaps.slice(0, 4).map((gap: any) => `${gap.label || "Yetkinlik"}: ${Number(gap.actual || 0).toFixed(1)} → hedef ${Number(gap.expected || 0).toFixed(1)}.`) : ["Ölçülebilir rol yetkinlik açığı bulunmuyor."],
+      nextActions: ["İlk 1–2 yetkinlik açığına öncelik verin.", "Aksiyonu iş üstünde uygulama veya proje kanıtıyla destekleyin.", "Başarı ölçütünü tarih ve gözlenebilir çıktı ile tanımlayın."],
+      interviewQuestions: ["Bu yetkinliği geliştirmek iş sonuçlarında hangi farkı yaratmalı?", "Hangi gerçek iş görevi gelişimi kanıtlayabilir?", "Başarıyı 60–90 gün içinde nasıl ölçeceğiz?"],
+      guardrail: "AI otomatik gelişim planı atamaz; öneriler yönetici ve çalışan tarafından doğrulanmalıdır.",
+    };
+  }
+
+  if (kind === "career") {
+    const readiness = context?.readiness || {};
+    const index = validNumber(readiness.index);
+    const notes = limitTextList(readiness.notes, 4);
+    return {
+      summary: `Hedef role hazır bulunuşluk${index !== null ? ` %${Math.round(index)}` : ""}; yetkinlik, performans, potansiyel, deneyim ve kariyer isteği birlikte ele alınmalıdır.`,
+      confidence: index !== null ? "orta" : "düşük",
+      confidenceReason: index !== null ? "Birden fazla hazır bulunuşluk bileşeni mevcut; yine de kariyer görüşmesiyle doğrulama gerekir." : "Hazır bulunuşluk bileşenleri eksik.",
+      evidenceStrengths: [
+        readiness.competencyFit !== undefined ? `Yetkinlik uyumu %${Math.round(Number(readiness.competencyFit) || 0)}.` : "",
+        readiness.performance !== undefined ? `Performans bileşeni %${Math.round(Number(readiness.performance) || 0)}.` : "",
+        readiness.potential !== undefined ? `Potansiyel bileşeni %${Math.round(Number(readiness.potential) || 0)}.` : "",
+      ].filter(Boolean).slice(0, 4),
+      evidenceGaps: notes.length ? notes : ["Hedef rol geçişinin davranışsal kanıtları kariyer görüşmesinde doğrulanmalı."],
+      nextActions: ["En düşük hazır bulunuşluk bileşenini gelişim hedefi yapın.", "Seviye veya job family değişimi varsa ara sorumluluk/proje deneyimi planlayın.", "Kariyer isteğini çalışanla güncel olarak teyit edin."],
+      interviewQuestions: ["Bu hedef rol neden sizin için anlamlı?", "Hedef rolün hangi sorumluluğunu bugün üstlenmeye hazırsınız?", "Geçiş öncesi hangi deneyimi kazanmanız gerektiğini düşünüyorsunuz?"],
+      guardrail: "Hazır bulunuşluk ve AI analizi terfi kararı değildir; kariyer ve yönetici görüşmesini destekler.",
+    };
+  }
+
+  const pool = context?.poolCoverage || {};
+  const candidates = Array.isArray(context?.candidates) ? context.candidates : [];
   return {
-    summary: generic[kind as Exclude<RecommendationKind, "recruitment">],
-    confidence: "orta",
-    confidenceReason: "AI servisi kullanılmadığı için yalnızca kural bazlı özet üretildi.",
-    evidenceStrengths: [],
-    evidenceGaps: ["AI tabanlı ayrıntılı kanıt sentezi mevcut değil."],
-    nextActions: ["İlgili modüldeki eksik kanıtları tamamlayın ve değerlendirmeyi yeniden çalıştırın."],
-    interviewQuestions: [],
-    guardrail: "Bu çıktı nihai İK kararı değildir.",
+    summary: "Halefiyet planı tek bir adayı seçmekten ziyade hedef rol için havuz kapsamasını, hazır olma riskini ve gelişim gereksinimlerini görünür kılmalıdır.",
+    confidence: candidates.length >= 3 ? "orta" : "düşük",
+    confidenceReason: candidates.length >= 3 ? `${candidates.length} adayın çok faktörlü kanıtı karşılaştırılabiliyor.` : "Halef havuzu sınırlı veya veri kapsamı düşük.",
+    evidenceStrengths: [
+      pool.candidateCount !== undefined ? `${pool.candidateCount} halef adayı değerlendiriliyor.` : "",
+      pool.readyNow !== undefined ? `${pool.readyNow} aday şimdi hazır bandında.` : "",
+      pool.averageScore !== undefined ? `Havuz ortalama uyumu %${Math.round(Number(pool.averageScore) || 0)}.` : "",
+    ].filter(Boolean).slice(0, 4),
+    evidenceGaps: candidates.length < 2 ? ["Tek adaya bağımlılık halefiyet riski oluşturuyor."] : [],
+    nextActions: ["Havuzdaki hazır olma boşluklarını hedefli gelişim planlarına bağlayın.", "Kritik rol için en az iki bağımsız halef senaryosu oluşturun.", "Kariyer isteği ve rol ilgisini adaylarla ayrıca doğrulayın."],
+    interviewQuestions: ["Bu rolün kritik sorumluluklarını hangi adaylar bugün kanıtlayabiliyor?", "Havuzda tek kişiye bağımlı olduğumuz alan var mı?", "6–12 ayda hazır hale gelmesi beklenen aday için hangi deneyim eksik?"],
+    guardrail: "AI halef seçmez, aday sıralamaz ve atama yapmaz; havuz kanıtlarını ve riskleri özetler.",
   };
 }
 
@@ -116,9 +218,22 @@ function safeContext(value: any): any {
   return out;
 }
 
+function taskFocus(kind: RecommendationKind): string {
+  const focus: Record<RecommendationKind, string> = {
+    recruitment: "Aday kanıtını sentezle; test, rol hedefi, yapılandırılmış mülakat ve iş örneğini birlikte değerlendir. Kabul/red kararı verme.",
+    performance: "Performans kalibrasyonu yap: KPI ile yönetici gözlemi farklarını, rol yetkinlik açıklarını, geçmiş trendi ve eksik kanıtları görünür kıl. Skoru değiştirme veya nihai performans kararı verme.",
+    talent: "Performans, potansiyel, 9-box, veri güveni ve rol yetkinlik farklarını birlikte analiz et. Terfi veya ücret kararı verme.",
+    development: "En kritik yetkinlik açıklarını ölçülebilir iş üstünde aksiyon, proje, koçluk ve başarı kriterleriyle ilişkilendir. Otomatik plan atama.",
+    career: "Hedef role hazır bulunuşluğu bileşenleriyle analiz et; job family/seviye mesafesini ve kariyer isteğini dikkate al. Terfi kararı verme.",
+    succession: "Halef havuzunun kapsama gücünü, hazır olma risklerini ve gelişim açıklarını analiz et. Aday sıralama, tek kişiyi seçme veya atama yapma.",
+  };
+  return focus[kind];
+}
+
 function buildPrompt(kind: RecommendationKind, context: any): string {
   return `Sen FutureHR içinde çalışan, kanıta dayalı bir İK karar destek asistanısın.
 Görev türü: ${kind}
+Odak: ${taskFocus(kind)}
 
 Yalnızca aşağıdaki veriyi kullan:
 ${JSON.stringify(context)}
@@ -128,11 +243,12 @@ Kurallar:
 - Yalnızca verilen kanıta dayan; bilinmeyeni tahmin etme.
 - Yaş, cinsiyet, sağlık, engellilik, din, siyasi görüş, etnik köken, ırk, medeni durum veya başka hassas özellikleri kullanma ya da tahmin etme.
 - Aday/çalışan hakkında kişilik, ruh sağlığı veya korunan özellik çıkarımı yapma.
-- İşe alma, işten çıkarma, terfi, ücret veya disiplin konusunda nihai karar verme; adayları sıralama veya otomatik eleme yapma.
-- İşe alımda test skorunu tek başına karar gerekçesi sayma. Rol hedefleri, yapılandırılmış mülakat, iş örneği ve doğrulanabilir deneyim kanıtını birlikte ele al.
-- Güçlü kanıtları ve eksik kanıtları ayrı yaz.
-- Aksiyonlar doğrulanabilir ve somut olsun.
-- Güven seviyesi yalnızca veri kapsamını ifade etsin; adayın kalitesini ifade etmesin.
+- İşe alma, işten çıkarma, terfi, ücret, disiplin veya halef ataması konusunda nihai karar verme; kişileri otomatik sıralama veya eleme yapma.
+- Tek bir skor veya etiketi karar gerekçesi sayma; birden fazla bağımsız kanıtı birlikte ele al.
+- Güçlü kanıtları ve eksik/doğrulanacak kanıtları ayrı yaz.
+- Aksiyonlar doğrulanabilir, ölçülebilir ve somut olsun.
+- Güven seviyesi yalnızca veri kapsamını ifade etsin; kişinin kalitesini ifade etmesin.
+- interviewQuestions alanını modüle uygun doğrulama/görüşme soruları için kullan.
 - En fazla 4 güçlü kanıt, 4 eksik kanıt, 4 aksiyon ve 4 soru üret.`;
 }
 
@@ -174,7 +290,6 @@ function extractGroqResponseText(payload: any): string | null {
 function parseJsonLoose(text: string | null): any {
   if (!text) return null;
   const attempts = [text.trim(), text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim()];
-
   const firstBrace = text.indexOf("{");
   const lastBrace = text.lastIndexOf("}");
   if (firstBrace >= 0 && lastBrace > firstBrace) attempts.push(text.slice(firstBrace, lastBrace + 1));
@@ -268,9 +383,6 @@ async function callGroq(kind: RecommendationKind, context: any) {
     if (!shouldRetry) {
       throw new Error(`Groq ${response.status}: ${firstError.slice(0, 700)}`);
     }
-
-    // Some Groq models occasionally fail constrained JSON generation even when the
-    // prompt is valid. Retry once without response_format and parse the JSON ourselves.
     response = await groqRequest(apiKey, model, kind, context, false);
   }
 
@@ -333,7 +445,7 @@ export async function POST(request: NextRequest) {
   }
 
   const kind = (body?.kind || "talent") as RecommendationKind;
-  const allowed: RecommendationKind[] = ["talent", "recruitment", "development", "career", "succession"];
+  const allowed: RecommendationKind[] = ["talent", "recruitment", "performance", "development", "career", "succession"];
   if (!allowed.includes(kind)) return NextResponse.json({ error: "Desteklenmeyen öneri türü" }, { status: 400 });
 
   const context = safeContext(body?.context || {});
