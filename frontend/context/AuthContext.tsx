@@ -1,8 +1,9 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { UserRole, mapToUserRole, REVERSE_ROLE_MAPPING } from "../app/data/roles";
+import { UserRole, getDefaultRoute, mapToUserRole } from "../app/data/roles";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../app/utils/storage";
+import { getDemoPersona } from "../lib/hr/demoPersonas";
 
 interface AuthContextType {
   currentUserRole: UserRole | null;
@@ -49,59 +50,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("userChanged", refresh);
     window.addEventListener("storageCleared", refresh);
 
-    const interval = setInterval(loadUserRole, 1000);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("userChanged", refresh);
       window.removeEventListener("storageCleared", refresh);
-      clearInterval(interval);
     };
   }, []);
 
   const switchRole = (role: UserRole) => {
     const currentUser = getStorageData(STORAGE_KEYS.CURRENT_USER, null);
 
-    // Secure sessions are authoritative on the server.  The browser cannot promote
-    // or downgrade the current user's real role through the demo switcher.
-    if (currentUser && typeof currentUser === "object" && (currentUser as any).authMode === "secure") {
-      return;
-    }
+    // Secure session rolü sunucu tarafından belirlenir. Demo persona anahtarı
+    // gerçek kullanıcıyı yükseltmek/düşürmek için kullanılamaz.
+    if (currentUser && typeof currentUser === "object" && (currentUser as any).authMode === "secure") return;
 
-    const internalRoles = REVERSE_ROLE_MAPPING[role] || [];
-    const newInternalRole = internalRoles[0] || role.toUpperCase();
+    const persona = getDemoPersona(role);
+    setStorageData(STORAGE_KEYS.CURRENT_USER, persona);
+    setCurrentUserRole(role);
+    setInternalRole(persona.role);
+    setUserName(persona.name);
+    setAuthMode("demo");
 
-    if (currentUser && typeof currentUser === "object") {
-      const updatedUser = {
-        ...(currentUser as any),
-        role: newInternalRole,
-      };
-
-      setStorageData(STORAGE_KEYS.CURRENT_USER, updatedUser);
-      setCurrentUserRole(role);
-      setInternalRole(newInternalRole);
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("storage"));
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
-      }
-    } else {
-      setCurrentUserRole(role);
-      setInternalRole(newInternalRole);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("userChanged", { detail: persona }));
+      window.location.assign(getDefaultRoute(role));
     }
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        currentUserRole,
-        switchRole,
-        internalRole,
-        userName,
-        authMode,
-      }}
-    >
+    <AuthContext.Provider value={{ currentUserRole, switchRole, internalRole, userName, authMode }}>
       {children}
     </AuthContext.Provider>
   );
@@ -109,8 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (context === undefined) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
