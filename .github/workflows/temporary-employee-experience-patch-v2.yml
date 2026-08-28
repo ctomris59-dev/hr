@@ -1,0 +1,96 @@
+name: Temporary employee experience patch v2
+
+on:
+  push:
+    branches:
+      - employee-experience-compact
+    paths:
+      - .github/workflows/temporary-employee-experience-patch-v2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: employee-experience-compact
+          fetch-depth: 0
+
+      - name: Apply patch using resilient anchors
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import textwrap
+
+          source_path = Path('.github/workflows/temporary-employee-experience-patch.yml')
+          source = source_path.read_text(encoding='utf-8')
+          start = source.index("          python - <<'PY'\n") + len("          python - <<'PY'\n")
+          end = source.index("\n          PY", start)
+          script = textwrap.dedent(source[start:end])
+
+          resilient = r'''pulse_insert = ''' + "'''" + r'''
+          const pulseScopeEmployeeCount = useMemo(() => {
+            const role = user?.role || "EMPLOYEE";
+            const dept = user?.dept || user?.department || "";
+            if (isAdmin && selectedPulseDepartment) {
+              return mergedData.filter((person) => person.Departman === selectedPulseDepartment).length;
+            }
+            if ((role === "DIRECTOR" || role === "MANAGER") && dept) {
+              return mergedData.filter((person) => person.Departman === dept).length;
+            }
+            return mergedData.length;
+          }, [isAdmin, selectedPulseDepartment, mergedData, user]);
+
+          const latestPulseResponses = latestPulse?.count ?? 0;
+          const pulseParticipation = pulseScopeEmployeeCount > 0 && latestPulseResponses > 0
+            ? Math.min(100, (latestPulseResponses / pulseScopeEmployeeCount) * 100)
+            : 0;
+          const pulseStatus = latestPulse
+            ? latestPulse.average_score >= PULSE_TARGET
+              ? "Hedef üstü"
+              : "Gelişim alanı"
+            : "Veri bekleniyor";
+
+          ''' + "'''" + r'''
+pulse_marker = "  if (dataLoading || !userReady) {"
+if pulse_marker not in dashboard:
+    raise RuntimeError("Anchor not found: pulse loading marker")
+dashboard = dashboard.replace(pulse_marker, pulse_insert + pulse_marker, 1)'''
+
+          script, count = re.subn(
+              r"pulse_anchor = '''.*?dashboard = replace_once\(dashboard, pulse_anchor, pulse_replacement, \"pulse summary calculations\"\)",
+              resilient,
+              script,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise RuntimeError('Could not rewrite pulse calculation patch logic')
+
+          exec(compile(script, '<employee-experience-patch>', 'exec'), {})
+          Path('.github/workflows/temporary-employee-experience-patch-v2.yml').unlink(missing_ok=True)
+          PY
+
+      - name: Validate backend syntax
+        run: python -m py_compile backend/routers/dashboard.py backend/utils_db.py
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Validate production build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Commit validated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Replace happiness trend with employee experience summary"
+          git push origin HEAD:employee-experience-compact
