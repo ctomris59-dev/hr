@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { USERS } from "../data/users";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../utils/storage";
+import { applyFutureHRV1DemoData } from "@/lib/hr/demoV1";
+import { DEMO_PERSONAS } from "@/lib/hr/demoPersonas";
 
 const modules = [
   { label: "Performans", icon: TrendingUp, pos: "top-[18%] left-[6%]" },
@@ -48,11 +50,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     const existingUsers = getStorageData(STORAGE_KEYS.USERS, {});
-    setStorageData(STORAGE_KEYS.USERS, { ...USERS, ...existingUsers });
+    // V1 demo hesapları eski localStorage kayıtlarından etkilenmesin.
+    setStorageData(STORAGE_KEYS.USERS, { ...existingUsers, ...USERS });
   }, []);
 
-  const loginAs = (nextUsername: string, nextPassword: string) => {
-    const users = getStorageData(STORAGE_KEYS.USERS, USERS);
+  const loginAs = (nextUsername: string, nextPassword: string, forceDemoSeed = false) => {
+    const users = { ...getStorageData(STORAGE_KEYS.USERS, {}), ...USERS };
     const user = users[nextUsername];
 
     if (!user || user.password !== nextPassword) {
@@ -60,14 +63,17 @@ export default function LoginPage() {
       return false;
     }
 
-    const userData = { username: nextUsername, ...user };
+    const userData = { username: nextUsername, ...user, authMode: "demo" as const };
     setStorageData(STORAGE_KEYS.CURRENT_USER, userData);
 
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-      window.dispatchEvent(new CustomEvent("userChanged", { detail: userData }));
+    const hasOrgData = getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []).length > 0;
+    if (forceDemoSeed || !hasOrgData) {
+      // Demo veri seti her zaman aynı CEO/İK/manager/personel kimlikleriyle üretilir.
+      // Böylece persona geçişinde organizasyon ilişkileri kopmaz.
+      applyFutureHRV1DemoData(DEMO_PERSONAS.ceo);
     }
 
+    window.dispatchEvent(new CustomEvent("userChanged", { detail: userData }));
     router.push("/dashboard");
     return true;
   };
@@ -82,9 +88,11 @@ export default function LoginPage() {
 
   const handleDemoLogin = () => {
     setError("");
+    setLoading(true);
     setUsername("ceo");
     setPassword("123");
-    loginAs("ceo", "123");
+    loginAs("ceo", "123", true);
+    setLoading(false);
   };
 
   return (
@@ -136,9 +144,10 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleDemoLogin}
-                className="inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-[#0c1f4d] px-6 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(12,31,77,0.18)] transition hover:-translate-y-0.5 hover:bg-[#10285f]"
+                disabled={loading}
+                className="inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-[#0c1f4d] px-6 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(12,31,77,0.18)] transition hover:-translate-y-0.5 hover:bg-[#10285f] disabled:cursor-wait disabled:opacity-70"
               >
-                V1 Demo'yu Aç
+                {loading ? "Demo hazırlanıyor..." : "V1 Demo'yu Aç"}
                 <ArrowRight className="h-4 w-4" />
               </button>
               <button
@@ -187,9 +196,9 @@ export default function LoginPage() {
           <section className="self-center lg:-translate-y-2">
             <div className="rounded-[24px] border border-slate-200 bg-white/95 p-6 shadow-[0_22px_54px_rgba(15,23,42,0.08)] sm:p-8">
               <div className="mb-7">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue-600">Personel Girişi</p>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue-600">Kurumsal giriş</p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-[#101d3b]">FutureHR çalışma alanı</h2>
-                <p className="mt-2 text-xs leading-5 text-slate-500">V1 demo için soldaki tek tık girişini kullanabilir veya kurum hesabınızla oturum açabilirsiniz.</p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">Sunum için “V1 Demo'yu Aç” butonu şirket verisini otomatik hazırlar. Kurum hesabı alanı gerçek SaaS geçişi için korunur.</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -197,16 +206,7 @@ export default function LoginPage() {
                   <label htmlFor="username" className="mb-2 block text-xs font-semibold text-slate-700">Kullanıcı Adı</label>
                   <div className="relative">
                     <CircleUserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      id="username"
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                      autoComplete="username"
-                      placeholder="Kullanıcı adınızı girin"
-                      className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
-                    />
+                    <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="username" placeholder="Kullanıcı adınızı girin" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50" />
                   </div>
                 </div>
 
@@ -214,22 +214,8 @@ export default function LoginPage() {
                   <label htmlFor="password" className="mb-2 block text-xs font-semibold text-slate-700">Şifre</label>
                   <div className="relative">
                     <LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      autoComplete="current-password"
-                      placeholder="Şifrenizi girin"
-                      className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((value) => !value)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
-                      aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
-                    >
+                    <input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder="Şifrenizi girin" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50" />
+                    <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600" aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
@@ -237,20 +223,12 @@ export default function LoginPage() {
 
                 {error && <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-xs font-medium text-red-700">{error}</div>}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0c1f4d] px-4 text-sm font-semibold text-white transition hover:bg-[#10285f] disabled:cursor-not-allowed disabled:bg-slate-400"
-                >
+                <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0c1f4d] px-4 text-sm font-semibold text-white transition hover:bg-[#10285f] disabled:cursor-not-allowed disabled:bg-slate-400">
                   {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
                 </button>
               </form>
 
-              <div className="my-6 flex items-center gap-3 text-[11px] text-slate-400">
-                <div className="h-px flex-1 bg-slate-200" />
-                veya
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
+              <div className="my-6 flex items-center gap-3 text-[11px] text-slate-400"><div className="h-px flex-1 bg-slate-200" />veya<div className="h-px flex-1 bg-slate-200" /></div>
 
               <Link href="/aday-girisi" className="flex items-center justify-between rounded-xl px-2 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50">
                 <span className="flex items-center gap-2"><CircleUserRound className="h-4 w-4" /> Aday girişi</span>
