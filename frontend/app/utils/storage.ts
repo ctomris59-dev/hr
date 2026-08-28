@@ -1,5 +1,6 @@
-// localStorage yönetimi - demo veri senkronizasyonu için
-// Not: Production kimlik doğrulaması ve kalıcı veri katmanı daha sonra sunucu tarafına taşınacak.
+// FutureHR V1 demo veri katmanı.
+// Production modunda kalıcı tenant verisi sunucu/PostgreSQL katmanına taşınır;
+// bu yardımcı yalnızca demo prototipinin modüller arası tek tarayıcı veri kaynağıdır.
 export const STORAGE_KEYS = {
   USERS: "hr_users",
   ORG_CHART: "hr_org_chart",
@@ -20,6 +21,27 @@ export const STORAGE_KEYS = {
   ACCESS_POLICY: "hr_access_policy_v2",
 };
 
+export const HR_DATA_CLEARED_KEY = "hr_data_cleared";
+
+const CORE_DATA_KEYS = new Set<string>([
+  STORAGE_KEYS.ORG_CHART,
+  STORAGE_KEYS.HISTORY_360,
+  STORAGE_KEYS.CANDIDATES,
+  STORAGE_KEYS.ASSESSMENTS,
+  STORAGE_KEYS.TRAINING_ASSIGNMENTS,
+  STORAGE_KEYS.DEVELOPMENT_PLANS,
+  STORAGE_KEYS.CAREER_PROFILES,
+  STORAGE_KEYS.COMPENSATION_CYCLES,
+  STORAGE_KEYS.MARKET_BENCHMARKS,
+  STORAGE_KEYS.PULSE_ANSWERS,
+]);
+
+function hasMeaningfulData(data: unknown): boolean {
+  if (Array.isArray(data)) return data.length > 0;
+  if (data && typeof data === "object") return Object.keys(data as Record<string, unknown>).length > 0;
+  return data !== null && data !== undefined && data !== "";
+}
+
 export function getStorageData(key: string, defaultValue: null): any;
 export function getStorageData<T>(key: string, defaultValue: T): T;
 export function getStorageData<T>(key: string, defaultValue: T | null): T | any {
@@ -36,14 +58,25 @@ export function setStorageData<T>(key: string, data: T): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(key, JSON.stringify(data));
+    // Temizlenmiş demo ortamına daha sonra Excel/form/API ile gerçek veri yazılırsa
+    // DataContext bu veriyi tekrar görünür kabul etsin.
+    if (CORE_DATA_KEYS.has(key) && hasMeaningfulData(data)) {
+      localStorage.removeItem(HR_DATA_CLEARED_KEY);
+    }
   } catch (error) {
     console.error("Storage error:", error);
   }
 }
 
+export function markHRDataActive(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(HR_DATA_CLEARED_KEY);
+}
+
 export function clearStorage(): void {
   if (typeof window === "undefined") return;
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  localStorage.removeItem(HR_DATA_CLEARED_KEY);
 }
 
 // Merkezi demo veri temizleme fonksiyonu. Kimlik bilgilerini ve firma yetki politikasını korur.
@@ -55,25 +88,29 @@ export function clearAllHRData(): void {
   const accessPolicy = localStorage.getItem(STORAGE_KEYS.ACCESS_POLICY);
 
   const allHrKeys = Object.keys(localStorage).filter(
-    (key) => key.startsWith("hr_") && key !== STORAGE_KEYS.CURRENT_USER && key !== STORAGE_KEYS.ACCESS_POLICY && key !== "hr_data_cleared"
+    (key) => key.startsWith("hr_") && key !== STORAGE_KEYS.CURRENT_USER && key !== STORAGE_KEYS.ACCESS_POLICY && key !== HR_DATA_CLEARED_KEY
   );
   allHrKeys.forEach((key) => localStorage.removeItem(key));
 
-  setStorageData(STORAGE_KEYS.ORG_CHART, []);
-  setStorageData(STORAGE_KEYS.HISTORY_360, []);
-  setStorageData(STORAGE_KEYS.LEAVE_REQUESTS, []);
-  setStorageData(STORAGE_KEYS.REWARD_LEAVE, []);
-  setStorageData(STORAGE_KEYS.NOTIFICATIONS, []);
-  setStorageData(STORAGE_KEYS.CANDIDATE_RESULTS, []);
-  setStorageData(STORAGE_KEYS.CANDIDATES, []);
-  setStorageData(STORAGE_KEYS.ASSESSMENTS, []);
-  setStorageData(STORAGE_KEYS.TRAINING_ASSIGNMENTS, []);
-  setStorageData(STORAGE_KEYS.DEVELOPMENT_PLANS, []);
-  setStorageData(STORAGE_KEYS.CAREER_PROFILES, []);
-  setStorageData(STORAGE_KEYS.COMPENSATION_CYCLES, []);
-  setStorageData(STORAGE_KEYS.MARKET_BENCHMARKS, []);
-  setStorageData(STORAGE_KEYS.PULSE_ANSWERS, []);
-  setStorageData(STORAGE_KEYS.USERS, {});
+  // Doğrudan localStorage kullanılır; setStorageData burada marker'ı yanlışlıkla açmasın.
+  const emptyKeys = [
+    STORAGE_KEYS.ORG_CHART,
+    STORAGE_KEYS.HISTORY_360,
+    STORAGE_KEYS.LEAVE_REQUESTS,
+    STORAGE_KEYS.REWARD_LEAVE,
+    STORAGE_KEYS.NOTIFICATIONS,
+    STORAGE_KEYS.CANDIDATE_RESULTS,
+    STORAGE_KEYS.CANDIDATES,
+    STORAGE_KEYS.ASSESSMENTS,
+    STORAGE_KEYS.TRAINING_ASSIGNMENTS,
+    STORAGE_KEYS.DEVELOPMENT_PLANS,
+    STORAGE_KEYS.CAREER_PROFILES,
+    STORAGE_KEYS.COMPENSATION_CYCLES,
+    STORAGE_KEYS.MARKET_BENCHMARKS,
+    STORAGE_KEYS.PULSE_ANSWERS,
+  ];
+  emptyKeys.forEach((key) => localStorage.setItem(key, "[]"));
+  localStorage.setItem(STORAGE_KEYS.USERS, "{}");
 
   localStorage.removeItem("hr_talent_matrix");
   localStorage.removeItem("hr_org_chart_data");
@@ -84,6 +121,6 @@ export function clearAllHRData(): void {
   if (currentUser) localStorage.setItem("user", currentUser);
   if (accessPolicy) localStorage.setItem(STORAGE_KEYS.ACCESS_POLICY, accessPolicy);
 
-  localStorage.setItem("hr_data_cleared", "true");
+  localStorage.setItem(HR_DATA_CLEARED_KEY, "true");
   window.dispatchEvent(new CustomEvent("storageCleared"));
 }
