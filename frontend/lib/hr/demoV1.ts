@@ -29,19 +29,21 @@ function roleSalary(position: string, level: number) {
 
 export interface FutureHRV1DemoData { organization: any[]; history360: any[]; benchmarks: any[]; developmentPlans: any[]; trainingAssignments: any[]; candidates: any[]; pulseAnswers: any[]; }
 
+type DemoTeam = { department: string; manager: string; managerPosition: string; staff: Array<[string, string]> };
+
 export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
   const role = String(currentUser?.role || "").toUpperCase();
   const executiveName = role === "CEO" && currentUser?.name ? String(currentUser.name) : "Mert Demir";
   const hrManagerName = role === "IK" && currentUser?.name ? String(currentUser.name) : "Selin Acar";
 
-  const teams = [
+  const teams: DemoTeam[] = [
     { department: "İnsan Kaynakları", manager: hrManagerName, managerPosition: "İnsan Kaynakları Müdürü", staff: [["Derya Yalçın", "İnsan Kaynakları Uzmanı"], ["Emre Koç", "Bordro Uzmanı"], ["Melis Özkan", "İşe Alım Uzmanı"], ["Burak Şen", "Eğitim ve Gelişim Uzmanı"]] },
     { department: "Finans & Muhasebe", manager: "Onur Kaya", managerPosition: "Finans Müdürü", staff: [["Gizem Arslan", "Finans Uzmanı"], ["Kerem Güneş", "Muhasebe Uzmanı"], ["Ece Tunç", "Bütçe ve Raporlama Uzmanı"], ["Tolga Yıldız", "Finans Analisti"]] },
     { department: "Satış & Pazarlama", manager: "Aslı Özer", managerPosition: "Satış Müdürü", staff: [["Can Polat", "Satış Uzmanı"], ["İrem Aksoy", "Pazarlama Uzmanı"], ["Bora Ergin", "Kilit Müşteri Yöneticisi"], ["Nazlı Erdem", "CRM Uzmanı"]] },
     { department: "Operasyon & Üretim", manager: "Hakan Çetin", managerPosition: "Üretim Müdürü", staff: [["Pelin Yılmaz", "Üretim Mühendisi"], ["Oğuz Kılıç", "Kalite Uzmanı"], ["Cemre Uysal", "Süreç Geliştirme Uzmanı"], ["Kaan Dinç", "Operasyon Uzmanı"]] },
     { department: "BT & Dijital", manager: "Deniz Şahin", managerPosition: "Bilgi Teknolojileri Müdürü", staff: [["Arda Eren", "Yazılım Uzmanı"], ["Elif Başar", "Veri Analisti"], ["Mertcan Işık", "Siber Güvenlik Uzmanı"], ["Seda Çakır", "Dijital Dönüşüm Uzmanı"]] },
     { department: "Proje & İş Geliştirme", manager: "Berk Aydın", managerPosition: "Proje Müdürü", staff: [["Nehir Keskin", "Proje Uzmanı"], ["Umut Karaca", "İş Geliştirme Uzmanı"], ["Zeynep Ekin", "Sürdürülebilirlik Uzmanı"], ["Alp Tekin", "Araştırma Uzmanı"]] },
-  ] as const;
+  ];
 
   const organization: any[] = [{ id: "P001", "Ad Soyad": executiveName, Departman: "Genel Yönetim", Pozisyon: "Genel Müdür", "İşe Giriş Tarihi": "2018-01-15", "Maaş (TL)": 185000 }];
   let personIndex = 2;
