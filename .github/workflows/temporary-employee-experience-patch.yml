@@ -1,0 +1,698 @@
+name: Temporary employee experience patch
+
+on:
+  push:
+    branches:
+      - employee-experience-compact
+    paths:
+      - .github/workflows/temporary-employee-experience-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: employee-experience-compact
+          fetch-depth: 0
+
+      - name: Apply employee experience changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              if old not in text:
+                  raise RuntimeError(f"Anchor not found: {label}")
+              return text.replace(old, new, 1)
+
+          dashboard_path = Path("frontend/app/(dashboard)/dashboard/page.tsx")
+          dashboard = dashboard_path.read_text(encoding="utf-8")
+
+          chart_import = '''import {
+            Area,
+            CartesianGrid,
+            Line,
+            LineChart,
+            ReferenceLine,
+            ResponsiveContainer,
+            Tooltip,
+            XAxis,
+            YAxis,
+          } from "@/components/charts/recharts";
+          '''
+          dashboard = replace_once(dashboard, chart_import, "", "dashboard chart imports")
+
+          pulse_anchor = '''  const pulseDelta = latestPulse && previousPulse
+            ? latestPulse.average_score - previousPulse.average_score
+            : null;
+
+          if (dataLoading || !userReady) {
+          '''
+          pulse_replacement = '''  const pulseDelta = latestPulse && previousPulse
+            ? latestPulse.average_score - previousPulse.average_score
+            : null;
+
+          const pulseScopeEmployeeCount = useMemo(() => {
+            const role = user?.role || "EMPLOYEE";
+            const dept = user?.dept || user?.department || "";
+            if (isAdmin && selectedPulseDepartment) {
+              return mergedData.filter((person) => person.Departman === selectedPulseDepartment).length;
+            }
+            if ((role === "DIRECTOR" || role === "MANAGER") && dept) {
+              return mergedData.filter((person) => person.Departman === dept).length;
+            }
+            return mergedData.length;
+          }, [isAdmin, selectedPulseDepartment, mergedData, user]);
+
+          const latestPulseResponses = latestPulse?.count ?? 0;
+          const pulseParticipation = pulseScopeEmployeeCount > 0 && latestPulseResponses > 0
+            ? Math.min(100, (latestPulseResponses / pulseScopeEmployeeCount) * 100)
+            : 0;
+          const pulseStatus = latestPulse
+            ? latestPulse.average_score >= PULSE_TARGET
+              ? "Hedef üstü"
+              : "Gelişim alanı"
+            : "Veri bekleniyor";
+
+          if (dataLoading || !userReady) {
+          '''
+          dashboard = replace_once(dashboard, pulse_anchor, pulse_replacement, "pulse summary calculations")
+
+          experience_block = r'''      {/* Employee experience summary */}
+          <div className="enterprise-card mb-4 p-4">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300">
+                  <Heart className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="enterprise-eyebrow">Çalışan deneyimi</p>
+                  <h2 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Haftalık check-in özeti
+                  </h2>
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    {isAdmin
+                      ? selectedPulseDepartment || "Tüm şirket"
+                      : user?.dept || user?.department || "Ekibiniz"} · çalışanların 1–10 deneyim yanıtlarından otomatik oluşur.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {isAdmin && (
+                  <select
+                    value={selectedPulseDepartment || ""}
+                    onChange={(event) => setSelectedPulseDepartment(event.target.value || null)}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 outline-none hover:border-slate-300 focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                    aria-label="Çalışan deneyimi departmanı"
+                  >
+                    <option value="">Tüm Şirket</option>
+                    {allDepartments.map((department) => (
+                      <option key={department} value={department}>
+                        {department}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <Link
+                  href="/calisan-deneyimi"
+                  className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-indigo-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-300"
+                >
+                  Check-in ekranı →
+                </Link>
+              </div>
+            </div>
+
+            {latestPulse ? (
+              <>
+                <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                  <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Deneyim skoru</p>
+                    <div className="mt-1.5 flex items-end gap-1.5">
+                      <span className="text-xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
+                        {latestPulse.average_score.toFixed(1).replace(".", ",")}
+                      </span>
+                      <span className="pb-0.5 text-[10px] font-medium text-slate-400">/ 10</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Katılım</p>
+                    <div className="mt-1.5 flex items-end justify-between gap-2">
+                      <span className="text-xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
+                        %{pulseParticipation.toFixed(0)}
+                      </span>
+                      <span className="pb-0.5 text-[10px] font-medium text-slate-400">{latestPulseResponses} yanıt</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Önceki haftaya göre</p>
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      {pulseDelta !== null ? (
+                        <>
+                          {pulseDelta >= 0 ? (
+                            <TrendingUp className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4 text-red-500" />
+                          )}
+                          <span className={`text-xl font-semibold tracking-[-0.03em] ${pulseDelta >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                            {pulseDelta >= 0 ? "+" : ""}{pulseDelta.toFixed(1).replace(".", ",")}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xl font-semibold text-slate-400">—</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Durum</p>
+                    <div className="mt-1.5 flex items-center justify-between gap-2">
+                      <span className={`text-sm font-semibold ${latestPulse.average_score >= PULSE_TARGET ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+                        {pulseStatus}
+                      </span>
+                      <span className="text-[10px] font-medium text-slate-400">Hedef {PULSE_TARGET.toFixed(1).replace(".", ",")}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`mt-3 flex items-start gap-2.5 rounded-lg border px-3 py-2.5 ${latestPulse.average_score >= PULSE_TARGET ? "border-emerald-100 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/10" : "border-amber-100 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/10"}`}>
+                  {latestPulse.average_score >= PULSE_TARGET ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+                  ) : (
+                    <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                  )}
+                  <p className="text-[11px] leading-5 text-slate-600 dark:text-slate-300">
+                    Son haftada {latestPulseResponses} çalışan check-in verdi. Deneyim skoru {latestPulse.average_score.toFixed(1).replace(".", ",")} / 10
+                    {pulseDelta !== null ? ` ve önceki haftaya göre ${Math.abs(pulseDelta).toFixed(1).replace(".", ",")} puan ${pulseDelta >= 0 ? "yükseldi" : "geriledi"}.` : "."}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="mt-3 flex flex-col gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/30">
+                <div className="flex items-center gap-3">
+                  <Heart className="h-5 w-5 flex-shrink-0 text-slate-300" />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Henüz check-in verisi yok</p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">İlk çalışan yanıtı geldiğinde skor, katılım ve haftalık değişim burada otomatik oluşacak.</p>
+                  </div>
+                </div>
+                <Link
+                  href="/calisan-deneyimi"
+                  className="inline-flex h-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-indigo-700"
+                >
+                  İlk check-in'i başlat →
+                </Link>
+              </div>
+            )}
+          </div>
+          '''
+
+          pattern = re.compile(r'      \{/\* Employee experience trend \*/\}.*?(?=\n      \{/\* Decision support \*/\})', re.S)
+          dashboard, count = pattern.subn(experience_block.rstrip(), dashboard, count=1)
+          if count != 1:
+              raise RuntimeError("Employee experience dashboard block was not replaced")
+          dashboard_path.write_text(dashboard, encoding="utf-8")
+
+          pulse_card = r'''"use client";
+
+          import { useEffect, useState } from "react";
+          import { CalendarDays, CheckCircle2, Heart, Send } from "lucide-react";
+          import { checkPulseStatus, submitPulseAnswer, type PulseSubmitRequest } from "../../app/services/surveyService";
+
+          interface WeeklyPulseCardProps {
+            userName: string;
+            departmentId?: string;
+            respectWindow?: boolean;
+          }
+
+          const isPulseWindow = () => {
+            const day = new Date().getDay();
+            return day === 5 || day === 6 || day === 0;
+          };
+
+          export default function WeeklyPulseCard({ userName, departmentId, respectWindow = true }: WeeklyPulseCardProps) {
+            const [score, setScore] = useState(0);
+            const [feedback, setFeedback] = useState("");
+            const [submitting, setSubmitting] = useState(false);
+            const [loading, setLoading] = useState(true);
+            const [hasSubmitted, setHasSubmitted] = useState(false);
+            const windowOpen = !respectWindow || isPulseWindow();
+
+            useEffect(() => {
+              let active = true;
+              const load = async () => {
+                if (!userName) {
+                  if (active) setLoading(false);
+                  return;
+                }
+                const status = await checkPulseStatus(userName);
+                if (active) {
+                  setHasSubmitted(Boolean(status.hasSubmitted));
+                  setLoading(false);
+                }
+              };
+              void load();
+              return () => { active = false; };
+            }, [userName]);
+
+            const handleSubmit = async () => {
+              if (!score || !userName) return;
+              setSubmitting(true);
+              try {
+                const request: PulseSubmitRequest = {
+                  user_name: userName,
+                  score,
+                  feedback: feedback.trim() || undefined,
+                  department_id: departmentId,
+                };
+                await submitPulseAnswer(request);
+                setHasSubmitted(true);
+                window.dispatchEvent(new CustomEvent("pulseUpdated"));
+              } catch (error: any) {
+                alert(error?.message || "Check-in gönderilirken bir hata oluştu.");
+              } finally {
+                setSubmitting(false);
+              }
+            };
+
+            if (loading) {
+              return <div className="h-32 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />;
+            }
+
+            if (hasSubmitted) {
+              return (
+                <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/10">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Bu haftanın check-in'i tamamlandı</p>
+                    <p className="mt-1 text-xs leading-5 text-emerald-700/80 dark:text-emerald-400/80">Yanıtınız haftalık çalışan deneyimi özetine dahil edildi. Yeni check-in gelecek hafta açılır.</p>
+                  </div>
+                </div>
+              );
+            }
+
+            if (!windowOpen) {
+              return (
+                <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                  <CalendarDays className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Haftalık check-in Cuma–Pazar arasında açılır</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Bu pencere, yanıtların aynı haftalık dönemde toplanmasını ve trendlerin tutarlı kalmasını sağlar.</p>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300">
+                    <Heart className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Bu hafta iş deneyimin nasıldı?</h3>
+                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Genel iş deneyimini, enerji ve üretkenlik hissini birlikte düşünerek 1–10 arasında değerlendir.</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-5 gap-2 sm:grid-cols-10">
+                  {[1,2,3,4,5,6,7,8,9,10].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setScore(value)}
+                      aria-pressed={score === value}
+                      className={`h-11 rounded-lg border text-sm font-semibold transition-all ${score === value ? "border-indigo-600 bg-indigo-600 text-white shadow-sm" : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"}`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 flex justify-between text-[10px] font-medium text-slate-400">
+                  <span>Çok düşük</span><span>Çok iyi</span>
+                </div>
+
+                <label className="mt-5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Bunu en çok ne etkiledi? <span className="font-normal text-slate-400">(isteğe bağlı)</span>
+                </label>
+                <textarea
+                  value={feedback}
+                  onChange={(event) => setFeedback(event.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="İş yükü, ekip iletişimi, odaklanma, süreçler veya başka bir etken..."
+                  className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-indigo-950"
+                />
+
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[10px] leading-4 text-slate-400">Yanıt, çalışan deneyimi raporlarında toplu skor ve trend üretmek için kullanılır.</p>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={submitting || score === 0}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    {submitting ? "Gönderiliyor..." : "Check-in'i gönder"}
+                  </button>
+                </div>
+              </div>
+            );
+          }
+          '''
+          Path("frontend/components/education/WeeklyPulseCard.tsx").write_text(pulse_card.replace("          ", ""), encoding="utf-8")
+
+          experience_page = r'''"use client";
+
+          import { useEffect, useState } from "react";
+          import { Heart, ShieldCheck } from "lucide-react";
+          import WeeklyPulseCard from "../../../components/education/WeeklyPulseCard";
+          import { getStorageData, STORAGE_KEYS } from "../../utils/storage";
+
+          export default function CalisanDeneyimiPage() {
+            const [user, setUser] = useState<any>(null);
+            const [ready, setReady] = useState(false);
+
+            useEffect(() => {
+              setUser(getStorageData(STORAGE_KEYS.CURRENT_USER, null));
+              setReady(true);
+            }, []);
+
+            if (!ready) {
+              return <div className="h-40 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />;
+            }
+
+            const userName = user?.name || user?.username || "";
+            const department = user?.dept || user?.department || "";
+
+            return (
+              <div className="mx-auto max-w-5xl space-y-4">
+                <div>
+                  <p className="enterprise-eyebrow">Çalışan deneyimi</p>
+                  <h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">Haftalık Check-in</h1>
+                  <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Kısa haftalık geri bildirimler, yönetim panelindeki çalışan deneyimi skorunu ve katılım göstergelerini doğrudan oluşturur.</p>
+                </div>
+
+                <div className="grid items-start gap-4 lg:grid-cols-[1fr_280px]">
+                  <div className="enterprise-card p-5">
+                    {userName ? (
+                      <WeeklyPulseCard userName={userName} departmentId={department} respectWindow={false} />
+                    ) : (
+                      <p className="text-sm text-slate-500">Check-in için aktif kullanıcı bilgisi bulunamadı.</p>
+                    )}
+                  </div>
+
+                  <div className="enterprise-card p-4">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                      <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Nasıl kullanılıyor?</h2>
+                    </div>
+                    <div className="mt-3 space-y-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      <p>Her çalışan haftada bir kez 1–10 arasında genel deneyim skoru verir.</p>
+                      <p>Departman ve şirket görünümündeki skorlar gerçek check-in yanıtlarından otomatik hesaplanır.</p>
+                      <p>Serbest metin geri bildirimi isteğe bağlıdır ve deneyimin bağlamını anlamaya yardımcı olur.</p>
+                    </div>
+                    {department && (
+                      <div className="mt-4 rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-900/50">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Kapsam</p>
+                        <p className="mt-1 text-xs font-semibold text-slate-700 dark:text-slate-200">{department}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          '''
+          experience_page_path = Path("frontend/app/(dashboard)/calisan-deneyimi/page.tsx")
+          experience_page_path.parent.mkdir(parents=True, exist_ok=True)
+          experience_page_path.write_text(experience_page.replace("          ", ""), encoding="utf-8")
+
+          roles_path = Path("frontend/app/data/roles.ts")
+          roles = roles_path.read_text(encoding="utf-8")
+          roles = replace_once(roles,
+              '    "/dashboard", "/organizasyon",',
+              '    "/dashboard", "/calisan-deneyimi", "/organizasyon",',
+              "CEO experience access")
+          roles = replace_once(roles,
+              '    "/dashboard", "/organizasyon",',
+              '    "/dashboard", "/calisan-deneyimi", "/organizasyon",',
+              "HR experience access")
+          roles = replace_once(roles,
+              '    "/dashboard", "/degerlendirme", "/egitim",',
+              '    "/dashboard", "/calisan-deneyimi", "/degerlendirme", "/egitim",',
+              "director experience access")
+          roles = replace_once(roles,
+              '    "/dashboard", "/degerlendirme", "/egitim",',
+              '    "/dashboard", "/calisan-deneyimi", "/degerlendirme", "/egitim",',
+              "manager experience access")
+          roles = replace_once(roles,
+              '  employee: ["/egitim", "/gelisim",',
+              '  employee: ["/egitim", "/calisan-deneyimi", "/gelisim",',
+              "employee experience access")
+          roles_path.write_text(roles, encoding="utf-8")
+
+          access_path = Path("frontend/lib/hr/accessControl.ts")
+          access = access_path.read_text(encoding="utf-8")
+          access = replace_once(access,
+              '  | "dashboard" | "leave" | "organization" | "performance" | "talent" | "training"',
+              '  | "dashboard" | "leave" | "experience" | "organization" | "performance" | "talent" | "training"',
+              "experience module key")
+          access = replace_once(access,
+              '  { key: "leave", label: "İzin Yönetimi", route: "/izinler" },',
+              '  { key: "leave", label: "İzin Yönetimi", route: "/izinler" },\n  { key: "experience", label: "Çalışan Deneyimi", route: "/calisan-deneyimi" },',
+              "experience module definition")
+          access_path.write_text(access, encoding="utf-8")
+
+          layout_path = Path("frontend/components/ClientLayout.tsx")
+          layout = layout_path.read_text(encoding="utf-8")
+          layout = replace_once(layout,
+              '  SlidersHorizontal,\n} from "lucide-react";',
+              '  SlidersHorizontal,\n  Heart,\n} from "lucide-react";',
+              "layout heart import")
+          layout = replace_once(layout,
+              '  { href: "/izinler", label: "İzin Yönetimi", icon: Plane, section: "Genel" },',
+              '  { href: "/izinler", label: "İzin Yönetimi", icon: Plane, section: "Genel" },\n  { href: "/calisan-deneyimi", label: "Çalışan Deneyimi", icon: Heart, section: "Genel" },',
+              "experience menu item")
+          layout_path.write_text(layout, encoding="utf-8")
+
+          utils_path = Path("backend/utils_db.py")
+          utils = utils_path.read_text(encoding="utf-8")
+          old_pulse_save = '''def save_pulse_answer(employee_id: str, employee_name: str, department_id: str, 
+                               department_name: str, score: float, week_number: str) -> bool:
+              """Yeni takım nabzı cevabı kaydeder (atomic write + file lock)."""
+              current_data = load_pulse_answers()
+              new_answer = {
+                  "id": len(current_data) + 1,
+                  "employee_id": employee_id,
+                  "employee_name": employee_name,
+                  "department_id": department_id,
+                  "department_name": department_name,
+                  "score": score,
+                  "created_at": datetime.now().isoformat(),
+                  "week_number": week_number
+              }
+              current_data.append(new_answer)
+              _pulse_store.save(current_data)
+              return True
+          '''.replace("              ", "")
+          new_pulse_save = '''def save_pulse_answer(employee_id: str, employee_name: str, department_id: str,
+                               department_name: str, score: float, week_number: str,
+                               feedback: Optional[str] = None) -> bool:
+              """Yeni takım nabzı cevabı kaydeder (atomic write + file lock)."""
+              current_data = load_pulse_answers()
+              new_answer = {
+                  "id": len(current_data) + 1,
+                  "employee_id": employee_id,
+                  "employee_name": employee_name,
+                  "department_id": department_id,
+                  "department_name": department_name,
+                  "score": score,
+                  "feedback": feedback or "",
+                  "created_at": datetime.now().isoformat(),
+                  "week_number": week_number
+              }
+              current_data.append(new_answer)
+              _pulse_store.save(current_data)
+              return True
+          '''.replace("              ", "")
+          utils = replace_once(utils, old_pulse_save, new_pulse_save, "pulse persistence feedback")
+          utils_path.write_text(utils, encoding="utf-8")
+
+          backend_path = Path("backend/routers/dashboard.py")
+          backend = backend_path.read_text(encoding="utf-8")
+          backend = replace_once(backend,
+              'from fastapi import APIRouter, Depends, Query',
+              'from fastapi import APIRouter, Depends, Query, HTTPException',
+              "backend HTTPException import")
+          backend = replace_once(backend,
+              '    score: float = Field(..., ge=1, le=5)',
+              '    score: float = Field(..., ge=1, le=10)',
+              "legacy pulse score scale")
+
+          model_anchor = '''class PulseAnswerRequest(BaseModel):
+              employee_id: str = Field(..., min_length=1)
+              employee_name: str = Field(..., min_length=1)
+              department_id: str = Field(..., min_length=1)
+              department_name: str = Field(..., min_length=1)
+              score: float = Field(..., ge=1, le=10)
+              week_number: str = Field(..., min_length=1)
+          '''.replace("              ", "")
+          model_replacement = model_anchor + '''
+
+          class PulseSubmitRequest(BaseModel):
+              user_name: str = Field(..., min_length=1)
+              score: float = Field(..., ge=1, le=10)
+              feedback: Optional[str] = Field(default=None, max_length=500)
+              department_id: Optional[str] = None
+
+
+          def _pulse_week_context():
+              now = datetime.now()
+              iso = now.isocalendar()
+              week_number = f"{iso.year}-W{iso.week:02d}"
+              week_start = (now - timedelta(days=now.weekday())).date().isoformat()
+              return week_number, week_start
+          '''.replace("          ", "")
+          backend = replace_once(backend, model_anchor, model_replacement, "pulse API models")
+
+          endpoint_anchor = '''@router.post("/api/pulse-answer")
+          async def save_pulse_response(request: PulseAnswerRequest):
+              """Persist a weekly pulse answer used by the training/dashboard UI."""
+              from utils_db import save_pulse_answer
+              saved = save_pulse_answer(
+                  employee_id=request.employee_id,
+                  employee_name=request.employee_name,
+                  department_id=request.department_id,
+                  department_name=request.department_name,
+                  score=request.score,
+                  week_number=request.week_number,
+              )
+              return {"success": bool(saved)}
+          '''.replace("          ", "")
+          endpoint_replacement = endpoint_anchor + '''
+
+          @router.get("/api/pulse/status")
+          async def get_pulse_status(user_name: str = Query(..., min_length=1)):
+              """Return whether the employee already submitted this week's check-in."""
+              from utils_db import load_pulse_answers
+              week_number, week_start = _pulse_week_context()
+              normalized_name = user_name.strip().casefold()
+              submitted = any(
+                  str(item.get("employee_name") or item.get("user_name") or "").strip().casefold() == normalized_name
+                  and item.get("week_number") == week_number
+                  for item in load_pulse_answers()
+              )
+              return {"success": True, "hasSubmitted": submitted, "weekStart": week_start}
+
+
+          @router.post("/api/pulse/submit")
+          async def submit_pulse_response(request: PulseSubmitRequest):
+              """Persist one real 1-10 employee-experience check-in per employee/week."""
+              from utils_db import load_org_chart, load_pulse_answers, save_pulse_answer
+              week_number, _ = _pulse_week_context()
+              normalized_name = request.user_name.strip().casefold()
+              existing = any(
+                  str(item.get("employee_name") or item.get("user_name") or "").strip().casefold() == normalized_name
+                  and item.get("week_number") == week_number
+                  for item in load_pulse_answers()
+              )
+              if existing:
+                  raise HTTPException(status_code=409, detail="Bu haftanın check-in'i zaten gönderildi.")
+
+              employee = next(
+                  (
+                      item for item in load_org_chart()
+                      if str(item.get("Ad Soyad") or item.get("name") or "").strip().casefold() == normalized_name
+                  ),
+                  {},
+              )
+              department = request.department_id or employee.get("Departman") or employee.get("department") or "Belirtilmemiş"
+              employee_id = str(employee.get("id") or employee.get("employee_id") or request.user_name)
+              saved = save_pulse_answer(
+                  employee_id=employee_id,
+                  employee_name=request.user_name.strip(),
+                  department_id=str(department),
+                  department_name=str(department),
+                  score=request.score,
+                  week_number=week_number,
+                  feedback=request.feedback,
+              )
+              return {"success": bool(saved), "message": "Check-in kaydedildi."}
+
+
+          @router.get("/api/pulse/data")
+          async def get_pulse_data(department: Optional[str] = None):
+              """Return stored employee-experience check-ins without synthetic data."""
+              from utils_db import load_pulse_answers
+              answers = load_pulse_answers()
+              if department:
+                  answers = [
+                      item for item in answers
+                      if item.get("department_id") == department or item.get("department_name") == department
+                  ]
+              return {"success": True, "data": answers}
+          '''.replace("          ", "")
+          backend = replace_once(backend, endpoint_anchor, endpoint_replacement, "pulse API endpoints")
+
+          trend_pattern = re.compile(r'@router\.get\("/api/pulse-trends"\).*?(?=@router\.get\("/api/dashboard/summary"\))', re.S)
+          trend_replacement = '''@router.get("/api/pulse-trends")
+          async def get_pulse(
+              role: str = Depends(get_current_user_role),
+              dept: str = Depends(get_current_user_dept),
+              user_role: Optional[str] = None,
+              user_dept: Optional[str] = None,
+              user_department: Optional[str] = None,
+              department_id: Optional[str] = None,
+          ):
+              """Return real weekly employee-experience trends with role/scope filtering."""
+              try:
+                  from utils_db import get_pulse_trends
+                  effective_role = user_role or role
+                  effective_dept = user_dept or user_department or dept
+                  target_dept = department_id
+                  if not target_dept and effective_role not in ["CEO", "IK", "admin"]:
+                      target_dept = effective_dept or None
+                  return {"success": True, "data": get_pulse_trends(target_dept)}
+              except Exception as exc:
+                  return {"success": False, "data": [], "error": str(exc)}
+
+
+          '''.replace("          ", "")
+          backend, count = trend_pattern.subn(trend_replacement, backend, count=1)
+          if count != 1:
+              raise RuntimeError("Pulse trends endpoint was not replaced")
+          backend_path.write_text(backend, encoding="utf-8")
+
+          workflow = Path(".github/workflows/temporary-employee-experience-patch.yml")
+          if workflow.exists():
+              workflow.unlink()
+          PY
+
+      - name: Validate backend syntax
+        run: |
+          python -m py_compile backend/routers/dashboard.py backend/utils_db.py
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Validate production build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Commit validated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Replace happiness trend with employee experience summary"
+          git push origin HEAD:employee-experience-compact
