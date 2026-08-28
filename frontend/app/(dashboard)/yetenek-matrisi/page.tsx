@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Brain, CheckCircle2, Sparkles, Target, Users } from "lucide-react";
+import { Brain, Target, Users } from "lucide-react";
+import AIDecisionSupport from "@/components/AIDecisionSupport";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
 import { calculatePotentialIndex, extractCompetencyMap, getNineBox } from "../../../lib/hr/talentPotential";
 import { resolveTargetProfile } from "../../../lib/hr/careerArchitecture";
@@ -19,8 +20,6 @@ export default function YetenekMatrisiPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [talentData, setTalentData] = useState<any[]>([]);
   const [selectedName, setSelectedName] = useState("");
-  const [ai, setAi] = useState<{mode:"ai"|"rules";recommendation:string;note?:string}|null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
 
   const reload = async () => {
     const org = getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []);
@@ -95,15 +94,32 @@ export default function YetenekMatrisiPage() {
     setOrgData(next); setStorageData(STORAGE_KEYS.ORG_CHART, next); window.dispatchEvent(new CustomEvent("dataUpdated"));
   };
 
-  const requestAI = async () => {
-    if (!selected) return;
-    setAiLoading(true); setAi(null);
-    try {
-      const response = await fetch("/api/ai/hr-recommendation", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ kind:"talent", context:{ employee:{ name:selected["Ad Soyad"], position:selected.Pozisyon, department:selected.Departman, performance:selected.Performans, nineBox:selected.box }, potential:selected.calculatedPotential, roleTargetSource:targetSourceText, topGaps:gapData.filter(item=>item.hasActual).slice(0,4), strengths:gapData.filter(item=>item.hasActual).sort((a,b)=>a.gap-b.gap).slice(0,3) } }) });
-      setAi(await response.json());
-    } catch { setAi({mode:"rules",recommendation:"AI servisine ulaşılamadı. Potansiyel faktörleri ve yetkinlik açıklarını birlikte değerlendirerek ölçülebilir gelişim aksiyonları tanımlayın."}); }
-    finally { setAiLoading(false); }
-  };
+  const aiContext = selected ? {
+    module: "talent_matrix",
+    employee: {
+      position: selected.Pozisyon,
+      department: selected.Departman,
+      performance: selected.Performans,
+      nineBox: selected.box,
+    },
+    potential: {
+      score: selected.calculatedPotential.score,
+      label: selected.calculatedPotential.label,
+      confidence: selected.calculatedPotential.confidence,
+      factors: selected.calculatedPotential.factors,
+      missingInputs: selected.calculatedPotential.missingInputs,
+    },
+    careerSignals: {
+      aspiration: Number(selected.career_aspiration ?? 3),
+      mobility: Number(selected.mobility_willingness ?? 3),
+    },
+    roleTarget: {
+      source: targetSourceText,
+      topGaps: gapData.filter((item) => item.hasActual && item.gap > 0).slice(0, 4),
+      strengths: gapData.filter((item) => item.hasActual).sort((a,b)=>a.gap-b.gap).slice(0,3),
+    },
+    instruction: "Performans, potansiyel, veri güveni ve rol yetkinlik farklarını birlikte analiz et. Terfi ya da ücret kararı verme; doğrulanması gereken kanıtları ve gelişim aksiyonlarını çıkar.",
+  } : {};
 
   return (
     <div className="space-y-5">
@@ -114,7 +130,7 @@ export default function YetenekMatrisiPage() {
       <div className="grid gap-5 xl:grid-cols-[1.45fr_.75fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-semibold">9-Box Yetenek Haritası</h2><p className="text-xs text-slate-500">X: Performans · Y: Çok faktörlü potansiyel</p></div><Users className="h-4 w-4 text-indigo-600"/></div><div className="h-[430px]"><ResponsiveContainer width="100%" height="100%"><ScatterChart margin={{top:18,right:22,bottom:28,left:10}}><CartesianGrid strokeDasharray="4 6"/><ReferenceArea x1={1} x2={3} y1={1} y2={3} fill="#fee2e2" fillOpacity={0.35}/><ReferenceArea x1={3} x2={4} y1={3} y2={4} fill="#fef3c7" fillOpacity={0.3}/><ReferenceArea x1={4} x2={5} y1={4} y2={5} fill="#dcfce7" fillOpacity={0.38}/><XAxis type="number" dataKey="performance" domain={[1,5]} ticks={[1,2,3,4,5]} name="Performans" label={{value:"Performans",position:"insideBottom",offset:-16}}/><YAxis type="number" dataKey="potential" domain={[1,5]} ticks={[1,2,3,4,5]} name="Potansiyel" label={{value:"Potansiyel",angle:-90,position:"insideLeft"}}/><ReferenceLine x={3} stroke="#94a3b8"/><ReferenceLine x={4} stroke="#94a3b8"/><ReferenceLine y={3} stroke="#94a3b8"/><ReferenceLine y={4} stroke="#94a3b8"/><Tooltip cursor={{strokeDasharray:"3 3"}} content={({active,payload}:any)=>active&&payload?.[0]?<div className="rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xl"><p className="font-semibold">{payload[0].payload.name}</p><p>{payload[0].payload.position}</p><p className="mt-1">Performans: {payload[0].payload.performance.toFixed(1)}</p><p>Potansiyel: {payload[0].payload.potential.toFixed(2)} · güven %{payload[0].payload.confidence}</p><p className="mt-1 font-semibold text-indigo-700">{payload[0].payload.box}</p></div>:null}/><Scatter data={plotData} fill="#4f46e5" onClick={(point:any)=>point?.name&&setSelectedName(point.name)}/></ScatterChart></ResponsiveContainer></div></div>
 
-        <div className="space-y-4"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><label className="text-xs font-medium text-slate-500">Çalışan<select value={selectedName} onChange={(e)=>{setSelectedName(e.target.value);setAi(null)}} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">{people.map((p)=><option key={p["Ad Soyad"]}>{p["Ad Soyad"]}</option>)}</select></label>{selected&&<div className="mt-4"><p className="text-lg font-semibold">{selected["Ad Soyad"]}</p><p className="text-xs text-slate-500">{selected.Pozisyon} · {selected.Departman}</p><span className="mt-3 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{selected.box}</span><div className="mt-4 grid grid-cols-2 gap-2"><Mini label="Performans" value={selected.Performans.toFixed(1)}/><Mini label="Potansiyel" value={selected.calculatedPotential.score.toFixed(2)}/><Mini label="Veri güveni" value={`%${selected.calculatedPotential.confidence}`}/><Mini label="Potansiyel bandı" value={selected.calculatedPotential.label}/></div></div>}</div>
+        <div className="space-y-4"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><label className="text-xs font-medium text-slate-500">Çalışan<select value={selectedName} onChange={(e)=>setSelectedName(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">{people.map((p)=><option key={p["Ad Soyad"]}>{p["Ad Soyad"]}</option>)}</select></label>{selected&&<div className="mt-4"><p className="text-lg font-semibold">{selected["Ad Soyad"]}</p><p className="text-xs text-slate-500">{selected.Pozisyon} · {selected.Departman}</p><span className="mt-3 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{selected.box}</span><div className="mt-4 grid grid-cols-2 gap-2"><Mini label="Performans" value={selected.Performans.toFixed(1)}/><Mini label="Potansiyel" value={selected.calculatedPotential.score.toFixed(2)}/><Mini label="Veri güveni" value={`%${selected.calculatedPotential.confidence}`}/><Mini label="Potansiyel bandı" value={selected.calculatedPotential.label}/></div></div>}</div>
         {selected&&<div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h3 className="text-sm font-semibold">Potansiyel girdileri</h3><p className="mt-1 text-xs text-slate-500">Öz-bildirim alanları girilmezse nötr 3,0 kullanılır ve güven skoru düşer.</p><Signal label="Kariyer isteği" value={Number(selected.career_aspiration ?? 3)} onChange={(v)=>updateProfileSignal("career_aspiration",v)}/><Signal label="Mobilite / yeni sorumluluk isteği" value={Number(selected.mobility_willingness ?? 3)} onChange={(v)=>updateProfileSignal("mobility_willingness",v)}/></div>}</div>
       </div>
 
@@ -123,7 +139,15 @@ export default function YetenekMatrisiPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-2"><Target className="h-4 w-4 text-indigo-600"/><h2 className="text-sm font-semibold">Rol yetkinlik farkı</h2></div><span className={`rounded-full px-2 py-1 text-[9px] font-bold ${targetResolution.source==="exact"?"bg-emerald-50 text-emerald-700":"bg-amber-50 text-amber-700"}`}>{targetResolution.source==="exact"?"ROL PROFİLİ":"TÜRETİLMİŞ HEDEF"}</span></div><p className="mt-1 text-[10px] leading-4 text-slate-400">{targetSourceText}</p><div className="mt-4 space-y-2">{gapData.slice(0,10).map((item)=><div key={item.label} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-800/60"><span>{item.label}</span>{item.hasActual?<span className={item.gap>0.5?"font-semibold text-red-600":item.gap>0?"font-semibold text-amber-600":"font-semibold text-emerald-600"}>{item.actual.toFixed(1)} / {item.expected.toFixed(1)} · {item.gap>0?`-${item.gap.toFixed(1)}`:"uyumlu"}</span>:<span className="font-semibold text-slate-400">Ölçüm yok · hedef {item.expected.toFixed(1)}</span>}</div>)}</div>{!gapData.length&&<div className="mt-4 rounded-xl bg-amber-50 p-4 text-xs text-amber-800">Bu rol için hedef yetkinlik profili üretilemedi. Pozisyon adı ve job level eşleşmesini kontrol edin.</div>}</div>
       </div>}
 
-      {selected&&<div className="rounded-2xl border border-violet-200 bg-violet-50/40 p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-violet-700"/><h2 className="text-sm font-semibold text-violet-950">Karar Desteği</h2></div><p className="mt-1 text-xs text-violet-800">Gerçek AI yalnızca sunucuda OPENAI_API_KEY tanımlıysa kullanılır; aksi halde ekran bunu açıkça kural bazlı olarak etiketler.</p></div><button onClick={requestAI} disabled={aiLoading} className="rounded-xl bg-violet-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">{aiLoading?"Analiz ediliyor...":"Öneri oluştur"}</button></div>{ai&&<div className="mt-4 rounded-xl bg-white p-4 text-sm text-slate-700 shadow-sm"><div className="mb-2 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-violet-600"/><span className="text-xs font-semibold uppercase tracking-wide text-violet-700">{ai.mode==="ai"?"AI Karar Desteği":"Kural Bazlı Öneri"}</span></div><div className="whitespace-pre-wrap leading-6">{ai.recommendation}</div>{ai.note&&<p className="mt-2 text-xs text-slate-400">{ai.note}</p>}</div>}</div>}
+      {selected&&<AIDecisionSupport
+        kind="talent"
+        context={aiContext}
+        resetKey={selectedName}
+        title="AI Yetenek Karar Desteği"
+        description="Performans, potansiyel, 9-box konumu, veri güveni ve rol yetkinlik farklarını birlikte sentezler. AI terfi kararı vermez; güçlü kanıtları, veri açıklarını ve doğrulama aksiyonlarını gösterir."
+        buttonLabel="Yetenek analizini oluştur"
+        questionTitle="Yönetici doğrulama soruları"
+      />}
     </div>
   );
 }
