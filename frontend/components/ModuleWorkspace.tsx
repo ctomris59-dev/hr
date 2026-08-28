@@ -22,6 +22,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import BulkExcelRouteTools from "./hr/BulkExcelRouteTools";
 
 type ModuleConfig = {
   path: string;
@@ -271,6 +272,7 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
         </div>
       </section>
 
+      <BulkExcelRouteTools pathname={pathname} />
       <section className="module-native-content">{children}</section>
     </div>
   );
