@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   Heart,
   Target,
+  Scale,
 } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useAuth } from "../context/AuthContext";
@@ -45,6 +46,7 @@ const menuItems = [
   { href: "/organizasyon", label: "Çalışanlar & Organizasyon", icon: Building2, section: "Genel" },
   { href: "/rol-mimarisi", label: "Rol & Yetkinlik Mimarisi", icon: Target, section: "Performans & Yetenek" },
   { href: "/degerlendirme", label: "Performans & Yetkinlik", icon: RefreshCw, section: "Performans & Yetenek" },
+  { href: "/kalibrasyon", label: "Kalibrasyon Merkezi", icon: Scale, section: "Performans & Yetenek" },
   { href: "/yetenek-matrisi", label: "Yetenek Matrisi", icon: BarChart3, section: "Performans & Yetenek" },
   { href: "/egitim", label: "Eğitim", icon: BookOpen, section: "Gelişim" },
   { href: "/gelisim", label: "Gelişim Planı", icon: Clock, section: "Gelişim" },
