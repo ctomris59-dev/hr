@@ -1,0 +1,239 @@
+name: Finalize employee experience integration
+
+on:
+  push:
+    branches:
+      - employee-experience-compact
+    paths:
+      - .github/workflows/employee-experience-patch-v4.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: employee-experience-compact
+          fetch-depth: 0
+
+      - name: Reuse validated frontend patch steps
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import textwrap
+
+          workflow = Path('.github/workflows/employee-experience-patch-v3.yml').read_text(encoding='utf-8')
+          for step_name in ['Update dashboard', 'Add connected check-in page and navigation']:
+              pattern = re.compile(
+                  rf'^      - name: {re.escape(step_name)}\n.*?^        run: \|\n(?P<body>.*?)(?=^      - name: )',
+                  re.M | re.S,
+              )
+              match = pattern.search(workflow)
+              if not match:
+                  raise RuntimeError(f'Could not extract step: {step_name}')
+              script = textwrap.dedent(match.group('body'))
+              subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', script], check=True)
+          PY
+
+      - name: Connect backend with correct Python indentation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import textwrap
+
+          utils_path = Path('backend/utils_db.py')
+          utils = utils_path.read_text(encoding='utf-8')
+          pattern = re.compile(
+              r'def save_pulse_answer\(employee_id: str, employee_name: str, department_id: str,\s*department_name: str, score: float, week_number: str\) -> bool:\n.*?\n    return True',
+              re.S,
+          )
+          replacement = textwrap.dedent('''\
+          def save_pulse_answer(employee_id: str, employee_name: str, department_id: str,
+                                department_name: str, score: float, week_number: str,
+                                feedback: Optional[str] = None) -> bool:
+              """Yeni takım nabzı cevabı kaydeder (atomic write + file lock)."""
+              current_data = load_pulse_answers()
+              new_answer = {
+                  "id": len(current_data) + 1,
+                  "employee_id": employee_id,
+                  "employee_name": employee_name,
+                  "department_id": department_id,
+                  "department_name": department_name,
+                  "score": score,
+                  "feedback": feedback or "",
+                  "created_at": datetime.now().isoformat(),
+                  "week_number": week_number
+              }
+              current_data.append(new_answer)
+              _pulse_store.save(current_data)
+              return True''')
+          utils, count = pattern.subn(lambda _: replacement, utils, count=1)
+          if count != 1:
+              raise RuntimeError('save_pulse_answer block not found')
+          utils_path.write_text(utils, encoding='utf-8')
+
+          backend_path = Path('backend/routers/dashboard.py')
+          backend = backend_path.read_text(encoding='utf-8')
+          if 'HTTPException' not in backend.split('\n', 1)[0]:
+              backend = backend.replace('from fastapi import APIRouter, Depends, Query', 'from fastapi import APIRouter, Depends, Query, HTTPException', 1)
+          backend = backend.replace('score: float = Field(..., ge=1, le=5)', 'score: float = Field(..., ge=1, le=10)', 1)
+
+          model_marker = '    week_number: str = Field(..., min_length=1)\n\n\n@router.post("/api/360-data")'
+          if model_marker not in backend:
+              raise RuntimeError('Pulse model marker not found')
+          model_insert = textwrap.dedent('''\
+              week_number: str = Field(..., min_length=1)
+
+
+          class PulseSubmitRequest(BaseModel):
+              user_name: str = Field(..., min_length=1)
+              score: float = Field(..., ge=1, le=10)
+              feedback: Optional[str] = Field(default=None, max_length=500)
+              department_id: Optional[str] = None
+
+
+          def _pulse_week_context():
+              now = datetime.now()
+              iso = now.isocalendar()
+              week_number = f"{iso.year}-W{iso.week:02d}"
+              week_start = (now - timedelta(days=now.weekday())).date().isoformat()
+              return week_number, week_start
+
+
+          @router.post("/api/360-data")''')
+          model_insert = '    ' + model_insert
+          backend = backend.replace(model_marker, model_insert, 1)
+
+          endpoint_marker = '    return {"success": bool(saved)}\n\n@router.get("/api/metadata")'
+          if endpoint_marker not in backend:
+              raise RuntimeError('Pulse endpoint marker not found')
+          endpoint_insert = textwrap.dedent('''\
+              return {"success": bool(saved)}
+
+
+          @router.get("/api/pulse/status")
+          async def get_pulse_status(user_name: str = Query(..., min_length=1)):
+              """Return whether the employee already submitted this week's check-in."""
+              from utils_db import load_pulse_answers
+              week_number, week_start = _pulse_week_context()
+              normalized_name = user_name.strip().casefold()
+              submitted = any(
+                  str(item.get("employee_name") or item.get("user_name") or "").strip().casefold() == normalized_name
+                  and item.get("week_number") == week_number
+                  for item in load_pulse_answers()
+              )
+              return {"success": True, "hasSubmitted": submitted, "weekStart": week_start}
+
+
+          @router.post("/api/pulse/submit")
+          async def submit_pulse_response(request: PulseSubmitRequest):
+              """Persist one real 1-10 employee-experience check-in per employee/week."""
+              from utils_db import load_org_chart, load_pulse_answers, save_pulse_answer
+              week_number, _ = _pulse_week_context()
+              normalized_name = request.user_name.strip().casefold()
+              existing = any(
+                  str(item.get("employee_name") or item.get("user_name") or "").strip().casefold() == normalized_name
+                  and item.get("week_number") == week_number
+                  for item in load_pulse_answers()
+              )
+              if existing:
+                  raise HTTPException(status_code=409, detail="Bu haftanın check-in'i zaten gönderildi.")
+
+              employee = next(
+                  (
+                      item for item in load_org_chart()
+                      if str(item.get("Ad Soyad") or item.get("name") or "").strip().casefold() == normalized_name
+                  ),
+                  {},
+              )
+              department = request.department_id or employee.get("Departman") or employee.get("department") or "Belirtilmemiş"
+              employee_id = str(employee.get("id") or employee.get("employee_id") or request.user_name)
+              saved = save_pulse_answer(
+                  employee_id=employee_id,
+                  employee_name=request.user_name.strip(),
+                  department_id=str(department),
+                  department_name=str(department),
+                  score=request.score,
+                  week_number=week_number,
+                  feedback=request.feedback,
+              )
+              return {"success": bool(saved), "message": "Check-in kaydedildi."}
+
+
+          @router.get("/api/pulse/data")
+          async def get_pulse_data(department: Optional[str] = None):
+              """Return stored employee-experience check-ins without synthetic data."""
+              from utils_db import load_pulse_answers
+              answers = load_pulse_answers()
+              if department:
+                  answers = [
+                      item for item in answers
+                      if item.get("department_id") == department or item.get("department_name") == department
+                  ]
+              return {"success": True, "data": answers}
+
+
+          @router.get("/api/metadata")''')
+          endpoint_insert = '    ' + endpoint_insert
+          backend = backend.replace(endpoint_marker, endpoint_insert, 1)
+
+          trend_pattern = re.compile(r'@router\.get\("/api/pulse-trends"\).*?(?=@router\.get\("/api/dashboard/summary"\))', re.S)
+          trend_replacement = textwrap.dedent('''\
+          @router.get("/api/pulse-trends")
+          async def get_pulse(
+              role: str = Depends(get_current_user_role),
+              dept: str = Depends(get_current_user_dept),
+              user_role: Optional[str] = None,
+              user_dept: Optional[str] = None,
+              user_department: Optional[str] = None,
+              department_id: Optional[str] = None,
+          ):
+              """Return real weekly employee-experience trends with role/scope filtering."""
+              try:
+                  from utils_db import get_pulse_trends
+                  effective_role = user_role or role
+                  effective_dept = user_dept or user_department or dept
+                  target_dept = department_id
+                  if not target_dept and effective_role not in ["CEO", "IK", "admin"]:
+                      target_dept = effective_dept or None
+                  return {"success": True, "data": get_pulse_trends(target_dept)}
+              except Exception as exc:
+                  return {"success": False, "data": [], "error": str(exc)}
+
+
+          ''')
+          backend, count = trend_pattern.subn(lambda _: trend_replacement, backend, count=1)
+          if count != 1:
+              raise RuntimeError('Pulse trends endpoint not found')
+          backend_path.write_text(backend, encoding='utf-8')
+          PY
+
+      - name: Remove temporary workflows
+        run: rm -f .github/workflows/temporary-employee-experience-patch.yml .github/workflows/temporary-employee-experience-patch-v2.yml .github/workflows/employee-experience-patch-v3.yml .github/workflows/employee-experience-patch-v4.yml
+
+      - name: Validate backend syntax
+        run: python -m py_compile backend/routers/dashboard.py backend/utils_db.py
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Validate production build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Commit validated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Replace happiness trend with employee experience summary"
+          git push origin HEAD:employee-experience-compact
