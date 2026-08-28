@@ -33,7 +33,7 @@ const modules = [
   { label: "İşe Alım", icon: BriefcaseBusiness, pos: "top-[72%] left-[13%]" },
   { label: "Halefiyet", icon: Network, pos: "top-[18%] right-[6%]" },
   { label: "İzin", icon: CalendarDays, pos: "top-[38%] right-[5%]" },
-  { label: "Maaş", icon: WalletCards, pos: "top-[57%] right-[7%]" },
+  { label: "Ücret", icon: WalletCards, pos: "top-[57%] right-[7%]" },
   { label: "Analitik", icon: PieChart, pos: "top-[73%] right-[13%]" },
   { label: "Kariyer", icon: Route, pos: "bottom-[8%] right-[31%]" },
 ];
@@ -95,7 +95,7 @@ export default function LoginPage() {
             future hr
           </div>
           <p className="mt-2 text-[12px] font-semibold tracking-[-0.01em] text-slate-600 sm:text-[14px]">
-            &apos;potansiyeli performansa dönüştürün&apos;
+            potansiyeli performansa dönüştürün
           </p>
         </div>
 
@@ -125,8 +125,11 @@ export default function LoginPage() {
 
         <div className="relative z-10 mx-auto grid min-h-[calc(100vh-32px)] max-w-[980px] items-center gap-10 px-6 py-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-14 lg:px-0 lg:py-16">
           <section className="lg:-translate-y-6 lg:pl-2">
+            <span className="mb-4 inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-700">
+              FutureHR V1 · Karar destekli İK
+            </span>
             <p className="max-w-[540px] text-[18px] font-medium leading-8 text-slate-600 sm:text-[20px] sm:leading-9">
-              Yetkinlikleri görünür kılın, kurum içindeki yetenekleri keşfedin ve doğru insanı doğru rolle eşleştirerek potansiyeli performansa dönüştürün.
+              Performans, yetenek, kariyer, halefiyet, çalışan deneyimi ve ücret kararlarını tek bir kanıt zincirinde birleştirin.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
@@ -135,7 +138,7 @@ export default function LoginPage() {
                 onClick={handleDemoLogin}
                 className="inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-[#0c1f4d] px-6 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(12,31,77,0.18)] transition hover:-translate-y-0.5 hover:bg-[#10285f]"
               >
-                Demo ile Giriş
+                V1 Demo'yu Aç
                 <ArrowRight className="h-4 w-4" />
               </button>
               <button
@@ -144,7 +147,7 @@ export default function LoginPage() {
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
                 <PlayCircle className="h-4 w-4 text-blue-600" />
-                Ürünü Keşfet
+                Kurumsal Giriş
               </button>
             </div>
 
@@ -153,8 +156,8 @@ export default function LoginPage() {
                 <div className="h-10 w-1 rounded-full bg-blue-500" />
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700">AK</div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-semibold text-slate-800"><span className="font-bold">Ayşe Kaya</span> için Gelişim Planı atandı</p>
-                  <p className="mt-1 text-[11px] text-slate-400">Liderlik Programı · 10:30</p>
+                  <p className="truncate text-[13px] font-semibold text-slate-800"><span className="font-bold">Ayşe Kaya</span> için gelişim aksiyonu oluşturuldu</p>
+                  <p className="mt-1 text-[11px] text-slate-400">Rol yetkinlik farkı · yönetici doğrulaması</p>
                 </div>
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><FileText className="h-4 w-4" /></div>
               </div>
@@ -163,8 +166,8 @@ export default function LoginPage() {
                 <div className="h-10 w-1 rounded-full bg-amber-400" />
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600"><Users className="h-5 w-5" /></div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-semibold text-slate-800">3 değerlendirme bekliyor</p>
-                  <p className="mt-1 text-[11px] text-slate-400">Performans Döngüsü Q2</p>
+                  <p className="text-[13px] font-semibold text-slate-800">3 kalibrasyon kaydı dikkat istiyor</p>
+                  <p className="mt-1 text-[11px] text-slate-400">KPI · yönetici gözlemi · kanıt güveni</p>
                 </div>
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-500"><ChevronRight className="h-4 w-4" /></div>
               </div>
@@ -173,8 +176,8 @@ export default function LoginPage() {
                 <div className="h-10 w-1 rounded-full bg-emerald-400" />
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><WalletCards className="h-5 w-5" /></div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-semibold text-slate-800">Maaş Senaryosu B hazır</p>
-                  <p className="mt-1 text-[11px] text-slate-400">2026 Ücret Dönemi</p>
+                  <p className="text-[13px] font-semibold text-slate-800">Ücret senaryosu karar için hazır</p>
+                  <p className="mt-1 text-[11px] text-slate-400">Piyasa referansı · rol uyumu · veri güveni</p>
                 </div>
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><BarChart3 className="h-4 w-4" /></div>
               </div>
@@ -186,6 +189,7 @@ export default function LoginPage() {
               <div className="mb-7">
                 <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-blue-600">Personel Girişi</p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-[#101d3b]">FutureHR çalışma alanı</h2>
+                <p className="mt-2 text-xs leading-5 text-slate-500">V1 demo için soldaki tek tık girişini kullanabilir veya kurum hesabınızla oturum açabilirsiniz.</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -253,8 +257,8 @@ export default function LoginPage() {
                 <ChevronRight className="h-4 w-4" />
               </Link>
 
-              <div className="mt-6 border-t border-slate-100 pt-4 text-[11px] text-slate-400">
-                Demo kullanıcıları: <button type="button" onClick={() => { setUsername("ceo"); setPassword("123"); }} className="font-mono font-medium text-slate-500 hover:text-blue-600">ceo / 123</button> · <button type="button" onClick={() => { setUsername("ik_dir"); setPassword("123"); }} className="font-mono font-medium text-slate-500 hover:text-blue-600">ik_dir / 123</button>
+              <div className="mt-6 border-t border-slate-100 pt-4 text-[11px] leading-5 text-slate-400">
+                Demo erişimi ayrı tutulur; gerçek kullanıcı bilgileri ve parolalar sunum ekranında gösterilmez.
               </div>
             </div>
           </section>
