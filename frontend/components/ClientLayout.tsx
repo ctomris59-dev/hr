@@ -21,6 +21,7 @@ import {
   DollarSign,
   UserPlus,
   FileText,
+  FileInput,
   Search as SearchIcon,
   ShieldCheck,
   SlidersHorizontal,
@@ -60,6 +61,7 @@ const menuItems = [
   { href: "/aday-testi", label: "Yetkinlik Testi", icon: FileText, section: "Operasyon" },
   { href: "/ekip-yonetimi", label: "Ekip", icon: Users, section: "Yönetim" },
   { href: "/admin", label: "Kullanıcı & Yetki", icon: ShieldCheck, section: "Yönetim" },
+  { href: "/admin/veri-aktarimi", label: "Veri Aktarımı", icon: FileInput, section: "Yönetim" },
   { href: "/admin/guven-kvkk", label: "Güven & KVKK", icon: LockKeyhole, section: "Yönetim" },
   { href: "/ayarlar/yetki-mimarisi", label: "Yetki Mimarisi", icon: SlidersHorizontal, section: "Yönetim" },
 ];
@@ -104,6 +106,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   };
 
   const filteredMenuItems = menuItems.filter((item) => canAccessRoute(currentUserRole, item.href));
+  const activeMenuHref = [...filteredMenuItems]
+    .filter((item) => {
+      const href = decodeURIComponent(item.href);
+      return normalizedPathname === href || normalizedPathname.startsWith(href + "/");
+    })
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
   const userInitials = (user?.name || "FH")
     .split(" ")
     .filter(Boolean)
@@ -127,8 +135,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <nav className="futurehr-sidebar-nav min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5 lg:overflow-hidden">
             {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
-              const normalizedHref = decodeURIComponent(item.href);
-              const isActive = normalizedPathname === normalizedHref || normalizedPathname.startsWith(normalizedHref + "/");
+              const isActive = item.href === activeMenuHref;
               const showSection = index === 0 || filteredMenuItems[index - 1]?.section !== item.section;
               return (
                 <div key={item.href}>
