@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Eye, LockKeyhole, Plus, Save, Star, Target, Trash2, TrendingUp, Users } from "lucide-react";
+import AIDecisionSupport from "@/components/AIDecisionSupport";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
@@ -97,10 +98,27 @@ export default function DegerlendirmePage() {
   const weightsValid = Math.abs(performanceResult.totalKpiWeight - 100) < 0.01;
   const targetResolution = useMemo(() => resolveTargetProfile(selected?.Pozisyon || ""), [selected?.Pozisyon]);
   const target = targetResolution.profile;
-  const radarData = Object.entries(COMPETENCIES).map(([code, label]) => {
+  const roleGapData = Object.entries(COMPETENCIES).map(([code, label]) => {
     const targetLabel = target[label] !== undefined ? label : legacyTargetLabel[code];
-    return { subject: label.replace(" Becerileri", "").replace("Dijital Okuryazarlık", "Dijital"), current: scores[code] || 0, target: Number((targetLabel && target[targetLabel]) || 0) };
+    const targetValue = Number((targetLabel && target[targetLabel]) || 0);
+    const currentValue = Number(scores[code] || 0);
+    return {
+      code,
+      label,
+      current: currentValue,
+      target: targetValue,
+      gap: targetValue > 0 ? Number((targetValue - currentValue).toFixed(2)) : null,
+    };
   });
+  const radarData = roleGapData.map((item) => ({
+    subject: item.label.replace(" Becerileri", "").replace("Dijital Okuryazarlık", "Dijital"),
+    current: item.current,
+    target: item.target,
+  }));
+  const roleFitItems = roleGapData.filter((item) => item.target > 0);
+  const roleFit = roleFitItems.length
+    ? Math.round(roleFitItems.reduce((sum, item) => sum + Math.min(item.current / item.target, 1), 0) / roleFitItems.length * 100)
+    : null;
   const lineData = [...selectedHistory].reverse().map((item, index) => ({ label: item.date ? new Date(item.date).toLocaleDateString("tr-TR") : `${index + 1}. ölçüm`, performance: Number(item.Performans || item.performance || 0) }));
 
   const updateKpi = (id: string, patch: Partial<KpiItem>) => setKpis((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
@@ -139,6 +157,38 @@ export default function DegerlendirmePage() {
     window.dispatchEvent(new CustomEvent("talentMatrixUpdated"));
     showToast(`Değerlendirme kaydedildi. Nihai performans: ${performanceResult.finalScore.toFixed(2)} / 5`, "success");
   };
+
+  const aiContext = selected ? {
+    module: "performance_competency",
+    analysisPurpose: "performance_calibration_and_competency_evidence_review",
+    employee: {
+      position: selected.Pozisyon,
+      department: selected.Departman,
+    },
+    currentEvaluation: {
+      finalPerformance: performanceResult.finalScore,
+      kpiScore: performanceResult.kpiScore,
+      managerObservation: performanceResult.managerScore,
+      kpiManagerDifference: Number((performanceResult.kpiScore - performanceResult.managerScore).toFixed(2)),
+      competencyScore,
+      roleFit,
+      kpiWeightsValid: weightsValid,
+      kpis: kpis.map((item) => ({ title: item.title, weight: item.weight, score: item.score })),
+      roleCompetencyGaps: roleGapData.filter((item) => item.target > 0).sort((a,b) => Number(b.gap || 0) - Number(a.gap || 0)).slice(0, 5),
+      starSignal: isStarPerformer,
+      managerNoteAvailable: Boolean(note.trim()),
+    },
+    history: selectedHistory.slice(0, 4).map((item) => ({
+      date: item.date || item.Tarih || null,
+      performance: Number(item.Performans || item.performance || 0),
+      competency: Number(item.competency_score || 0) || null,
+    })),
+    roleTarget: {
+      source: targetResolution.source,
+      referenceCount: targetResolution.referenceCount,
+    },
+    instruction: "Bu bir performans kalibrasyonu ve yetkinlik kanıt incelemesidir. Skorları değiştirme veya nihai performans kararı verme. KPI ile yönetici gözlemi arasındaki tutarsızlıkları, rol yetkinlik açıklarını, trendi ve eksik kanıtları göster; yönetici için doğrulama soruları üret.",
+  } : {};
 
   if (!employees.length) {
     return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900"><LockKeyhole className="mx-auto h-7 w-7 text-slate-300"/><h2 className="mt-3 text-sm font-semibold">Değerlendirilecek çalışan yok</h2><p className="mt-1 text-xs text-slate-500">Yöneticiyseniz çalışan kaydında Yönetici 1 / Yönetici 2 bağlantınızı kontrol edin. İK rolü tüm kayıtları salt okunur görebilir.</p></div>;
@@ -187,6 +237,16 @@ export default function DegerlendirmePage() {
           </fieldset>
         </div>
       </div>
+
+      {selected && <AIDecisionSupport
+        kind="development"
+        context={aiContext}
+        resetKey={selectedName}
+        title="AI Performans & Yetkinlik Kalibrasyonu"
+        description="Canlı KPI sonuçlarını, yönetici gözlemini, yetkinlik skorunu, rol hedef farklarını ve geçmiş trendi birlikte inceler. AI puanı değiştirmez ve performans kararı vermez; tutarsızlıkları, güçlü kanıtları ve kalibrasyonda sorulması gereken soruları çıkarır."
+        buttonLabel="Performans analizini oluştur"
+        questionTitle="Kalibrasyon soruları"
+      />}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="text-sm font-semibold">Mevcut yetkinlik vs. rol hedefi</h2><p className="mt-1 text-xs text-slate-500">{targetResolution.source === "exact" ? "Pozisyona özel hedef profil" : `Türetilmiş hedef · ${targetResolution.referenceCount} referans rol`}</p><div className="mt-3 h-[320px]"><ResponsiveContainer width="100%" height="100%"><RadarChart data={radarData}><PolarGrid/><PolarAngleAxis dataKey="subject" tick={{fontSize:10}}/><PolarRadiusAxis domain={[0,5]} tick={{fontSize:9}}/><Radar name="Değerlendirme" dataKey="current" stroke="#2563eb" fill="#2563eb" fillOpacity={0.15}/><Radar name="Rol Hedefi" dataKey="target" stroke="#f97316" fill="#f97316" fillOpacity={0.08}/><Tooltip/></RadarChart></ResponsiveContainer></div></div>
