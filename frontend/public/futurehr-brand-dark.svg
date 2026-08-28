@@ -1,6 +1,23 @@
-<svg width="300" height="84" viewBox="0 0 300 84" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="6" width="56" height="56" rx="16" fill="#3B82F6"/>
-  <path d="M18 20H42V28H27V34H39V42H27V55H18V20Z" fill="white"/>
-  <text x="70" y="42" fill="white" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="750" letter-spacing="-1.5">future hr</text>
-  <text x="70" y="62" fill="#94A3B8" font-family="Inter, Arial, sans-serif" font-size="10.5" font-weight="600">potansiyeli performansa dönüştürün</text>
+<svg width="256" height="64" viewBox="0 0 256 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="futurehrMark" x1="6" y1="8" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#818CF8"/>
+      <stop offset="1" stop-color="#2DD4BF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- FH monogram: talent pathways + upward movement, without a social-app tile -->
+  <g stroke="url(#futurehrMark)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 10V50"/>
+    <path d="M10 11H28"/>
+    <path d="M10 29H25"/>
+    <path d="M38 15V50"/>
+    <path d="M24 29H38"/>
+    <path d="M38 15L47 7"/>
+  </g>
+  <circle cx="47" cy="7" r="3.2" fill="#2DD4BF"/>
+
+  <text x="62" y="30" fill="#F8FAFC" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="760" letter-spacing="-1">future</text>
+  <text x="128" y="30" fill="#5EEAD4" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="760" letter-spacing="-1">hr</text>
+  <text x="62" y="45" fill="#718096" font-family="Inter, Arial, sans-serif" font-size="8.4" font-weight="600" letter-spacing="0.15">potansiyeli performansa dönüştürün</text>
 </svg>
