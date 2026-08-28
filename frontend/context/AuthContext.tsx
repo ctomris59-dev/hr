@@ -9,6 +9,7 @@ interface AuthContextType {
   switchRole: (role: UserRole) => void;
   internalRole: string | null;
   userName: string | null;
+  authMode: "demo" | "secure" | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,8 +18,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [internalRole, setInternalRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [authMode, setAuthMode] = useState<"demo" | "secure" | null>(null);
 
-  // Load user role from storage on mount and listen for changes
   useEffect(() => {
     const loadUserRole = () => {
       const currentUser = getStorageData(STORAGE_KEYS.CURRENT_USER, null);
@@ -28,67 +29,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCurrentUserRole(mappedRole);
         setInternalRole(userRole);
         setUserName((currentUser as any).name || null);
+        setAuthMode((currentUser as any).authMode === "secure" ? "secure" : "demo");
       } else {
-        // No user logged in, keep role as null
         setCurrentUserRole(null);
         setInternalRole(null);
         setUserName(null);
+        setAuthMode(null);
       }
     };
 
-    // Load on mount
     loadUserRole();
 
-    // Listen for storage changes (when user logs in/out)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.CURRENT_USER) {
-        loadUserRole();
-      }
+      if (!e.key || e.key === STORAGE_KEYS.CURRENT_USER) loadUserRole();
     };
+    const refresh = () => loadUserRole();
 
     window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("userChanged", refresh);
+    window.addEventListener("storageCleared", refresh);
 
-    // Also check periodically (for same-tab updates)
     const interval = setInterval(loadUserRole, 1000);
-
     return () => {
       window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("userChanged", refresh);
+      window.removeEventListener("storageCleared", refresh);
       clearInterval(interval);
     };
   }, []);
 
   const switchRole = (role: UserRole) => {
-    // Get the first internal role that maps to this UserRole
+    const currentUser = getStorageData(STORAGE_KEYS.CURRENT_USER, null);
+
+    // Secure sessions are authoritative on the server.  The browser cannot promote
+    // or downgrade the current user's real role through the demo switcher.
+    if (currentUser && typeof currentUser === "object" && (currentUser as any).authMode === "secure") {
+      return;
+    }
+
     const internalRoles = REVERSE_ROLE_MAPPING[role] || [];
     const newInternalRole = internalRoles[0] || role.toUpperCase();
-    
-    // Update localStorage with the new role
-    const currentUser = getStorageData(STORAGE_KEYS.CURRENT_USER, null);
+
     if (currentUser && typeof currentUser === "object") {
-      // Update the user object with new role, preserving other properties
       const updatedUser = {
         ...(currentUser as any),
         role: newInternalRole,
       };
-      
-      // Save to localStorage
+
       setStorageData(STORAGE_KEYS.CURRENT_USER, updatedUser);
-      
-      // Update state
       setCurrentUserRole(role);
       setInternalRole(newInternalRole);
-      
-      // Dispatch storage event to notify other components
+
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
-        
-        // Reload page after a short delay to ensure all components update
         setTimeout(() => {
           window.location.reload();
         }, 100);
       }
     } else {
-      // No user logged in, just update the role state for demo purposes
       setCurrentUserRole(role);
       setInternalRole(newInternalRole);
     }
@@ -101,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         switchRole,
         internalRole,
         userName,
+        authMode,
       }}
     >
       {children}
@@ -115,5 +114,3 @@ export function useAuth() {
   }
   return context;
 }
-
-
