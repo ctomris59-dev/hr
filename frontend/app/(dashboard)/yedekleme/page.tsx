@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Crown, ShieldCheck, Sparkles, TrendingUp, Users } from "lucide-react";
+import AIDecisionSupport from "@/components/AIDecisionSupport";
 import { getStorageData, STORAGE_KEYS } from "../../utils/storage";
 import { getCareerRole } from "../../../lib/hr/careerArchitecture";
 import { rankSuccessors } from "../../../lib/hr/succession";
@@ -16,6 +17,14 @@ export default function YedeklemePage(){
   const readyNow=ranked.filter(r=>r.assessment.readiness==="Şimdi").length;
   const averageScore=ranked.length?Math.round(ranked.reduce((sum,r)=>sum+Number(r.assessment.score||0),0)/ranked.length):0;
   const nearestReadiness=ranked[0]?.assessment.readiness||"—";
+  const targetCareer=target?getCareerRole(target.Pozisyon||""):null;
+  const aiContext=target?{
+    module:"succession_planning",
+    targetRole:{position:target.Pozisyon||"",department:target.Departman||"",level:targetCareer?.level||"",directReports:reportCounts[target["Ad Soyad"]]||0},
+    poolCoverage:{candidateCount:ranked.length,readyNow,averageScore,nearestReadiness},
+    candidates:ranked.slice(0,5).map(({candidate,assessment},index)=>({candidateRef:`Aday ${index+1}`,currentPosition:candidate.Pozisyon||"",currentDepartment:candidate.Departman||"",readiness:assessment.readiness,totalFit:Number(assessment.score||0),targetRoleFit:Number(assessment.targetRoleFit||0),levelFit:Number(assessment.levelFit||0),performanceTrend:Number(assessment.performanceTrend||0),potential:Number(assessment.potential||0),reasons:Array.isArray(assessment.reasons)?assessment.reasons.slice(0,4):[]})),
+    instruction:"Adayları yeniden sıralama, tek bir kişiyi seçme veya halef atama. Halef havuzunun kapsama gücünü, hazır olma risklerini, rol uyumu ve veri açıklarını karşılaştır; yönetici paneli için doğrulama soruları ve hazırlık aksiyonları üret."
+  }:{};
 
   return <div className="space-y-5">
     <div><p className="text-xs font-semibold uppercase tracking-[.12em] text-red-600">Halefiyet yönetimi</p><h1 className="mt-1 text-2xl font-semibold">Yedekleme</h1><p className="mt-1 max-w-4xl text-sm text-slate-500">Sabit “%65 hazır” kaldırıldı. Halef skoru hedef rol yetkinlik uyumu %35, seviye uyumu %15, hazır olma süresi %15, kariyer isteği %10, performans trendi %15 ve potansiyel %10 ile dinamik hesaplanır.</p></div>
@@ -30,6 +39,8 @@ export default function YedeklemePage(){
 
       <div className="min-w-0 space-y-4">
         {target&&<div className="rounded-[20px] border border-slate-200/80 bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-900"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-500">Halefi aranan rol</p><h2 className="mt-1 text-lg font-semibold text-slate-950 dark:text-white">{target.Pozisyon}</h2><p className="mt-1 text-xs text-slate-500">Mevcut rol sahibi: {target["Ad Soyad"]} · {target.Departman}</p></div><div className="flex flex-wrap gap-2"><SummaryChip label="Aday" value={ranked.length}/><SummaryChip label="Ort. uyum" value={`%${averageScore}`}/><SummaryChip label="En yakın" value={nearestReadiness}/></div></div></div>}
+
+        {target&&<AIDecisionSupport kind="succession" context={aiContext} resetKey={selectedName} title="AI Halefiyet Karar Desteği" description="Hedef rolün halef havuzunu; rol uyumu, seviye, hazır olma süresi, performans trendi ve potansiyel kanıtlarıyla birlikte inceler. AI aday seçmez veya atama yapmaz; havuz risklerini, veri açıklarını ve hazırlık aksiyonlarını çıkarır." buttonLabel="Halefiyet analizini oluştur" questionTitle="Halefiyet doğrulama soruları"/>}
 
         <section className="overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.07)] dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-red-50/40 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-red-950/10">
