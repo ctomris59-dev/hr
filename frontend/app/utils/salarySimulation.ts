@@ -1,5 +1,6 @@
 import { resolveTargetProfile } from "../../lib/hr/careerArchitecture";
 import { buildTalentDecisionSnapshot } from "../../lib/hr/talentDecisionChain";
+import { employeeName, latestEvaluationForEmployee } from "../../lib/hr/employeeIdentity";
 
 export interface EmployeeData {
   "Ad Soyad": string;
@@ -134,16 +135,23 @@ function tenureYears(row:any):number {
   return Number.isNaN(d.getTime())?0:Math.max(0,(Date.now()-d.getTime())/(365.25*86400000));
 }
 
+/**
+ * Ücret motoru çalışan/değerlendirme eşleştirmesinde FutureHR V1 kimlik katmanını
+ * kullanır. Böylece localStorage sırası değişse bile son değerlendirme deterministik
+ * seçilir ve performans trendi/talent snapshot bütün geçmiş üzerinden hesaplanır.
+ */
 export function processEmployeeData(orgData:any[],data360:any[]):EmployeeData[] {
-  const latest=new Map<string,any>();
-  data360.forEach(item=>{const name=item.target||item.Personel||item["Ad Soyad"]; if(name)latest.set(name,item);});
   return orgData.map(row=>{
-    const name=row["Ad Soyad"]||"Bilinmeyen", evaluation=latest.get(name), snapshot=buildTalentDecisionSnapshot(row,evaluation?[evaluation]:[]);
+    const name=employeeName(row)||"Bilinmeyen";
+    const evaluation=latestEvaluationForEmployee(row,data360);
+    const snapshot=buildTalentDecisionSnapshot(row,data360);
     const salary=parseMoney(row["Maaş (TL)"]??row.Maaş??row.salary), perf=snapshot.performance.score, pot=snapshot.talent.potential.score;
     const competency=snapshot.competency.score>0?snapshot.competency.score:null;
     const roleFit=snapshot.competency.currentRoleFit>0?snapshot.competency.currentRoleFit:roleFitScore(row.Pozisyon||"",evaluation);
     const warnings:string[]=[];
-    if(!salary)warnings.push("Maaş verisi yok"); if(!perf)warnings.push("Performans verisi yok");
+    if(!salary)warnings.push("Maaş verisi yok");
+    if(!perf)warnings.push("Performans verisi yok");
+    if(snapshot.performance.historyCount<1)warnings.push("Geçmiş performans ölçümü yok");
     if(snapshot.evidence.score<60)warnings.push(`Kanıt Güveni %${snapshot.evidence.score}`);
     return {
       "Ad Soyad":name, Departman:row.Departman||"Genel", Pozisyon:row.Pozisyon||"Personel", "Mevcut Maaş":salary,
