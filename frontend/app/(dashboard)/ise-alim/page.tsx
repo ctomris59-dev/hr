@@ -194,22 +194,22 @@ export default function IseAlimPage() {
         </button>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
         {STAGES.map((stage) => (
-          <div key={stage} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{stage}</p>
+          <div key={stage} className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">{stage}</p>
             <p className="mt-2 text-2xl font-semibold">{candidates.filter((candidate) => candidate.status === stage).length}</p>
           </div>
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
-        <div className="flex min-w-max gap-3">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/50">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-7">
           {STAGES.map((stage) => (
-            <div key={stage} className="w-[250px]">
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-xs font-semibold text-slate-600 dark:text-slate-300">{stage}</h2>
-                <span className="text-[10px] text-slate-400">{candidates.filter((candidate) => candidate.status === stage).length}</span>
+            <div key={stage} className="min-w-0 rounded-xl border border-slate-200/80 bg-white/55 p-2 dark:border-slate-800 dark:bg-slate-900/40">
+              <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+                <h2 className="truncate text-[11px] font-semibold text-slate-600 dark:text-slate-300">{stage}</h2>
+                <span className="shrink-0 rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold text-slate-400 shadow-sm dark:bg-slate-900">{candidates.filter((candidate) => candidate.status === stage).length}</span>
               </div>
               <div className="space-y-2">
                 {candidates
@@ -221,18 +221,18 @@ export default function IseAlimPage() {
                         setSelectedId(candidate.id);
                         setAi(null);
                       }}
-                      className={`w-full rounded-xl border bg-white p-3 text-left shadow-sm transition dark:bg-slate-900 ${
+                      className={`w-full min-w-0 rounded-xl border bg-white p-2.5 text-left shadow-sm transition dark:bg-slate-900 ${
                         selectedId === candidate.id
                           ? "border-violet-400 ring-2 ring-violet-100 dark:ring-violet-950"
                           : "border-slate-200 dark:border-slate-800"
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold">{candidate.name}</p>
-                        {candidate.isDemo && <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[8px] font-black text-violet-700">DEMO</span>}
+                      <div className="flex min-w-0 items-start justify-between gap-1.5">
+                        <p className="min-w-0 truncate text-xs font-semibold">{candidate.name}</p>
+                        {candidate.isDemo && <span className="shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 text-[7px] font-black text-violet-700">DEMO</span>}
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">{candidate.role}</p>
-                      <p className="mt-2 text-[10px] text-slate-400">{candidate.email || "E-posta yok"}</p>
+                      <p className="mt-1 truncate text-[10px] text-slate-500">{candidate.role}</p>
+                      <p className="mt-1.5 truncate text-[9px] text-slate-400">{candidate.email || "E-posta yok"}</p>
                     </button>
                   ))}
               </div>
