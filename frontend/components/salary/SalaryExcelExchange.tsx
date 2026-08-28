@@ -9,10 +9,19 @@ function normalize(value: unknown) {
 }
 
 function numeric(value: unknown): number | null {
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "number") return Number.isFinite(value) && value > 0 ? value : null;
   const cleaned = String(value ?? "").trim().replace(/[^0-9,.-]/g, "");
   if (!cleaned) return null;
-  const normalized = cleaned.includes(",") ? cleaned.replace(/\./g, "").replace(",", ".") : cleaned;
+  let normalized = cleaned;
+  if (cleaned.includes(".") && cleaned.includes(",")) {
+    normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (/^-?\d{1,3}(\.\d{3})+$/.test(cleaned)) {
+    normalized = cleaned.replace(/\./g, "");
+  } else if (/^-?\d{1,3}(,\d{3})+$/.test(cleaned)) {
+    normalized = cleaned.replace(/,/g, "");
+  } else if (cleaned.includes(",")) {
+    normalized = cleaned.replace(",", ".");
+  }
   const parsed = Number(normalized);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
