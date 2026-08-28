@@ -11,12 +11,16 @@ export interface SuccessorAssessment {
   performanceTrend: number;
   potential: number;
   evidenceScore: number;
+  decisionCoverage: number;
   evidenceBand: "Düşük" | "Orta" | "Yüksek";
   chainVersion: string;
   reasons: string[];
 }
 
-function readinessMonths(index: number, levelDistance: number): number {
+function readinessMonths(index: number, levelDistance: number, dataCoverage: number, evidenceScore: number): number {
+  // Düşük kanıt / veri kapsamı asla "Şimdi hazır" sonucu üretmez.
+  if (dataCoverage < 40 || evidenceScore < 40) return 30;
+  if (dataCoverage < 60 || evidenceScore < 60) return index >= 68 && levelDistance <= 1 ? 18 : 30;
   if (index >= 80 && levelDistance <= 1) return 0;
   if (index >= 68 && levelDistance <= 1) return 9;
   if (index >= 52 && levelDistance <= 2) return 18;
@@ -24,18 +28,9 @@ function readinessMonths(index: number, levelDistance: number): number {
 }
 
 /**
- * Halefiyet skoru artık FutureHR tek yetenek karar zinciri üzerinden beslenir:
- * performans trendi, potansiyel, rol uyumu ve kanıt güveni kariyer/yetenek ekranlarıyla
- * aynı kaynaktan gelir. Kanıt skoru adayın yetkinlik puanını artırıp azaltmaz; ayrı bir
- * karar güveni sinyali olarak tutulur.
- *
- * Skor bileşimi:
- * - Hedef rol yetkinlik uyumu %35
- * - Mevcut seviye/rol mesafesi %15
- * - Hazır olma süresi %15
- * - Kariyer isteği %10
- * - Performans trendi %15
- * - Potansiyel %10
+ * Halefiyet skoru FutureHR tek yetenek karar zinciri üzerinden beslenir.
+ * Kanıt güveni adayın yetenek/performans kalitesine bonus vermez; yalnızca
+ * "hazır olma" iddiasının güvenilirliğini sınırlar.
  */
 export function assessSuccessor(candidate: any, targetPosition: string, history: any[] = []): SuccessorAssessment {
   const snapshot: TalentDecisionSnapshot = buildTalentDecisionSnapshot(candidate, history, targetPosition);
@@ -48,10 +43,11 @@ export function assessSuccessor(candidate: any, targetPosition: string, history:
       targetRoleFit: 0,
       levelFit: 0,
       timeToReadiness: 0,
-      aspiration: Math.round((snapshot.profile.aspiration / 5) * 100),
+      aspiration: snapshot.profile.aspiration > 0 ? Math.round((snapshot.profile.aspiration / 5) * 100) : 0,
       performanceTrend: snapshot.performance.trendScore,
-      potential: Math.round((snapshot.talent.potential.score / 5) * 100),
+      potential: snapshot.talent.potential.score > 0 ? Math.round((snapshot.talent.potential.score / 5) * 100) : 0,
       evidenceScore: snapshot.evidence.score,
+      decisionCoverage: 0,
       evidenceBand: snapshot.evidence.band,
       chainVersion: snapshot.version,
       reasons: ["Hedef rol için kariyer hazır bulunuşluk modeli üretilemedi."],
@@ -60,11 +56,11 @@ export function assessSuccessor(candidate: any, targetPosition: string, history:
 
   const targetRoleFit = career.competencyFit;
   const levelFit = Math.max(0, 100 - Math.max(0, career.levelDistance - 1) * 30);
-  const months = readinessMonths(career.index, career.levelDistance);
+  const months = readinessMonths(career.index, career.levelDistance, career.dataCoverage, snapshot.evidence.score);
   const timeToReadiness = months === 0 ? 100 : months <= 12 ? 80 : months <= 24 ? 55 : 25;
-  const aspiration = Math.round((snapshot.profile.aspiration / 5) * 100);
-  const trend = snapshot.performance.trendScore;
-  const potential = Math.round((snapshot.talent.potential.score / 5) * 100);
+  const aspiration = snapshot.profile.aspiration > 0 ? Math.round((snapshot.profile.aspiration / 5) * 100) : 0;
+  const trend = snapshot.performance.historyCount > 0 ? snapshot.performance.trendScore : 0;
+  const potential = snapshot.talent.potential.score > 0 ? Math.round((snapshot.talent.potential.score / 5) * 100) : 0;
 
   const score = Math.round(
     targetRoleFit * 0.35 +
@@ -79,11 +75,15 @@ export function assessSuccessor(candidate: any, targetPosition: string, history:
     months === 0 ? "Şimdi" : months <= 12 ? "6–12 ay" : months <= 24 ? "12–24 ay" : "24+ ay";
 
   const reasons: string[] = [];
-  if (targetRoleFit < 70) reasons.push("Hedef rol yetkinlik uyumu geliştirilmelidir.");
+  if (targetRoleFit < 70) reasons.push(targetRoleFit > 0 ? "Hedef rol yetkinlik uyumu geliştirilmelidir." : "Hedef rol yetkinlik kanıtı bulunmuyor.");
   if (career.levelDistance > 1) reasons.push(`Seviye mesafesi ${career.levelDistance} kademe.`);
-  if (snapshot.profile.aspiration <= 3) reasons.push("Kariyer isteği teyit edilmelidir.");
+  if (snapshot.profile.aspiration === 0) reasons.push("Kariyer isteği henüz teyit edilmemiştir.");
+  else if (snapshot.profile.aspiration <= 3) reasons.push("Kariyer isteği teyit edilmelidir.");
   if (snapshot.talent.potential.missingInputs.length) {
     reasons.push(`Potansiyel verisi eksik: ${snapshot.talent.potential.missingInputs.join(", ")}.`);
+  }
+  if (career.dataCoverage < 60) {
+    reasons.push(`Hedef rol karar veri kapsamı %${career.dataCoverage}; hazır olma süresi temkinli tutuldu.`);
   }
   if (snapshot.evidence.score < 60) {
     reasons.push(`Kanıt Güveni %${snapshot.evidence.score}; halefiyet kararı öncesi ek kanıt toplanmalıdır.`);
@@ -102,6 +102,7 @@ export function assessSuccessor(candidate: any, targetPosition: string, history:
     performanceTrend: trend,
     potential,
     evidenceScore: snapshot.evidence.score,
+    decisionCoverage: career.dataCoverage,
     evidenceBand: snapshot.evidence.band,
     chainVersion: snapshot.version,
     reasons,
@@ -132,6 +133,8 @@ export function rankSuccessors(
     .sort((a, b) => {
       const scoreDifference = b.assessment.score - a.assessment.score;
       if (scoreDifference !== 0) return scoreDifference;
+      const coverageDifference = b.assessment.decisionCoverage - a.assessment.decisionCoverage;
+      if (coverageDifference !== 0) return coverageDifference;
       return b.assessment.evidenceScore - a.assessment.evidenceScore;
     });
 }
