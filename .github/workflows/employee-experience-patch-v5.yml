@@ -1,0 +1,72 @@
+name: Finalize employee experience integration v5
+
+on:
+  push:
+    branches:
+      - employee-experience-compact
+    paths:
+      - .github/workflows/employee-experience-patch-v5.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: employee-experience-compact
+          fetch-depth: 0
+
+      - name: Apply frontend and corrected backend patches
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import textwrap
+
+          def extract_run(workflow_text: str, step_name: str) -> str:
+              pattern = re.compile(
+                  rf'^      - name: {re.escape(step_name)}\n.*?^        run: \|\n(?P<body>.*?)(?=^      - name: )',
+                  re.M | re.S,
+              )
+              match = pattern.search(workflow_text)
+              if not match:
+                  raise RuntimeError(f'Could not extract step: {step_name}')
+              return textwrap.dedent(match.group('body'))
+
+          v3 = Path('.github/workflows/employee-experience-patch-v3.yml').read_text(encoding='utf-8')
+          for step_name in ['Update dashboard', 'Add connected check-in page and navigation']:
+              subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', extract_run(v3, step_name)], check=True)
+
+          v4 = Path('.github/workflows/employee-experience-patch-v4.yml').read_text(encoding='utf-8')
+          backend_script = extract_run(v4, 'Connect backend with correct Python indentation')
+          backend_script = backend_script.replace("model_insert = '    ' + model_insert\n", '')
+          backend_script = backend_script.replace("endpoint_insert = '    ' + endpoint_insert\n", '')
+          subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', backend_script], check=True)
+          PY
+
+      - name: Remove temporary workflows
+        run: rm -f .github/workflows/temporary-employee-experience-patch.yml .github/workflows/temporary-employee-experience-patch-v2.yml .github/workflows/employee-experience-patch-v3.yml .github/workflows/employee-experience-patch-v4.yml .github/workflows/employee-experience-patch-v5.yml
+
+      - name: Validate backend syntax
+        run: python -m py_compile backend/routers/dashboard.py backend/utils_db.py
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Validate production build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Commit validated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Replace happiness trend with employee experience summary"
+          git push origin HEAD:employee-experience-compact
