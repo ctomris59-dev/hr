@@ -1,8 +1,9 @@
 import { buildEvidenceGraph, type EvidenceGraphResult } from "./evidenceGraph";
 import { calculateCareerReadiness, getCareerRole, type CareerReadiness, type CareerRole } from "./careerArchitecture";
-import { calculatePotentialIndex, extractCompetencyMap, getNineBox, type PotentialResult } from "./talentPotential";
+import { calculatePotentialIndex, extractCompetencyMap, type PotentialResult } from "./talentPotential";
+import { employeeKey as stableEmployeeKey, employeeName, evaluationsForEmployee } from "./employeeIdentity";
 
-export const TALENT_DECISION_CHAIN_VERSION = "FHR-TALENT-CHAIN-1.0" as const;
+export const TALENT_DECISION_CHAIN_VERSION = "FHR-TALENT-CHAIN-1.1" as const;
 
 export type TrendDirection = "Yükseliş" | "Yatay" | "Düşüş" | "Veri yok";
 
@@ -45,34 +46,14 @@ export interface TalentDecisionSnapshot {
 
 const clamp = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 
-function employeeKey(person: any): string {
-  return String(person?.id || person?.employee_id || person?.["Ad Soyad"] || person?.name || "unknown");
-}
-
-function employeeName(person: any): string {
-  return String(person?.["Ad Soyad"] || person?.name || "").trim().toLocaleLowerCase("tr-TR");
-}
-
-function recordEmployeeName(record: any): string {
-  return String(record?.Personel || record?.target || record?.["Ad Soyad"] || record?.name || "")
-    .trim()
-    .toLocaleLowerCase("tr-TR");
-}
-
-function recordTime(record: any, fallbackIndex: number): number {
-  const value = record?.date || record?.Tarih || record?.createdAt || record?.timestamp;
-  const parsed = value ? new Date(value).getTime() : Number.NaN;
-  return Number.isFinite(parsed) ? parsed : fallbackIndex;
-}
-
 function normalizeFive(value: unknown): number {
   const n = Number(value);
-  return Number.isFinite(n) ? Math.min(5, Math.max(0, n)) : 0;
+  return Number.isFinite(n) && n >= 1 && n <= 5 ? n : 0;
 }
 
 function profileFive(value: unknown): number {
   const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? Math.min(5, Math.max(1, n)) : 3;
+  return Number.isFinite(n) && n >= 1 && n <= 5 ? n : 0;
 }
 
 function competencyAverage(person: any): { score: number; coverage: number } {
@@ -86,13 +67,8 @@ function competencyAverage(person: any): { score: number; coverage: number } {
 }
 
 function performanceSnapshot(person: any, history: any[]) {
-  const name = employeeName(person);
-  const records = history
-    .map((record, index) => ({ record, time: recordTime(record, index) }))
-    .filter(({ record }) => !name || recordEmployeeName(record) === name)
-    .sort((a, b) => a.time - b.time)
-    .map(({ record }) => record);
-
+  const recordsDesc = evaluationsForEmployee(person, history);
+  const records = [...recordsDesc].reverse();
   const points = records
     .map((record) => normalizeFive(record?.Performans ?? record?.performance))
     .filter((value) => value > 0);
@@ -103,7 +79,7 @@ function performanceSnapshot(person: any, history: any[]) {
     return {
       score,
       historyCount: 0,
-      trendScore: Math.round((score / 5) * 100),
+      trendScore: score > 0 ? Math.round((score / 5) * 100) : 0,
       trendDelta: 0,
       trendDirection: "Veri yok" as TrendDirection,
       latestEvaluationDate: null,
@@ -118,7 +94,7 @@ function performanceSnapshot(person: any, history: any[]) {
   const trendBonus = Math.max(-15, Math.min(15, delta * 15));
   const trendScore = Math.round(clamp((average / 5) * 100 + trendBonus));
   const trendDirection: TrendDirection = points.length < 2 ? "Yatay" : delta >= 0.25 ? "Yükseliş" : delta <= -0.25 ? "Düşüş" : "Yatay";
-  const latestRecord = records[records.length - 1] || null;
+  const latestRecord = recordsDesc[0] || null;
   const latestDate = latestRecord?.date || latestRecord?.Tarih || latestRecord?.createdAt || latestRecord?.timestamp || null;
 
   return {
@@ -134,8 +110,8 @@ function performanceSnapshot(person: any, history: any[]) {
 
 /**
  * FutureHR'ın performans → yetkinlik → yetenek → kariyer → halefiyet zinciri için
- * tek çalışan karar görünümünü üretir. Bu çıktı otomatik terfi/halef ataması değildir;
- * tüm modüllerin aynı kanıt ve hesaplama kaynaklarını kullanmasını sağlar.
+ * tek çalışan karar görünümünü üretir. Eksik kişisel profil veya değerlendirme verisi
+ * nötr/ortalama puanla doldurulmaz; 0 + açık veri sinyali olarak taşınır.
  */
 export function buildTalentDecisionSnapshot(
   person: any,
@@ -161,32 +137,33 @@ export function buildTalentDecisionSnapshot(
 
   const evidenceContext: Record<string, unknown> = {
     performance: {
-      score: perf.score,
+      score: perf.score || null,
       historyCount: perf.historyCount,
-      trendScore: perf.trendScore,
+      trendScore: perf.trendScore || null,
       trendDelta: perf.trendDelta,
       evaluationDate: perf.latestEvaluationDate,
     },
     assessment: {
-      competencyScore,
+      competencyScore: competencyScore || null,
       competencyCoverage: competency.coverage,
       managerScores: composite?.manager_scores || composite?.scores || composite?.raw_scores || null,
     },
     profile: {
-      careerAspiration: composite?.career_aspiration ?? composite?.careerAspiration ?? null,
-      mobility: composite?.mobility_willingness ?? composite?.mobilityWillingness ?? null,
+      careerAspiration: aspiration || null,
+      mobility: mobility || null,
     },
     potential: {
-      score: potential.score,
+      score: potential.score || null,
       confidence: potential.confidence,
       missingInputs: potential.missingInputs,
     },
     roleTarget: {
       currentPosition: position,
-      currentRoleFit: currentRoleReadiness?.competencyFit ?? null,
+      currentRoleFit: currentRoleReadiness?.competencyFit || null,
       targetPosition: targetPosition || null,
-      targetReadiness: targetReadiness?.index ?? null,
-      targetCompetencyFit: targetReadiness?.competencyFit ?? null,
+      targetReadiness: targetReadiness?.index || null,
+      targetCompetencyFit: targetReadiness?.competencyFit || null,
+      targetDataCoverage: targetReadiness?.dataCoverage || null,
     },
   };
 
@@ -195,15 +172,18 @@ export function buildTalentDecisionSnapshot(
   const signals: string[] = [];
   if (!perf.historyCount) signals.push("Geçmiş performans ölçümü yok; trend yorumu sınırlı.");
   if (competency.coverage < 70) signals.push(`Yetkinlik veri kapsamı %${competency.coverage}; ek ölçüm önerilir.`);
+  if (aspiration === 0) signals.push("Kariyer isteği teyit edilmemiş; nötr puan varsayılmadı.");
+  if (mobility === 0) signals.push("Mobilite / yeni sorumluluk isteği teyit edilmemiş; nötr puan varsayılmadı.");
   if (potential.missingInputs.length) signals.push(`Potansiyel güveni için eksik: ${potential.missingInputs.join(", ")}.`);
   if (evidence.score < 60) signals.push(`Kanıt Güveni %${evidence.score}; insan kararı öncesi ek kanıt toplanmalı.`);
-  if (targetReadiness && targetReadiness.competencyFit < 70) signals.push("Hedef rol yetkinlik uyumu gelişim eşiğinin altında.");
+  if (targetReadiness && targetReadiness.dataCoverage < 60) signals.push(`Hedef rol karar veri kapsamı %${targetReadiness.dataCoverage}; hazır kararı üretmek için yetersiz.`);
+  if (targetReadiness && targetReadiness.competencyFit > 0 && targetReadiness.competencyFit < 70) signals.push("Hedef rol yetkinlik uyumu gelişim eşiğinin altında.");
   if (targetReadiness && targetReadiness.levelDistance > 1) signals.push(`Hedef rol mevcut seviyenin ${targetReadiness.levelDistance} kademe üzerinde.`);
 
   return {
     version: TALENT_DECISION_CHAIN_VERSION,
     identity: {
-      employeeKey: employeeKey(person),
+      employeeKey: stableEmployeeKey(person),
       position,
       department,
     },
