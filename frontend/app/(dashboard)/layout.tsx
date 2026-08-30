@@ -1,11 +1,19 @@
+import { redirect } from "next/navigation";
 import ClientLayout from "@/components/ClientLayout";
 import RoleGuard from "@/components/RoleGuard";
+import { hasSessionCookie, isSaasMode } from "@/lib/saasAuthServer";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Demo mode deliberately remains local and frictionless. In SaaS mode the
+  // dashboard is never rendered unless an HttpOnly access/refresh session exists.
+  if (isSaasMode() && !(await hasSessionCookie())) {
+    redirect("/sistem-girisi");
+  }
+
   return (
     <RoleGuard>
       <ClientLayout>{children}</ClientLayout>
