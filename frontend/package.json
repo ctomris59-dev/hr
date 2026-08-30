@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "demo:inspect": "playwright test demo-inspector.spec.ts"
+    "demo:inspect": "playwright test demo-inspector.spec.ts",
+    "test:e2e": "playwright test --config=playwright.v1.config.ts",
+    "quality:v1": "npm run build && npm run test:e2e"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.20",
