@@ -58,21 +58,25 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openDemo(page);
     await page.goto("/gelisim");
-    const metrics = await page.evaluate(() => {
-      const nav = document.querySelector(".futurehr-family-nav") as HTMLElement | null;
-      const heading = nav?.querySelector("h2") as HTMLElement | null;
-      const card = nav?.querySelector(".futurehr-family-card") as HTMLElement | null;
+    const familyNav = page.locator(".futurehr-family-nav");
+    const hero = page.locator(".module-hero");
+    await expect(familyNav).toBeVisible();
+    await expect(hero).toBeVisible();
+    await expect(familyNav.getByRole("heading", { name: "Bu alanın modülleri" })).toBeVisible();
+    const metrics = await familyNav.evaluate((nav, heroElement) => {
+      const heading = nav.querySelector("h2") as HTMLElement | null;
+      const card = nav.querySelector(".futurehr-family-card") as HTMLElement | null;
       const description = card?.querySelector("p") as HTMLElement | null;
-      const hero = document.querySelector(".module-hero") as HTMLElement | null;
-      if (!nav || !heading || !card || !description || !hero) return null;
+      const heroNode = heroElement as HTMLElement | null;
+      if (!heading || !card || !description || !heroNode) return null;
       return {
         headingSize: parseFloat(getComputedStyle(heading).fontSize),
         descriptionSize: parseFloat(getComputedStyle(description).fontSize),
         cardHeight: card.getBoundingClientRect().height,
-        heroHeight: hero.getBoundingClientRect().height,
+        heroHeight: heroNode.getBoundingClientRect().height,
         cardBackgroundImage: getComputedStyle(card).backgroundImage,
       };
-    });
+    }, await hero.elementHandle());
     expect(metrics).not.toBeNull();
     expect(metrics!.headingSize).toBeGreaterThanOrEqual(16);
     expect(metrics!.descriptionSize).toBeGreaterThanOrEqual(12);
