@@ -1,10 +1,12 @@
 import { getStorageData, markHRDataActive, setStorageData, STORAGE_KEYS } from "@/app/utils/storage";
+import { findDevelopmentIntervention } from "@/lib/hr/developmentLibrary";
 
 const COMP_CODES = ["DIG", "ANA", "RES", "DET", "LRN", "ETH", "DIS", "STR", "TEA", "COM"] as const;
 
 function round2(value: number) { return Math.round(value * 100) / 100; }
 function clamp5(value: number) { return Math.max(1, Math.min(5, value)); }
 function isoDateMonthsAgo(months: number) { const date = new Date(); date.setMonth(date.getMonth() - months); return date.toISOString(); }
+function isoDateDaysFromNow(days: number) { const date = new Date(); date.setDate(date.getDate() + days); return date.toISOString(); }
 function isoWeek(date = new Date()) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const day = d.getUTCDay() || 7;
@@ -122,23 +124,49 @@ export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
     };
   });
 
-  const trainingNames = ["Pelin Yılmaz", "Oğuz Kılıç", "Gizem Arslan", "Can Polat", "Arda Eren", "Elif Başar", "Nehir Keskin", "Derya Yalçın"];
-  const trainingCatalog = [
-    ["analytics", "Analitik Düşünme ve Problem Çözme"],
-    ["communication", "Etkili İletişim ve Geri Bildirim"],
-    ["digital", "Dijital Okuryazarlık ve Verimlilik"],
-    ["leadership", "Yeni Nesil Liderlik"],
+  const trainingBlueprints = [
+    { employee: "Pelin Yılmaz", trainingId: "ANA-02", stage: "verified" },
+    { employee: "Pelin Yılmaz", trainingId: "COM-03", stage: "completed" },
+    { employee: "Oğuz Kılıç", trainingId: "DET-03", stage: "submitted" },
+    { employee: "Gizem Arslan", trainingId: "RES-02", stage: "in-progress" },
+    { employee: "Can Polat", trainingId: "COM-02", stage: "assigned" },
+    { employee: "Arda Eren", trainingId: "DIG-03", stage: "in-progress" },
+    { employee: "Elif Başar", trainingId: "LRN-01", stage: "assigned" },
+    { employee: "Nehir Keskin", trainingId: "TEA-03", stage: "in-progress" },
+    { employee: "Derya Yalçın", trainingId: "ETH-02", stage: "assigned" },
   ] as const;
-  const trainingAssignments = trainingNames.map((name, index) => {
-    const person = organization.find((item) => item["Ad Soyad"] === name);
-    const [trainingId, trainingName] = trainingCatalog[index % trainingCatalog.length];
+
+  const trainingAssignments = trainingBlueprints.map((blueprint, index) => {
+    const person = organization.find((item) => item["Ad Soyad"] === blueprint.employee);
+    const intervention = findDevelopmentIntervention(blueprint.trainingId);
+    const completed = blueprint.stage === "verified" || blueprint.stage === "submitted" || blueprint.stage === "completed";
+    const transferEvidence = blueprint.stage === "verified"
+      ? "Gerçek üretim problemi üzerinde kök neden analizi uygulandı; alternatif nedenler ayrıştırıldı ve seçilen aksiyon sonrası hata tekrarında düşüş gözlendi. Yönetici çalışma çıktısını gözden geçirdi."
+      : blueprint.stage === "submitted"
+        ? "Kalite kontrol adımında iki aşamalı checklist uygulandı; tekrar eden hata örnekleri kaydedildi ve yeni kontrol rutininin sonuçları yönetici incelemesine sunuldu."
+        : undefined;
     return {
-      id: `training-${person?.id || index + 1}`, employee: name, trainingId, trainingName,
+      id: `training-${person?.id || index + 1}-${index + 1}`,
+      employee: blueprint.employee,
+      trainingId: blueprint.trainingId,
+      trainingName: intervention?.name || "Gelişim müdahalesi",
       source: index % 3 === 0 ? "Gelişim Planı" : "Yetkinlik açığı",
       assignedBy: person?.["Yönetici 1"] || hrManagerName,
-      assignedAt: isoDateMonthsAgo(1),
-      dueDate: isoDateMonthsAgo(-1).slice(0, 10),
-      status: index % 4 === 0 ? "Devam Ediyor" : index % 4 === 3 ? "Tamamlandı" : "Atandı",
+      assignedAt: isoDateMonthsAgo(2),
+      dueDate: isoDateDaysFromNow(30 + index * 3).slice(0, 10),
+      status: completed ? "Tamamlandı" : blueprint.stage === "in-progress" ? "Devam Ediyor" : "Atandı",
+      completedAt: completed ? isoDateMonthsAgo(1) : undefined,
+      competencyCode: intervention?.competencyCode,
+      developmentLevel: intervention?.level,
+      interventionType: intervention?.type,
+      transferTask: intervention?.transferTask,
+      successMetric: intervention?.successMetric,
+      reassessDueAt: completed ? isoDateDaysFromNow(intervention?.reassessDays || 60) : undefined,
+      transferEvidence,
+      transferSubmittedAt: transferEvidence ? isoDateDaysFromNow(-10) : undefined,
+      managerVerified: blueprint.stage === "verified",
+      verifiedAt: blueprint.stage === "verified" ? isoDateDaysFromNow(-5) : undefined,
+      verifiedBy: blueprint.stage === "verified" ? person?.["Yönetici 1"] || hrManagerName : undefined,
     };
   });
 
