@@ -35,8 +35,8 @@ async function screenshot(page: Page, name: string) {
    LOGIN BYPASS
 ======================= */
 type SharedStorageSnapshot = {
-  trainingAssignments: string | null;
-  leaveRequests: string | null;
+  trainingAssignments?: string | null;
+  leaveRequests?: string | null;
   orgChart?: string | null;
   history360?: string | null;
 };
@@ -184,12 +184,11 @@ async function selectFirstOption(page: Page, testId: string) {
 
 async function waitForSelectOptions(page: Page, testId: string, minCount: number = 2) {
   await page.waitForFunction(
-    (selector, count) => {
+    ({ selector, count }) => {
       const el = document.querySelector(selector) as HTMLSelectElement | null;
       return !!el && el.options.length >= count;
     },
-    `[data-testid="${testId}"]`,
-    minCount
+    { selector: `[data-testid="${testId}"]`, count: minCount }
   );
 }
 
