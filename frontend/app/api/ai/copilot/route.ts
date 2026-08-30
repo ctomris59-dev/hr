@@ -54,7 +54,7 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const ROUTES = new Set(["/dashboard", "/degerlendirme", "/kalibrasyon", "/yetenek-matrisi", "/gelisim", "/kariyer", "/yedekleme", "/maas", "/calisan-deneyimi", "/organizasyon", "/ise-alim"]);
+const ROUTES = new Set(["/dashboard", "/degerlendirme", "/kalibrasyon", "/yetenek-matrisi", "/gelisim", "/egitim", "/kariyer", "/yedekleme", "/maas", "/calisan-deneyimi", "/organizasyon", "/ise-alim"]);
 const unique = <T,>(values: T[]) => Array.from(new Set(values));
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -97,7 +97,8 @@ Görevin:
 - En önemli 0-4 önceliği önem sırasıyla çıkar; gerçekten öncelik yoksa boş dizi kullan.
 - Her öncelik için kanıt, insan tarafından yapılacak aksiyon ve ilgili FutureHR route'u ver.
 - Route sadece şu değerlerden biri olsun: ${Array.from(ROUTES).join(", ")}.
-- Performans kalibrasyonu, düşük kanıt güveni, kritik rol/halefiyet açığı, gelişim gecikmesi, ücret verisi/benchmark açığı ve çalışan deneyimi sinyallerini gerektiğinde birleştir.
+- Performans kalibrasyonu, düşük kanıt güveni, kritik rol/halefiyet açığı, gelişim gecikmesi, doğrulanmış öğrenme ve yeniden ölçüm etkisi, ücret verisi/benchmark açığı ve çalışan deneyimi sinyallerini gerektiğinde birleştir.
+- learningAverageDelta ve learningPositiveRate yalnız doğrulanmış işe transfer kanıtı sonrasındaki karşılaştırılabilir yeniden ölçümleri özetler; bunları eğitimin nedensel etkisi olarak sunma.
 - Kişiler hakkında bilinmeyen özellik çıkarımı yapma. Hassas/korunan özellikleri kullanma veya tahmin etme.
 - İşe alma, işten çıkarma, terfi, ücret artışı, disiplin veya halef ataması için nihai karar verme; kişileri otomatik sıralama/eleme yapma.
 - Kanıt güveni düşükse bunu açıkça söyle; eksik veriyi gerçek veri gibi doldurma.
@@ -151,17 +152,21 @@ function fallback(context: any): CopilotAnalysis {
   const priorities: Priority[] = [];
   if (Number(m.calibrationRequired || 0) > 0) priorities.push({ severity: "yüksek", title: "Performans kalibrasyonu", evidence: `${m.calibrationRequired} değerlendirmede KPI-yönetici farkı kalibrasyon eşiğini aşıyor.`, action: "Kalibrasyon Merkezi'nde somut davranış ve çıktı kanıtlarını karşılaştırın.", route: "/kalibrasyon" });
   if (Number(m.criticalRolesWithoutReadySuccessor || 0) > 0) priorities.push({ severity: "kritik", title: "Halefiyet açığı", evidence: `${m.criticalRolesWithoutReadySuccessor} kritik rolün şimdi hazır halefi bulunmuyor.`, action: "Kritik roller için 6–12 aylık hazırlık ve alternatif halef senaryosu oluşturun.", route: "/yedekleme" });
+  if (Number(m.learningReassessmentDue || 0) > 0) priorities.push({ severity: "yüksek", title: "Gelişim yeniden ölçümü", evidence: `${m.learningReassessmentDue} doğrulanmış gelişim müdahalesinde yeniden ölçüm zamanı geldi.`, action: "Eğitim & Gelişim ekranında aynı yetkinliği yeniden ölçün; sonucu başlangıç ölçümüyle karşılaştırın.", route: "/egitim" });
   if (Number(m.lowEvidenceEmployees || 0) > 0) priorities.push({ severity: "orta", title: "Kanıt kapsamı", evidence: `${m.lowEvidenceEmployees} çalışanda Kanıt Güveni %60'ın altında.`, action: "Karar öncesi eksik performans, yetkinlik veya rol kanıtlarını tamamlayın.", route: "/yetenek-matrisi" });
   if (Number(m.compensationDataWarnings || 0) > 0) priorities.push({ severity: "orta", title: "Ücret karar verisi", evidence: `${m.compensationDataWarnings} ücret satırında veri/benchmark uyarısı var.`, action: "Ücret Karar Merkezi'nde eksik maaş ve dış benchmark kayıtlarını doğrulayın.", route: "/maas" });
   const confidence: Confidence = Number(m.employeeCount || 0) > 0 ? "orta" : "düşük";
+  const learningSentence = Number(m.learningMeasured || 0) > 0
+    ? ` Ölçülen ${m.learningMeasured} gelişim kaydında pozitif değişim oranı ${m.learningPositiveRate ?? "—"}% ve ortalama yetkinlik değişimi ${m.learningAverageDelta ?? "—"}. Bu değerler nedensellik kanıtı değildir.`
+    : "";
   return {
-    answer: priorities.length ? `Şu anda ${priorities.length} yönetim sinyali öncelikli görünüyor. En kritik konular kalibrasyon, halefiyet ve kanıt kapsamında yoğunlaşıyor.` : "Mevcut veride belirgin bir kritik yönetim sinyali oluşmadı; veri kapsamını ve güncelliğini kontrol ederek izlemeye devam edin.",
+    answer: priorities.length ? `Şu anda ${priorities.length} yönetim sinyali öncelikli görünüyor.${learningSentence}` : `Mevcut veride belirgin bir kritik yönetim sinyali oluşmadı; veri kapsamını ve güncelliğini kontrol ederek izlemeye devam edin.${learningSentence}`,
     confidence,
     confidenceReason: confidence === "orta" ? "Birden fazla FutureHR modülünden toplu kanıt mevcut; insan doğrulaması yine gereklidir." : "Karar desteği için yeterli şirket verisi bulunmuyor.",
     priorities: priorities.slice(0, 4),
     nextActions: priorities.slice(0, 3).map((item) => item.action),
     evidenceGaps: Array.isArray(context?.evidenceGaps) ? context.evidenceGaps.slice(0, 4) : [],
-    guardrail: "FutureHR AI nihai işe alma, terfi, ücret, disiplin veya halef ataması kararı vermez; kanıtı sentezler ve insan doğrulamasını yönlendirir.",
+    guardrail: "FutureHR AI nihai işe alma, terfi, ücret, disiplin veya halef ataması kararı vermez; gelişim değişimini nedensellik iddiasına çevirmeden kanıtı sentezler ve insan doğrulamasını yönlendirir.",
   };
 }
 
