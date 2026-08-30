@@ -1,9 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Building2, ChevronLeft, ChevronRight, Pencil, Plus, Search, UserRoundCheck, Users, X } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, LoaderCircle, Pencil, Plus, Search, UserRoundCheck, Users, X } from "lucide-react";
 import { DEPARTMENTS, POSITIONS } from "../../data/jobData";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
+import {
+  createSaasEmployee,
+  EMPLOYEE_SAAS_MODE,
+  employeeMutationPayload,
+  fetchSaasEmployees,
+  updateSaasEmployee,
+} from "@/lib/hr/employeeClient";
 
 interface EmployeeRow {
   id?: string | number;
@@ -54,11 +61,29 @@ export default function OrganizasyonPage() {
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dataError, setDataError] = useState("");
 
-  const reload = () => setEmployees(getStorageData<EmployeeRow[]>(STORAGE_KEYS.ORG_CHART, []));
+  const reload = async () => {
+    setLoading(true);
+    try {
+      if (EMPLOYEE_SAAS_MODE) {
+        setEmployees(await fetchSaasEmployees());
+      } else {
+        setEmployees(getStorageData<EmployeeRow[]>(STORAGE_KEYS.ORG_CHART, []));
+      }
+      setDataError("");
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : "Çalışan verisi alınamadı.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    reload();
-    const handler = () => reload();
+    void reload();
+    const handler = () => void reload();
     window.addEventListener("dataUpdated", handler);
     window.addEventListener("storageCleared", handler);
     return () => {
@@ -86,6 +111,7 @@ export default function OrganizasyonPage() {
     setEditingId(null);
     setForm(emptyForm);
     setFormOpen(true);
+    setDataError("");
   };
 
   const openEdit = (employee: EmployeeRow) => {
@@ -99,45 +125,75 @@ export default function OrganizasyonPage() {
       hireDate: employee["İşe Giriş Tarihi"] || employee.hireDate || "",
     });
     setFormOpen(true);
+    setDataError("");
   };
 
-  const save = (event: FormEvent) => {
+  const save = async (event: FormEvent) => {
     event.preventDefault();
-    if (!form.name.trim() || !form.department || !form.position) return;
-    const existing = editingId === null ? null : employees.find((employee) => (employee.id ?? employee["Ad Soyad"]) === editingId);
-    const employee: EmployeeRow = {
-      ...(existing || {}),
-      id: existing?.id ?? `emp-${Date.now()}`,
-      "Ad Soyad": form.name.trim(),
-      Departman: form.department,
-      Pozisyon: form.position,
-      "Yönetici 1": form.manager1 || undefined,
-      "Yönetici 2": form.manager2 || undefined,
-      "İşe Giriş Tarihi": form.hireDate || undefined,
-    };
-    const next = existing
-      ? employees.map((item) => (item.id ?? item["Ad Soyad"]) === editingId ? employee : item)
-      : [employee, ...employees];
-    setEmployees(next);
-    setStorageData(STORAGE_KEYS.ORG_CHART, next);
-    window.dispatchEvent(new CustomEvent("dataUpdated"));
-    setFormOpen(false);
+    if (!form.name.trim() || !form.department || !form.position || saving) return;
+    setSaving(true);
+    setDataError("");
+    try {
+      if (EMPLOYEE_SAAS_MODE) {
+        const payload = employeeMutationPayload({
+          name: form.name,
+          department: form.department,
+          position: form.position,
+          hireDate: form.hireDate,
+          manager1Name: form.manager1,
+          manager2Name: form.manager2,
+          employees,
+        });
+        if (editingId !== null) await updateSaasEmployee(String(editingId), payload);
+        else await createSaasEmployee(payload);
+        await reload();
+      } else {
+        const existing = editingId === null ? null : employees.find((employee) => (employee.id ?? employee["Ad Soyad"]) === editingId);
+        const employee: EmployeeRow = {
+          ...(existing || {}),
+          id: existing?.id ?? `emp-${Date.now()}`,
+          "Ad Soyad": form.name.trim(),
+          Departman: form.department,
+          Pozisyon: form.position,
+          "Yönetici 1": form.manager1 || undefined,
+          "Yönetici 2": form.manager2 || undefined,
+          "İşe Giriş Tarihi": form.hireDate || undefined,
+        };
+        const next = existing
+          ? employees.map((item) => (item.id ?? item["Ad Soyad"]) === editingId ? employee : item)
+          : [employee, ...employees];
+        setEmployees(next);
+        setStorageData(STORAGE_KEYS.ORG_CHART, next);
+        window.dispatchEvent(new CustomEvent("dataUpdated"));
+      }
+      setFormOpen(false);
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : "Çalışan kaydı kaydedilemedi.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const avgTenure = employees.length ? employees.reduce((sum, employee) => sum + tenureYears(employee), 0) / employees.length : 0;
+  const availableManagers = employees.filter((employee) => editingId === null || (employee.id ?? employee["Ad Soyad"]) !== editingId);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-blue-600">Personel ana verisi</p>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-blue-600">Personel ana verisi</p>
+            {EMPLOYEE_SAAS_MODE && <span className="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700">SaaS veri kaynağı</span>}
+          </div>
           <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-slate-900 dark:text-white">Çalışan Dizini</h2>
           <p className="mt-1 text-xs text-slate-500">Departman, pozisyon, bağlı yönetici ve kıdem bilgisinin tek doğruluk kaynağı.</p>
         </div>
-        <button onClick={openNew} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(37,99,235,.22)] hover:from-blue-700 hover:to-indigo-700">
+        <button onClick={openNew} disabled={loading} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(37,99,235,.22)] hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
           <Plus className="h-4 w-4" /> Çalışan ekle
         </button>
       </div>
+
+      {dataError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">{dataError}</div>}
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Metric label="Toplam çalışan" value={employees.length} icon={Users} accent="blue" />
@@ -162,7 +218,7 @@ export default function OrganizasyonPage() {
               <option>Tümü</option>
               {departments.map((d) => <option key={d}>{d}</option>)}
             </select>
-            <span className="hidden rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-500 md:inline-flex dark:border-slate-700 dark:bg-slate-950">{filtered.length} kayıt</span>
+            <span className="hidden rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-500 md:inline-flex dark:border-slate-700 dark:bg-slate-950">{loading ? "Yükleniyor" : `${filtered.length} kayıt`}</span>
           </div>
         </div>
 
@@ -180,7 +236,9 @@ export default function OrganizasyonPage() {
               </tr>
             </thead>
             <tbody>
-              {visibleRows.map((employee) => {
+              {loading && !employees.length ? (
+                <tr><td colSpan={7} className="px-6 py-16 text-center"><LoaderCircle className="mx-auto h-6 w-6 animate-spin text-slate-400" /><p className="mt-3 text-sm font-medium text-slate-500">Çalışan verisi yükleniyor.</p></td></tr>
+              ) : visibleRows.map((employee) => {
                 const deptIndex = departmentIndex.get(employee.Departman) ?? 0;
                 return (
                   <tr key={employee.id ?? employee["Ad Soyad"]} className="group bg-white transition-colors hover:bg-blue-50/35 dark:bg-slate-900 dark:hover:bg-slate-800/60">
@@ -189,7 +247,7 @@ export default function OrganizasyonPage() {
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-blue-50 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200/80 group-hover:from-blue-100 group-hover:to-indigo-50 group-hover:text-blue-700 dark:from-slate-800 dark:to-slate-800 dark:text-slate-200 dark:ring-slate-700">{initials(employee["Ad Soyad"])}</div>
                         <div className="min-w-0">
                           <p className="truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">{employee["Ad Soyad"]}</p>
-                          <p className="mt-0.5 truncate text-[10px] text-slate-400">{employee.id ? `ID ${employee.id}` : "Aktif çalışan"}</p>
+                          <p className="mt-0.5 truncate text-[10px] text-slate-400">{employee.externalId ? `Personel ${employee.externalId}` : employee.id ? `ID ${String(employee.id).slice(0, 8)}` : "Aktif çalışan"}</p>
                         </div>
                       </div>
                     </td>
@@ -206,7 +264,7 @@ export default function OrganizasyonPage() {
                   </tr>
                 );
               })}
-              {!visibleRows.length && (
+              {!loading && !visibleRows.length && (
                 <tr><td colSpan={7} className="px-6 py-16 text-center"><Users className="mx-auto h-8 w-8 text-slate-300" /><p className="mt-3 text-sm font-medium text-slate-500">Aramanızla eşleşen çalışan bulunamadı.</p></td></tr>
               )}
             </tbody>
@@ -223,7 +281,7 @@ export default function OrganizasyonPage() {
         </div>
       </section>
 
-      {formOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]"><form onSubmit={save} className="w-full max-w-xl rounded-2xl border border-white/50 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-blue-600">Çalışan kaydı</p><h2 className="mt-1 text-lg font-semibold">{editingId ? "Çalışanı düzenle" : "Yeni çalışan"}</h2></div><button type="button" onClick={() => setFormOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><Field label="Ad Soyad"><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></Field><Field label="Departman"><select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Seçin</option>{DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}</select></Field><Field label="Pozisyon"><select value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Seçin</option>{POSITIONS.map((p) => <option key={p}>{p}</option>)}</select></Field><Field label="İşe giriş tarihi"><input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></Field><Field label="1. Yönetici"><select value={form.manager1} onChange={(e) => setForm({ ...form, manager1: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Yok</option>{employees.filter((e) => e["Ad Soyad"] !== form.name).map((e) => <option key={e.id ?? e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select></Field><Field label="2. Yönetici"><select value={form.manager2} onChange={(e) => setForm({ ...form, manager2: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Yok</option>{employees.filter((e) => e["Ad Soyad"] !== form.name).map((e) => <option key={e.id ?? e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select></Field></div><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setFormOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600">Vazgeç</button><button className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-slate-900">Kaydet</button></div></form></div>}
+      {formOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]"><form onSubmit={save} className="w-full max-w-xl rounded-2xl border border-white/50 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-blue-600">Çalışan kaydı</p><h2 className="mt-1 text-lg font-semibold">{editingId ? "Çalışanı düzenle" : "Yeni çalışan"}</h2></div><button type="button" onClick={() => setFormOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><Field label="Ad Soyad"><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></Field><Field label="Departman"><select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Seçin</option>{DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}</select></Field><Field label="Pozisyon"><select value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Seçin</option>{POSITIONS.map((p) => <option key={p}>{p}</option>)}</select></Field><Field label="İşe giriş tarihi"><input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></Field><Field label="1. Yönetici"><select value={form.manager1} onChange={(e) => setForm({ ...form, manager1: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Yok</option>{availableManagers.map((e) => <option key={e.id ?? e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select></Field><Field label="2. Yönetici"><select value={form.manager2} onChange={(e) => setForm({ ...form, manager2: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Yok</option>{availableManagers.map((e) => <option key={e.id ?? e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select></Field></div>{dataError && <p className="mt-4 text-xs font-medium text-red-600">{dataError}</p>}<div className="mt-5 flex justify-end gap-2"><button type="button" disabled={saving} onClick={() => setFormOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 disabled:opacity-50">Vazgeç</button><button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 dark:bg-white dark:text-slate-900">{saving && <LoaderCircle className="h-4 w-4 animate-spin" />}{saving ? "Kaydediliyor" : "Kaydet"}</button></div></form></div>}
     </div>
   );
 }
