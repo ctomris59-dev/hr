@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  quality:
+  frontend-quality:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -31,6 +31,8 @@ jobs:
         run: npm audit --audit-level=low
       - name: Verify hardened dependency graph
         run: npm ls axios jspdf next uuid tmp
+      - name: Lint
+        run: npm run lint
       - name: ExcelJS compatibility smoke test
         run: |
           node <<'NODE'
@@ -63,3 +65,26 @@ jobs:
           name: futurehr-playwright-report
           path: frontend/playwright-report
           retention-days: 7
+
+  backend-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install backend dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Backend security and tenant tests
+        env:
+          ENVIRONMENT: test
+          APP_ENV: test
+        run: pytest -q tests/test_saas_security.py tests/test_production_readiness.py tests/unit/test_roles_permissions.py tests/integration/test_org_chart_endpoint.py
