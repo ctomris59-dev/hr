@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { UserRole, getDefaultRoute, mapToUserRole } from "../app/data/roles";
+import { UserRole, mapToUserRole } from "../app/data/roles";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { getDemoPersona } from "../lib/hr/demoPersonas";
 
@@ -71,9 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserName(persona.name);
     setAuthMode("demo");
 
+    // Navigasyon bu state değişikliğini başlatan UI tarafından yapılır.
+    // Böylece role switch ile route değişimi aynı anda iki farklı navigation
+    // üretmez ve test/demo akışında yarış durumu oluşmaz.
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("userChanged", { detail: persona }));
-      window.location.assign(getDefaultRoute(role));
     }
   };
 
