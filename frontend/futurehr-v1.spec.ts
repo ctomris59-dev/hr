@@ -54,6 +54,34 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page.getByRole("link", { name: /Güven & KVKK/ })).toBeVisible();
   });
 
+  test("Human Enterprise workspace navigation is readable, compact and gradient-free", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openDemo(page);
+    await page.goto("/gelisim");
+    const metrics = await page.evaluate(() => {
+      const nav = document.querySelector(".futurehr-family-nav") as HTMLElement | null;
+      const heading = nav?.querySelector("h2") as HTMLElement | null;
+      const card = nav?.querySelector(".futurehr-family-card") as HTMLElement | null;
+      const description = card?.querySelector("p") as HTMLElement | null;
+      const hero = document.querySelector(".module-hero") as HTMLElement | null;
+      if (!nav || !heading || !card || !description || !hero) return null;
+      return {
+        headingSize: parseFloat(getComputedStyle(heading).fontSize),
+        descriptionSize: parseFloat(getComputedStyle(description).fontSize),
+        cardHeight: card.getBoundingClientRect().height,
+        heroHeight: hero.getBoundingClientRect().height,
+        cardBackgroundImage: getComputedStyle(card).backgroundImage,
+      };
+    });
+    expect(metrics).not.toBeNull();
+    expect(metrics!.headingSize).toBeGreaterThanOrEqual(16);
+    expect(metrics!.descriptionSize).toBeGreaterThanOrEqual(12);
+    expect(metrics!.cardHeight).toBeGreaterThanOrEqual(96);
+    expect(metrics!.cardHeight).toBeLessThanOrEqual(120);
+    expect(metrics!.heroHeight).toBeLessThanOrEqual(84);
+    expect(metrics!.cardBackgroundImage).toBe("none");
+  });
+
   test("employee persona only sees self-service scope", async ({ page }) => {
     await openDemo(page);
     await switchPersona(page, "employee");
