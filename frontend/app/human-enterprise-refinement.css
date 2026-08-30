@@ -1,0 +1,204 @@
+/* FutureHR — Human Enterprise UI refinement
+   Screenshot-driven refinement pass: one brand accent, readable enterprise type,
+   compact-but-obvious workspace navigation, neutral surfaces and semantic colour only. */
+
+:root {
+  --fh-content-max: 1480px;
+  --fh-text-xs: 12px;
+  --fh-text-sm: 13.5px;
+  --fh-teal-line: #b9cfcc;
+  --fh-teal-soft-2: #f3f7f6;
+}
+
+/* Keep the product visually coherent: modules do not get their own decorative colours. */
+.module-workspace {
+  --module-accent: var(--fh-accent) !important;
+  --module-accent-2: var(--fh-accent) !important;
+  --module-soft: var(--fh-accent-soft) !important;
+  width: 100%;
+  max-width: var(--fh-content-max);
+  margin-inline: auto;
+}
+
+/* Top application chrome: a little more breathing room and less micro-type. */
+header[data-tour="topbar"] {
+  min-height: 66px;
+  background: #fbfbf8 !important;
+  box-shadow: none !important;
+}
+
+.dark header[data-tour="topbar"] { background: #141b22 !important; }
+
+header[data-tour="topbar"] button,
+header[data-tour="topbar"] select {
+  min-height: 38px;
+  font-size: 12px !important;
+}
+
+.futurehr-welcome-title { font-size: 14.5px !important; line-height: 19px !important; }
+.futurehr-welcome-role { font-size: 9.5px !important; }
+.futurehr-welcome-scope { font-size: 11px !important; }
+.futurehr-welcome-time { font-size: 11.5px !important; }
+
+/* Workflow strip: still visible, but no longer consumes a whole screen band. */
+.module-hero {
+  margin-bottom: 16px !important;
+  border-top: 2px solid var(--fh-accent) !important;
+}
+
+.module-hero::before { display: none !important; }
+.module-hero > div { min-height: 64px; padding: 10px 16px !important; gap: 12px !important; }
+.module-hero > div > div:first-child > span:first-child {
+  width: 32px !important;
+  height: 32px !important;
+  background: #466d6a !important;
+}
+.module-hero > div > div:first-child > div > p:first-child {
+  font-size: 9.5px !important;
+  letter-spacing: .13em !important;
+  color: #839099 !important;
+}
+.module-hero > div > div:first-child > div > p:last-child {
+  margin-top: 2px !important;
+  font-size: 12.5px !important;
+  line-height: 18px !important;
+  color: #46545f !important;
+}
+.dark .module-hero > div > div:first-child > div > p:last-child { color: #b8c2c8 !important; }
+.module-hero > div > div:last-child > span {
+  min-height: 27px;
+  padding: 4px 8px !important;
+  font-size: 10.5px !important;
+  border-radius: 6px !important;
+  background: #f5f6f4 !important;
+}
+.dark .module-hero > div > div:last-child > span { background: #19222a !important; }
+
+/* Module family: prominent enough to discover, compact enough to get to the work. */
+.futurehr-family-nav { margin-bottom: 22px !important; }
+.futurehr-family-nav-header { padding: 13px 17px !important; }
+.futurehr-family-nav-header > div { align-items: center !important; }
+.futurehr-family-nav-header p:first-child {
+  font-size: 9.5px !important;
+  letter-spacing: .13em !important;
+}
+.futurehr-family-nav-header h2 { margin-top: 3px !important; font-size: 17px !important; }
+.futurehr-family-nav-header > div > p:last-child {
+  font-size: 12.5px !important;
+  line-height: 18px !important;
+}
+.futurehr-family-nav > div:last-child { gap: 9px !important; padding: 12px !important; }
+.futurehr-family-card { min-height: 108px !important; padding: 13px !important; }
+.futurehr-family-card-icon { width: 34px !important; height: 34px !important; }
+.futurehr-family-card > div:nth-of-type(2) { margin-top: 10px !important; padding-right: 42px !important; }
+.futurehr-family-card h3 { font-size: 14.5px !important; line-height: 19px !important; }
+.futurehr-family-card p { margin-top: 4px !important; font-size: 12.25px !important; line-height: 17px !important; }
+.futurehr-family-current { top: 11px !important; right: 11px !important; padding: 4px 7px !important; font-size: 9px !important; }
+.futurehr-family-arrow { right: 10px !important; bottom: 10px !important; width: 28px !important; height: 28px !important; }
+.futurehr-family-card[data-active="true"] {
+  background: #f1f6f5 !important;
+  border-color: #92b3af !important;
+  box-shadow: inset 3px 0 0 var(--fh-accent) !important;
+}
+
+/* Readability floor across native module screens. */
+.module-native-content { font-size: 13px; line-height: 1.5; }
+.module-native-content h1 {
+  font-size: clamp(25px, 1.8vw, 29px) !important;
+  line-height: 1.1 !important;
+  letter-spacing: -.03em !important;
+}
+.module-native-content h2 { font-size: 16px; line-height: 1.3; }
+.module-native-content .text-xs { font-size: 12.5px !important; line-height: 18px !important; }
+.module-native-content :where(p,span,label,button,a,div)[class*="text-[9px]"] { font-size: 10.5px !important; }
+.module-native-content :where(p,span,label,button,a,div)[class*="text-[10px]"] { font-size: 11px !important; }
+.module-native-content :where(p,span,label,button,a,div)[class*="text-[11px]"] { font-size: 12px !important; line-height: 17px !important; }
+.module-native-content input,
+.module-native-content select,
+.module-native-content textarea { font-size: 13.5px !important; }
+
+/* Data surfaces are calm and legible. */
+:where(main,.module-native-content) table:not(.no-premium-table),
+.premium-data-table { font-size: 13px !important; }
+:where(main,.module-native-content) table:not(.no-premium-table) thead th,
+.premium-data-table thead th { font-size: 10.5px !important; letter-spacing: .055em !important; }
+:where(main,.module-native-content) table:not(.no-premium-table) td,
+.premium-data-table td { line-height: 1.45; }
+
+/* Replace decorative AI-template indigo/violet/purple/blue surfaces with the brand system.
+   Red/amber/green remain untouched because they communicate meaning. */
+.module-native-content [class*="bg-indigo-50"],
+.module-native-content [class*="bg-indigo-100"],
+.module-native-content [class*="bg-violet-50"],
+.module-native-content [class*="bg-violet-100"],
+.module-native-content [class*="bg-purple-50"],
+.module-native-content [class*="bg-purple-100"],
+.module-native-content [class*="bg-blue-50"],
+.module-native-content [class*="bg-blue-100"] {
+  background-color: var(--fh-accent-soft) !important;
+  background-image: none !important;
+}
+.module-native-content [class*="bg-indigo-500"],
+.module-native-content [class*="bg-indigo-600"],
+.module-native-content [class*="bg-indigo-700"],
+.module-native-content [class*="bg-violet-500"],
+.module-native-content [class*="bg-violet-600"],
+.module-native-content [class*="bg-violet-700"],
+.module-native-content [class*="bg-purple-500"],
+.module-native-content [class*="bg-purple-600"],
+.module-native-content [class*="bg-purple-700"],
+.module-native-content [class*="bg-blue-500"],
+.module-native-content [class*="bg-blue-600"],
+.module-native-content [class*="bg-blue-700"] {
+  background-color: var(--fh-accent) !important;
+  background-image: none !important;
+}
+.module-native-content [class*="border-indigo-"],
+.module-native-content [class*="border-violet-"],
+.module-native-content [class*="border-purple-"],
+.module-native-content [class*="border-blue-"] { border-color: #c5d6d3 !important; }
+.module-native-content [class*="text-indigo-"],
+.module-native-content [class*="text-violet-"],
+.module-native-content [class*="text-purple-"],
+.module-native-content [class*="text-blue-"] { color: var(--fh-accent) !important; }
+
+/* Decorative badges read as quiet metadata, not game UI. */
+.module-native-content [class*="rounded-full"][class*="uppercase"],
+.module-native-content [class*="rounded-full"][class*="font-bold"] {
+  border-radius: 6px !important;
+  letter-spacing: .06em !important;
+  box-shadow: none !important;
+}
+
+/* Keep strong primary actions sober. */
+.module-native-content button[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]),
+.module-native-content a[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]) {
+  background-color: var(--fh-accent) !important;
+  background-image: none !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+}
+
+/* Dashboard micro-type should not look like a dense BI console. */
+.futurehr-dashboard :where(p,span,div)[class*="text-[9px]"] { font-size: 10.5px !important; }
+.futurehr-dashboard :where(p,span,div)[class*="text-[10px]"] { font-size: 11px !important; }
+.futurehr-dashboard :where(p,span,div)[class*="text-[11px]"] { font-size: 12px !important; }
+.futurehr-dashboard .enterprise-eyebrow { font-size: 10.5px !important; }
+
+/* Less floating-card feeling: secondary panels can sit directly on the canvas. */
+.module-native-content [class*="shadow-sm"],
+.module-native-content [class*="shadow-md"] { box-shadow: none !important; }
+
+@media (max-width: 1023px) {
+  .module-workspace { max-width: none; }
+  .futurehr-family-card { min-height: 102px !important; }
+}
+
+@media (max-width: 640px) {
+  header[data-tour="topbar"] { min-height: 60px; }
+  .module-hero > div { padding: 10px 12px !important; }
+  .futurehr-family-nav-header { padding: 12px 13px !important; }
+  .futurehr-family-nav > div:last-child { padding: 10px !important; }
+  .futurehr-family-card { min-height: 96px !important; }
+  .module-native-content h1 { font-size: 24px !important; }
+}
