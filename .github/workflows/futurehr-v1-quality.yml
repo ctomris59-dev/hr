@@ -87,4 +87,4 @@ jobs:
         env:
           ENVIRONMENT: test
           APP_ENV: test
-        run: pytest -q tests/test_saas_security.py tests/test_production_readiness.py tests/unit/test_roles_permissions.py tests/integration/test_org_chart_endpoint.py
+        run: pytest -q tests/test_saas_security.py tests/test_production_readiness.py tests/test_employee_saas_api.py tests/unit/test_roles_permissions.py tests/integration/test_org_chart_endpoint.py
