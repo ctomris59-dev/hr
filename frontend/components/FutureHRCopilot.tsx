@@ -8,6 +8,7 @@ import { buildTalentDecisionSnapshot } from "@/lib/hr/talentDecisionChain";
 import { getCareerRole } from "@/lib/hr/careerArchitecture";
 import { employeeKey, latestEvaluationForEmployee, latestEvaluationMap, normalizeEmployeeName } from "@/lib/hr/employeeIdentity";
 import { rankSuccessors } from "@/lib/hr/succession";
+import { learningImpactForAssignment, learningImpactSummary } from "@/lib/hr/learningImpact";
 import { processEmployeeData } from "@/app/utils/salarySimulation";
 
 interface Props { pathname: string; }
@@ -26,6 +27,7 @@ type Result = { mode?: "ai" | "rules"; provider?: string; model?: string; config
 const QUICK_PROMPTS = [
   "Bu ay yönetim olarak nelere dikkat etmeliyim?",
   "Performans kalibrasyonu gereken alanları özetle.",
+  "Gelişim yatırımlarının ölçülen etkisi ne durumda?",
   "Hazır halefi olmayan kritik roller var mı?",
   "Ücret kararlarında hangi veri açıkları var?",
 ];
@@ -67,11 +69,13 @@ function buildCompanyContext(question: string, pathname: string) {
   const org = getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []);
   const history = getStorageData<any[]>(STORAGE_KEYS.HISTORY_360, []);
   const development = getStorageData<any[]>(STORAGE_KEYS.DEVELOPMENT_PLANS, []);
+  const training = getStorageData<any[]>(STORAGE_KEYS.TRAINING_ASSIGNMENTS, []);
   const benchmarks = getStorageData<any[]>(STORAGE_KEYS.MARKET_BENCHMARKS, []);
   const pulse = getStorageData<any[]>(STORAGE_KEYS.PULSE_ANSWERS, []);
   const latest = latestEvaluationMap(history);
   const snapshots = org.map((person) => buildTalentDecisionSnapshot(person, history));
   const snapshotByKey = new Map(snapshots.map((snapshot) => [snapshot.identity.employeeKey, snapshot]));
+  const learningSummary = learningImpactSummary(training, history);
 
   let calibrationRequired = 0;
   latest.forEach((evaluation) => {
@@ -133,6 +137,13 @@ function buildCompanyContext(question: string, pathname: string) {
   const redactedQuestion = focusName ? question.replace(new RegExp(focusName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "seçili çalışan") : question;
   const focusSnapshot = matched ? buildTalentDecisionSnapshot(matched, history) : null;
   const focusEvaluation = matched ? latestEvaluationForEmployee(matched, history) : null;
+  const focusAssignments = focusName ? training.filter((item) => normalizeEmployeeName(item?.employee) === normalizeEmployeeName(focusName)) : [];
+  const focusLearningSummary = focusName ? learningImpactSummary(focusAssignments, history) : null;
+  const focusMeasuredLearning = focusAssignments
+    .map((item) => learningImpactForAssignment(item, history))
+    .filter((item) => item.state === "measured")
+    .slice(0, 5)
+    .map((item) => ({ competency: item.competency, baseline: item.baseline, post: item.post, delta: item.delta, direction: item.direction }));
 
   return {
     focusName,
@@ -149,6 +160,12 @@ function buildCompanyContext(question: string, pathname: string) {
         criticalRolesWithoutReadySuccessor,
         singleSuccessorPool,
         overdueDevelopmentPlans,
+        learningVerified: learningSummary.verified,
+        learningMeasured: learningSummary.measured,
+        learningReassessmentDue: learningSummary.due,
+        learningScheduled: learningSummary.scheduled,
+        learningPositiveRate: learningSummary.positiveRate,
+        learningAverageDelta: learningSummary.averageDelta,
         compensationDataWarnings,
         missingSalaryCount,
         externalBenchmarkCount: benchmarks.length,
@@ -169,11 +186,21 @@ function buildCompanyContext(question: string, pathname: string) {
           managerScore: numeric(focusEvaluation?.manager_performance_score) || null,
           difference: numeric(focusEvaluation?.kpi_score) && numeric(focusEvaluation?.manager_performance_score) ? Math.round(Math.abs(numeric(focusEvaluation.kpi_score) - numeric(focusEvaluation.manager_performance_score)) * 100) / 100 : null,
         } : null,
+        learningImpact: focusLearningSummary ? {
+          verified: focusLearningSummary.verified,
+          measured: focusLearningSummary.measured,
+          due: focusLearningSummary.due,
+          positiveRate: focusLearningSummary.positiveRate,
+          averageDelta: focusLearningSummary.averageDelta,
+          measuredCompetencies: focusMeasuredLearning,
+        } : null,
       } : null,
       evidenceGaps: [
         ...(history.length ? [] : ["Performans geçmişi bulunmuyor."]),
         ...(benchmarks.length ? [] : ["Dış piyasa ücret benchmarkı bulunmuyor."]),
         ...(pulseValues.length >= 5 ? [] : ["Çalışan deneyimi yanıt kapsamı anonim trend yorumu için sınırlı."]),
+        ...(learningSummary.verified > 0 && learningSummary.measured === 0 ? ["Doğrulanmış gelişim kanıtları var ancak karşılaştırılabilir yeniden ölçüm sonucu henüz oluşmadı."] : []),
+        ...(learningSummary.due > 0 ? [`${learningSummary.due} doğrulanmış gelişim müdahalesinde yeniden ölçüm zamanı geldi.`] : []),
       ],
     },
   };
@@ -253,13 +280,13 @@ export default function FutureHRCopilot({ pathname }: Props) {
               {!result && !loading && (
                 <div>
                   <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 dark:border-indigo-900/50 dark:from-indigo-950/20 dark:via-slate-900 dark:to-violet-950/20">
-                    <div className="flex items-start gap-2"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600"/><div><p className="text-sm font-semibold text-slate-900 dark:text-white">Bugün neyi anlamak istiyorsunuz?</p><p className="mt-1 text-xs leading-5 text-slate-500">Copilot; performans, yetenek, kariyer, halefiyet, gelişim ve ücret kanıtlarını birlikte tarar. Kişi adı yazarsanız ad sunucuya gönderilmeden ilgili çalışanın anonim karar profili kullanılır.</p></div></div>
+                    <div className="flex items-start gap-2"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600"/><div><p className="text-sm font-semibold text-slate-900 dark:text-white">Bugün neyi anlamak istiyorsunuz?</p><p className="mt-1 text-xs leading-5 text-slate-500">Copilot; performans, yetenek, kariyer, halefiyet, gelişim etkisi ve ücret kanıtlarını birlikte tarar. Kişi adı yazarsanız ad sunucuya gönderilmeden ilgili çalışanın anonim karar profili kullanılır.</p></div></div>
                   </div>
                   <div className="mt-4 space-y-2">{QUICK_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => void ask(prompt)} className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left text-xs font-medium text-slate-700 shadow-sm hover:border-indigo-200 hover:text-indigo-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"><span>{prompt}</span><ArrowRight className="h-3.5 w-3.5 text-slate-300"/></button>)}</div>
                 </div>
               )}
 
-              {loading && <div className="flex min-h-[320px] flex-col items-center justify-center text-center"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg"><Loader2 className="h-5 w-5 animate-spin"/></span><p className="mt-4 text-sm font-semibold">FutureHR kanıtları birleştiriyor</p><p className="mt-1 text-xs text-slate-500">Performans → yetenek → kariyer → halefiyet → ücret sinyalleri taranıyor.</p></div>}
+              {loading && <div className="flex min-h-[320px] flex-col items-center justify-center text-center"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg"><Loader2 className="h-5 w-5 animate-spin"/></span><p className="mt-4 text-sm font-semibold">FutureHR kanıtları birleştiriyor</p><p className="mt-1 text-xs text-slate-500">Performans → gelişim etkisi → yetenek → kariyer → halefiyet → ücret sinyalleri taranıyor.</p></div>}
 
               {result?.error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700"><AlertTriangle className="mr-2 inline h-4 w-4"/>{result.error}</div>}
 
