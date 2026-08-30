@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Command } from "cmdk";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, Users, DollarSign, Plane, UserPlus, Moon, Sun, Search } from "lucide-react";
+import { BarChart3, LayoutDashboard, Users, DollarSign, Plane, UserPlus, Moon, Sun, Search } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useTheme } from "next-themes";
 
 const pageLinks = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Organizasyon", href: "/organizasyon", icon: Users },
+  { label: "Gelişim Etkinliği", href: "/gelisim-analitigi", icon: BarChart3 },
   { label: "Maaş Simülasyonu", href: "/maas", icon: DollarSign },
   { label: "İzin Yönetimi", href: "/izinler", icon: Plane },
   { label: "Ekip & Kullanıcı Yönetimi", href: "/ekip-yonetimi", icon: Users },
