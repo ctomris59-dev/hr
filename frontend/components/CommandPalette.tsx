@@ -13,7 +13,7 @@ import { NAVIGATION_FAMILIES, type NavigationFamilyId } from "../lib/hr/navigati
 const familyIcons:Record<NavigationFamilyId,LucideIcon>={organization:Building2,performance:Target,talentCareer:BriefcaseBusiness,development:GraduationCap,compensation:WalletCards,experience:Heart,recruitment:UserPlus,employeeOps:UsersRound,system:Settings2};
 
 export default function CommandPalette(){
-  const router=useRouter();const{setTheme}=useTheme();const{currentUserRole}=useAuth();const[open,setOpen]=useState(false);const[query,setQuery]=useState("");const[people,setPeople]=useState<string[]>([]);const[,setPolicyRevision]=useState(0);
+  const router=useRouter();const{setTheme}=useTheme();const{currentUserRole}=useAuth();const[open,setOpen]=useState(false);const[query,setQuery]=useState("");const[people,setPeople]=useState<string[]>([]);const[policyRevision,setPolicyRevision]=useState(0);
   const refreshPeople=()=>{const stored=getStorageData<any[]>(STORAGE_KEYS.ORG_CHART,[]);setPeople(Array.from(new Set(stored.map(p=>String(p["Ad Soyad"]||"")).filter(Boolean))).sort());};
   useEffect(()=>{refreshPeople();const refresh=()=>refreshPeople();const policy=()=>setPolicyRevision(v=>v+1);window.addEventListener("dataUpdated",refresh);window.addEventListener("accessPolicyUpdated",policy);return()=>{window.removeEventListener("dataUpdated",refresh);window.removeEventListener("accessPolicyUpdated",policy);};},[]);
   useEffect(()=>{const onKey=(event:KeyboardEvent)=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="k"){event.preventDefault();setOpen(v=>!v);}if(event.key==="Escape")setOpen(false);};document.addEventListener("keydown",onKey);return()=>document.removeEventListener("keydown",onKey);},[]);
@@ -23,7 +23,7 @@ export default function CommandPalette(){
     if(canAccessRoute(currentUserRole,"/dashboard"))pages.push({label:"Yönetici Özeti",href:"/dashboard",icon:LayoutDashboard});
     NAVIGATION_FAMILIES.forEach(family=>{const accessible=family.items.filter(item=>canAccessRoute(currentUserRole,item.href));if(accessible.length===0)return;let label=family.label;if(accessible.length===1&&family.id==="talentCareer"&&accessible[0].href==="/kariyer")label=currentUserRole==="employee"?"Kariyerim":"Kariyer";if(accessible.length===1&&family.id==="employeeOps"&&accessible[0].href==="/izinler")label="İzinler";if(accessible.length===1&&family.id==="compensation")label="Ücret Önerileri";pages.push({label,href:accessible[0].href,icon:familyIcons[family.id]});});
     return pages;
-  },[currentUserRole]);
+  },[currentUserRole,policyRevision]);
   const canSearchPeople=canAccessRoute(currentUserRole,"/organizasyon");
   const filteredPeople=useMemo(()=>{if(!canSearchPeople)return[];const term=query.trim().toLocaleLowerCase("tr-TR");if(!term)return[];return people.filter(name=>name.toLocaleLowerCase("tr-TR").includes(term)).slice(0,8);},[people,query,canSearchPeople]);
   if(!open)return null;
