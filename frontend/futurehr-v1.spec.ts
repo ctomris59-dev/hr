@@ -63,27 +63,26 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(familyNav).toBeVisible();
     await expect(hero).toBeVisible();
     await expect(familyNav.getByRole("heading", { name: "Bu alanın modülleri" })).toBeVisible();
-    const metrics = await familyNav.evaluate((nav, heroElement) => {
+    const navMetrics = await familyNav.evaluate((nav) => {
       const heading = nav.querySelector("h2") as HTMLElement | null;
       const card = nav.querySelector(".futurehr-family-card") as HTMLElement | null;
       const description = card?.querySelector("p") as HTMLElement | null;
-      const heroNode = heroElement as HTMLElement | null;
-      if (!heading || !card || !description || !heroNode) return null;
+      if (!heading || !card || !description) return null;
       return {
         headingSize: parseFloat(getComputedStyle(heading).fontSize),
         descriptionSize: parseFloat(getComputedStyle(description).fontSize),
         cardHeight: card.getBoundingClientRect().height,
-        heroHeight: heroNode.getBoundingClientRect().height,
         cardBackgroundImage: getComputedStyle(card).backgroundImage,
       };
-    }, await hero.elementHandle());
-    expect(metrics).not.toBeNull();
-    expect(metrics!.headingSize).toBeGreaterThanOrEqual(16);
-    expect(metrics!.descriptionSize).toBeGreaterThanOrEqual(12);
-    expect(metrics!.cardHeight).toBeGreaterThanOrEqual(96);
-    expect(metrics!.cardHeight).toBeLessThanOrEqual(120);
-    expect(metrics!.heroHeight).toBeLessThanOrEqual(84);
-    expect(metrics!.cardBackgroundImage).toBe("none");
+    });
+    const heroHeight = await hero.evaluate((element) => element.getBoundingClientRect().height);
+    expect(navMetrics).not.toBeNull();
+    expect(navMetrics!.headingSize).toBeGreaterThanOrEqual(16);
+    expect(navMetrics!.descriptionSize).toBeGreaterThanOrEqual(12);
+    expect(navMetrics!.cardHeight).toBeGreaterThanOrEqual(96);
+    expect(navMetrics!.cardHeight).toBeLessThanOrEqual(120);
+    expect(heroHeight).toBeLessThanOrEqual(84);
+    expect(navMetrics!.cardBackgroundImage).toBe("none");
   });
 
   test("employee persona only sees self-service scope", async ({ page }) => {
