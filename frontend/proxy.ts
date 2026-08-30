@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 const SAAS_MODE = process.env.FUTUREHR_SAAS_MODE === "true" || process.env.NEXT_PUBLIC_DATA_MODE === "saas";
 const PUBLIC_SAAS_PATHS = ["/sistem-girisi", "/basvuru", "/aday-girisi", "/aday-sinavi", "/test-adayi"];
-const SAFE_API_PREFIXES = ["/api/secure-auth/", "/api/saas/", "/api/ai/", "/api/health"];
+const SAFE_API_PREFIXES = ["/api/secure-auth/", "/api/saas/", "/api/ai/"];
+const SAFE_API_EXACT = new Set(["/api/health"]);
 
 function isPublicSaasPath(pathname: string) {
   return PUBLIC_SAAS_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+function isAllowedApi(pathname: string) {
+  if (SAFE_API_EXACT.has(pathname)) return true;
+  return SAFE_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 export function proxy(request: NextRequest) {
@@ -15,8 +21,7 @@ export function proxy(request: NextRequest) {
   if (pathname === "/") return NextResponse.redirect(new URL("/sistem-girisi", request.url));
 
   if (pathname.startsWith("/api/")) {
-    const allowed = SAFE_API_PREFIXES.some((prefix) => pathname === prefix.replace(/\/$/, "") || pathname.startsWith(prefix));
-    if (!allowed) {
+    if (!isAllowedApi(pathname)) {
       return NextResponse.json(
         { error: "Legacy/demo API is disabled in SaaS mode." },
         { status: 410, headers: { "Cache-Control": "no-store" } },
