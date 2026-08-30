@@ -101,6 +101,52 @@
 .futurehr-editorial-header>div:last-child a{height:32px!important;padding-left:10px!important;padding-right:10px!important;font-size:10.5px!important;background:transparent!important;border-color:var(--fh-line)!important;color:var(--fh-muted)!important}
 .futurehr-editorial-header>div:last-child a:hover{border-color:var(--fh-line-strong)!important;background:var(--fh-surface-muted)!important;color:var(--fh-ink)!important}
 
+/* Final 100% pass: remove the last prototype cues and align every module to one product language. */
+.workspace-deneyim{--module-accent:var(--primary)!important;--module-accent-2:var(--primary)!important;--module-soft:var(--primary-soft)!important}
+.workspace-deneyim .module-native-content>div{max-width:none!important;width:100%!important;margin-left:0!important;margin-right:0!important}
+.workspace-deneyim .module-native-content [class*="text-indigo-"],
+.workspace-deneyim .module-native-content [class*="text-violet-"]{color:var(--primary)!important}
+.workspace-deneyim .module-native-content [class*="border-indigo-"],
+.workspace-deneyim .module-native-content [class*="border-violet-"]{border-color:#d8e5e3!important}
+.workspace-deneyim .module-native-content [class*="bg-indigo-50"],
+.workspace-deneyim .module-native-content [class*="bg-indigo-100"],
+.workspace-deneyim .module-native-content [class*="bg-violet-50"],
+.workspace-deneyim .module-native-content [class*="bg-violet-100"]{background-color:var(--primary-soft)!important}
+.workspace-deneyim .module-native-content [class*="bg-indigo-500"],
+.workspace-deneyim .module-native-content [class*="bg-indigo-600"],
+.workspace-deneyim .module-native-content [class*="bg-violet-500"],
+.workspace-deneyim .module-native-content [class*="bg-violet-600"]{background-color:var(--primary)!important}
+.workspace-deneyim .module-native-content [class*="ring-indigo"],
+.workspace-deneyim .module-native-content [class*="ring-violet"]{--tw-ring-color:rgba(47,102,100,.16)!important}
+@media(min-width:1280px){.workspace-deneyim .module-native-content>div>div[class*="grid"][class*="xl:grid-cols-"]{grid-template-columns:minmax(0,1fr) 340px!important}}
+
+.workspace-yetenek-matrisi{--module-accent:var(--primary)!important;--module-accent-2:var(--primary)!important;--module-soft:var(--primary-soft)!important}
+.workspace-yetenek-matrisi .module-native-content [class*="text-indigo-"]{color:var(--primary)!important}
+.workspace-yetenek-matrisi .module-native-content [class*="bg-indigo-50"],
+.workspace-yetenek-matrisi .module-native-content [class*="bg-indigo-100"]{background-color:var(--primary-soft)!important}
+.workspace-yetenek-matrisi .module-native-content [class*="bg-indigo-500"],
+.workspace-yetenek-matrisi .module-native-content [class*="bg-indigo-600"]{background-color:var(--primary)!important}
+.workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child{display:inline-flex!important;align-items:center!important;gap:0!important;padding:3px!important;border:1px solid var(--border)!important;border-radius:9px!important;background:var(--surface)!important}
+.workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child a{height:30px!important;padding:0 10px!important;border:0!important;border-radius:6px!important;background:transparent!important;color:var(--muted-foreground)!important;font-size:11px!important;font-weight:600!important}
+.workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child a+a{border-left:1px solid var(--border)!important;border-radius:0 6px 6px 0!important}
+.workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child a:hover{background:var(--surface-subtle)!important;color:var(--foreground)!important}
+
+.workspace-admin .module-native-content section:first-of-type h2+span{display:none!important}
+.workspace-admin .module-native-content [class*="text-indigo-"]{color:var(--primary)!important}
+.workspace-admin .module-native-content [class*="bg-indigo-600"]{background-color:var(--primary)!important}
+
+.workspace-ise-alim .module-native-content span[class*="bg-violet-600"][class*="font-black"],
+.workspace-ise-alim .module-native-content span[class*="bg-violet-100"][class*="font-black"]{display:none!important}
+.workspace-ise-alim .module-native-content>.space-y-5>div:nth-child(2)>button{font-size:0!important}
+.workspace-ise-alim .module-native-content>.space-y-5>div:nth-child(2)>button::after{content:"Örnek adayı aç";font-size:11px;font-weight:650;color:var(--primary)}
+
+.futurehr-dashboard>.grid>.enterprise-card{align-self:start}
+
+/* Keep utility badges semantic rather than decorative. */
+.workspace-admin .module-native-content [class*="uppercase"][class*="text-indigo-"],
+.workspace-ise-alim .module-native-content [class*="uppercase"][class*="text-violet-"],
+.workspace-deneyim .module-native-content [class*="uppercase"][class*="text-indigo-"]{color:var(--muted-foreground)!important}
+
 /* Laptop heights should stay readable; the sidebar can scroll instead of shrinking text. */
 @media(min-width:1024px) and (max-height:1050px){
   .futurehr-sidebar-section{font-size:9.5px!important;line-height:13px!important}
