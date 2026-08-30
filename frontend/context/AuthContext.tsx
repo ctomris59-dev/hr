@@ -14,6 +14,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const SAAS_MODE = process.env.NEXT_PUBLIC_DATA_MODE === "saas";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
@@ -22,35 +23,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authMode, setAuthMode] = useState<"demo" | "secure" | null>(null);
 
   useEffect(() => {
-    const loadUserRole = () => {
-      const currentUser = getStorageData(STORAGE_KEYS.CURRENT_USER, null);
-      if (currentUser && typeof currentUser === "object" && "role" in currentUser) {
-        const userRole = (currentUser as any).role;
-        const mappedRole = mapToUserRole(userRole);
-        setCurrentUserRole(mappedRole);
-        setInternalRole(userRole);
-        setUserName((currentUser as any).name || null);
-        setAuthMode((currentUser as any).authMode === "secure" ? "secure" : "demo");
-      } else {
-        setCurrentUserRole(null);
-        setInternalRole(null);
-        setUserName(null);
-        setAuthMode(null);
+    let cancelled = false;
+
+    const clearUser = () => {
+      if (cancelled) return;
+      setCurrentUserRole(null);
+      setInternalRole(null);
+      setUserName(null);
+      setAuthMode(null);
+    };
+
+    const applySecureUser = (user: any) => {
+      if (cancelled || !user?.role) return;
+      setCurrentUserRole(mapToUserRole(user.role));
+      setInternalRole(String(user.role));
+      setUserName(user.employee_name || user.username || null);
+      setAuthMode("secure");
+
+      // Compatibility mirror only. Authorization never trusts this value in SaaS mode.
+      setStorageData(STORAGE_KEYS.CURRENT_USER, {
+        username: user.username,
+        name: user.employee_name || user.username,
+        role: user.role,
+        dept: user.department || "",
+        department: user.department || "",
+        position: user.position || "",
+        employeeId: user.employee_id,
+        tenantId: user.tenant_id,
+        tenantSlug: user.tenant_slug,
+        tenantName: user.tenant_name,
+        authMode: "secure",
+      });
+    };
+
+    const loadSecureSession = async () => {
+      try {
+        const response = await fetch("/api/secure-auth/session", { cache: "no-store", credentials: "same-origin" });
+        const payload = await response.json().catch(() => null);
+        if (response.ok && payload?.authenticated && payload?.user) applySecureUser(payload.user);
+        else clearUser();
+      } catch {
+        clearUser();
       }
     };
 
-    loadUserRole();
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (!e.key || e.key === STORAGE_KEYS.CURRENT_USER) loadUserRole();
+    const loadDemoUser = () => {
+      const currentUser = getStorageData(STORAGE_KEYS.CURRENT_USER, null);
+      if (currentUser && typeof currentUser === "object" && "role" in currentUser) {
+        const userRole = (currentUser as any).role;
+        setCurrentUserRole(mapToUserRole(userRole));
+        setInternalRole(userRole);
+        setUserName((currentUser as any).name || null);
+        setAuthMode((currentUser as any).authMode === "secure" ? "secure" : "demo");
+      } else clearUser();
     };
-    const refresh = () => loadUserRole();
+
+    const load = () => {
+      if (SAAS_MODE) void loadSecureSession();
+      else loadDemoUser();
+    };
+
+    load();
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!SAAS_MODE && (!e.key || e.key === STORAGE_KEYS.CURRENT_USER)) loadDemoUser();
+    };
+    const refresh = () => load();
 
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("userChanged", refresh);
     window.addEventListener("storageCleared", refresh);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("userChanged", refresh);
       window.removeEventListener("storageCleared", refresh);
@@ -58,10 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const switchRole = (role: UserRole) => {
+    // Role switching is a demo-only feature. In SaaS mode the backend session is authoritative.
+    if (SAAS_MODE) return;
     const currentUser = getStorageData(STORAGE_KEYS.CURRENT_USER, null);
-
-    // Secure session rolü sunucu tarafından belirlenir. Demo persona anahtarı
-    // gerçek kullanıcıyı yükseltmek/düşürmek için kullanılamaz.
     if (currentUser && typeof currentUser === "object" && (currentUser as any).authMode === "secure") return;
 
     const persona = getDemoPersona(role);
@@ -70,13 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setInternalRole(persona.role);
     setUserName(persona.name);
     setAuthMode("demo");
-
-    // Navigasyon bu state değişikliğini başlatan UI tarafından yapılır.
-    // Böylece role switch ile route değişimi aynı anda iki farklı navigation
-    // üretmez ve test/demo akışında yarış durumu oluşmaz.
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("userChanged", { detail: persona }));
-    }
+    window.dispatchEvent(new CustomEvent("userChanged", { detail: persona }));
   };
 
   return (
