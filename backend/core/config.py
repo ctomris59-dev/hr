@@ -16,14 +16,13 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENVIRONMENT: str = "development"  # development, staging, production
     APP_ENV: str = "development"  # Alias for ENVIRONMENT, can be set via APP_ENV env var
-    # NOTE: Default remains development/demo so the current prototype keeps working.
 
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     RELOAD: bool = False
 
-    # CORS
+    # CORS / host boundary
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:8000",
@@ -32,38 +31,38 @@ class Settings(BaseSettings):
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["*"]
     CORS_ALLOW_HEADERS: List[str] = ["*"]
+    ALLOWED_HOSTS: List[str] = ["*"]
 
     # Logging
-    LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-    LOG_FORMAT: str = "json"  # json, text
-    LOG_FILE: Optional[str] = None  # If None, logs to stdout
+    LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: str = "json"
+    LOG_FILE: Optional[str] = None
 
     # Legacy/demo persistence
     DB_BASE_DIR: str = "database"
     DATA_MODE: str = "demo"  # demo | database
+    # In secure SaaS mode old unversioned data endpoints are blocked by default.
+    # This may only be enabled temporarily during a controlled migration.
+    ALLOW_LEGACY_API_IN_SAAS: bool = False
 
     # SaaS database. Production should use PostgreSQL.
-    # Accepted examples:
-    # postgresql://user:password@host:5432/futurehr
-    # postgres://user:password@host:5432/futurehr
     DATABASE_URL: Optional[str] = None
     DB_ECHO: bool = False
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10
 
     # Security / JWT
-    SECRET_KEY: str = "change-me-in-production"  # MUST be changed before secure auth is enabled
+    SECRET_KEY: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_MINUTES: int = 20
     REFRESH_TOKEN_DAYS: int = 7
     SAAS_AUTH_ENABLED: bool = False
-    ALLOWED_HOSTS: List[str] = ["*"]  # Restrict in production
 
     # API
     API_PREFIX: str = "/api"
     API_V1_PREFIX: str = "/api/v1"
 
-    # Rate Limiting (future)
+    # Rate limiting. Edge/gateway rate limiting is still recommended in production.
     RATE_LIMIT_ENABLED: bool = False
     RATE_LIMIT_PER_MINUTE: int = 60
 
@@ -72,13 +71,42 @@ class Settings(BaseSettings):
         return self.DATA_MODE.lower() == "database"
 
     @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT.lower() == "production" or self.APP_ENV.lower() == "production"
+
+    @property
     def secure_auth_ready(self) -> bool:
         return bool(
             self.SAAS_AUTH_ENABLED
             and self.DATABASE_URL
             and self.SECRET_KEY
             and self.SECRET_KEY != "change-me-in-production"
+            and len(self.SECRET_KEY) >= 32
         )
+
+    @property
+    def production_issues(self) -> list[str]:
+        """Return fail-closed configuration violations without exposing secrets."""
+        if not self.is_production:
+            return []
+        issues: list[str] = []
+        if self.DEBUG:
+            issues.append("DEBUG must be false")
+        if not self.is_database_mode:
+            issues.append("DATA_MODE must be database")
+        if not self.SAAS_AUTH_ENABLED:
+            issues.append("SAAS_AUTH_ENABLED must be true")
+        if not self.DATABASE_URL:
+            issues.append("DATABASE_URL is required")
+        if not self.SECRET_KEY or self.SECRET_KEY == "change-me-in-production" or len(self.SECRET_KEY) < 32:
+            issues.append("SECRET_KEY must be a non-default value of at least 32 characters")
+        if not self.ALLOWED_HOSTS or "*" in self.ALLOWED_HOSTS:
+            issues.append("ALLOWED_HOSTS must explicitly list production hosts")
+        if not self.CORS_ORIGINS or "*" in self.CORS_ORIGINS:
+            issues.append("CORS_ORIGINS must explicitly list trusted origins")
+        if self.ALLOW_LEGACY_API_IN_SAAS:
+            issues.append("ALLOW_LEGACY_API_IN_SAAS must be false")
+        return issues
 
     class Config:
         env_file = ".env"
@@ -92,5 +120,4 @@ def get_settings() -> Settings:
     return Settings()
 
 
-# Convenience instance for legacy imports.
 settings = get_settings()
