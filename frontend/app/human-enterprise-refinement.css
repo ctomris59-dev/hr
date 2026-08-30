@@ -88,13 +88,37 @@ header[data-tour="topbar"] select {
   line-height: 18px !important;
 }
 .futurehr-family-nav > div:last-child { gap: 9px !important; padding: 12px !important; }
-.futurehr-family-card { min-height: 108px !important; padding: 13px !important; }
-.futurehr-family-card-icon { width: 34px !important; height: 34px !important; }
-.futurehr-family-card > div:nth-of-type(2) { margin-top: 10px !important; padding-right: 42px !important; }
+.futurehr-family-card {
+  min-height: 104px !important;
+  padding: 12px 13px !important;
+  display: grid !important;
+  grid-template-columns: 34px minmax(0,1fr) 28px;
+  align-items: center;
+  column-gap: 12px;
+}
+.futurehr-family-card-icon {
+  grid-column: 1;
+  width: 34px !important;
+  height: 34px !important;
+}
+.futurehr-family-card > div:nth-of-type(2) {
+  grid-column: 2;
+  min-width: 0;
+  margin-top: 0 !important;
+  padding-right: 0 !important;
+}
 .futurehr-family-card h3 { font-size: 14.5px !important; line-height: 19px !important; }
 .futurehr-family-card p { margin-top: 4px !important; font-size: 12.25px !important; line-height: 17px !important; }
-.futurehr-family-current { top: 11px !important; right: 11px !important; padding: 4px 7px !important; font-size: 9px !important; }
-.futurehr-family-arrow { right: 10px !important; bottom: 10px !important; width: 28px !important; height: 28px !important; }
+.futurehr-family-current { top: 9px !important; right: 9px !important; padding: 3px 6px !important; font-size: 8.75px !important; }
+.futurehr-family-arrow {
+  position: static !important;
+  grid-column: 3;
+  grid-row: 1;
+  align-self: center;
+  justify-self: end;
+  width: 28px !important;
+  height: 28px !important;
+}
 .futurehr-family-card[data-active="true"] {
   background: #f1f6f5 !important;
   border-color: #92b3af !important;
@@ -191,7 +215,7 @@ header[data-tour="topbar"] select {
 
 @media (max-width: 1023px) {
   .module-workspace { max-width: none; }
-  .futurehr-family-card { min-height: 102px !important; }
+  .futurehr-family-card { min-height: 100px !important; }
 }
 
 @media (max-width: 640px) {
@@ -199,6 +223,12 @@ header[data-tour="topbar"] select {
   .module-hero > div { padding: 10px 12px !important; }
   .futurehr-family-nav-header { padding: 12px 13px !important; }
   .futurehr-family-nav > div:last-child { padding: 10px !important; }
-  .futurehr-family-card { min-height: 96px !important; }
+  .futurehr-family-card {
+    min-height: 96px !important;
+    grid-template-columns: 32px minmax(0,1fr) 26px;
+    column-gap: 10px;
+  }
+  .futurehr-family-card-icon { width: 32px !important; height: 32px !important; }
+  .futurehr-family-arrow { width: 26px !important; height: 26px !important; }
   .module-native-content h1 { font-size: 24px !important; }
 }
