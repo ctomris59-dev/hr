@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   quality:
@@ -18,45 +18,38 @@ jobs:
         working-directory: frontend
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Regenerate hardened lockfile
-        if: startsWith(github.ref, 'refs/heads/feature/dependency-security-hardening')
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          npm audit fix --package-lock-only --ignore-scripts || true
-      - name: Apply Playwright compatibility fixes
-        if: startsWith(github.ref, 'refs/heads/feature/dependency-security-hardening')
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("demo-inspector.spec.ts")
-          text = p.read_text()
-          text = text.replace(
-              '  trainingAssignments: string | null;\n  leaveRequests: string | null;',
-              '  trainingAssignments?: string | null;\n  leaveRequests?: string | null;'
-          )
-          old = '''  await page.waitForFunction(\n    (selector, count) => {\n      const el = document.querySelector(selector) as HTMLSelectElement | null;\n      return !!el && el.options.length >= count;\n    },\n    `[data-testid="${testId}"]`,\n    minCount\n  );'''
-          new = '''  await page.waitForFunction(\n    ({ selector, count }) => {\n      const el = document.querySelector(selector) as HTMLSelectElement | null;\n      return !!el && el.options.length >= count;\n    },\n    { selector: `[data-testid="${testId}"]`, count: minCount }\n  );'''
-          if old not in text:
-              raise SystemExit("waitForFunction compatibility block not found")
-          text = text.replace(old, new)
-          p.write_text(text)
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json demo-inspector.spec.ts
-          git diff --cached --quiet || git commit -m "Align tests with hardened dependencies"
-          git push origin HEAD:feature/dependency-security-hardening
       - name: Install dependencies
         run: npm ci
-      - name: Dependency audit diagnostic
-        run: npm audit --json || true
+      - name: Strict dependency security audit
+        run: npm audit --audit-level=low
+      - name: Verify hardened dependency graph
+        run: npm ls axios jspdf next uuid tmp
+      - name: ExcelJS compatibility smoke test
+        run: |
+          node <<'NODE'
+          const ExcelJS = require("exceljs");
+          (async () => {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet("SecuritySmoke");
+            sheet.getCell("A1").value = "FutureHR";
+            const buffer = await workbook.xlsx.writeBuffer();
+            const restored = new ExcelJS.Workbook();
+            await restored.xlsx.load(buffer);
+            const value = restored.getWorksheet("SecuritySmoke")?.getCell("A1").value;
+            if (value !== "FutureHR") throw new Error("ExcelJS secure override smoke test failed");
+            console.log("ExcelJS secure override smoke test passed");
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Production build
@@ -65,7 +58,7 @@ jobs:
         run: npm run test:e2e
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: futurehr-playwright-report
           path: frontend/playwright-report
