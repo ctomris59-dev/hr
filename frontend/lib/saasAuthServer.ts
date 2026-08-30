@@ -2,8 +2,6 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-const BACKEND_BASE_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
-
 export const ACCESS_COOKIE = "futurehr_access";
 export const REFRESH_COOKIE = "futurehr_refresh";
 
@@ -28,23 +26,43 @@ interface TokenPayload {
   user: SecureUser;
 }
 
+export function isSaasMode() {
+  return process.env.FUTUREHR_SAAS_MODE === "true" || process.env.NEXT_PUBLIC_DATA_MODE === "saas";
+}
+
+export function backendConfigured() {
+  return Boolean(process.env.BACKEND_URL);
+}
+
+function backendBaseUrl() {
+  const configured = process.env.BACKEND_URL;
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production" && isSaasMode()) {
+    throw new Error("BACKEND_URL is required in SaaS production mode");
+  }
+  return "http://127.0.0.1:8000";
+}
+
 function cookieOptions(maxAge: number) {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
+    sameSite: "strict" as const,
     path: "/",
     maxAge,
+    priority: "high" as const,
   };
 }
 
 export async function backendFetch(path: string, init: RequestInit = {}) {
-  const url = new URL(path, BACKEND_BASE_URL);
+  const url = new URL(path, backendBaseUrl());
   return fetch(url, {
     ...init,
     cache: "no-store",
+    redirect: "error",
     headers: {
       "Content-Type": "application/json",
+      Accept: "application/json",
       ...(init.headers || {}),
     },
   });
@@ -70,6 +88,11 @@ export async function getAccessToken() {
 export async function getRefreshToken() {
   const store = await cookies();
   return store.get(REFRESH_COOKIE)?.value || null;
+}
+
+export async function hasSessionCookie() {
+  const store = await cookies();
+  return Boolean(store.get(ACCESS_COOKIE)?.value || store.get(REFRESH_COOKIE)?.value);
 }
 
 export async function refreshSession(): Promise<TokenPayload | null> {
