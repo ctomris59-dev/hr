@@ -38,19 +38,19 @@ export default function ModuleFamilyNavigator({pathname}:{pathname:string}){
   const visibleItems=family.items.filter(item=>canAccessRoute(currentUserRole,item.href));
   if(visibleItems.length<2)return null;
   const activeHref=[...visibleItems].filter(item=>routeMatches(pathname,item.href)).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
-  return <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,.055)] dark:border-slate-800 dark:bg-slate-900" aria-label={`${family.label} modülleri`}>
-    <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-indigo-50/50 px-4 py-3.5 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20 sm:px-5">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-indigo-500">{family.label} çalışma alanı</p><h2 className="mt-0.5 text-base font-bold text-slate-900 dark:text-white">Bu alanın modülleri</h2></div>
-        <p className="max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400">{family.description}</p>
+  return <section className="futurehr-family-nav mb-6 overflow-hidden dark:bg-slate-900" aria-label={`${family.label} modülleri`}>
+    <div className="futurehr-family-nav-header px-4 py-4 sm:px-5">
+      <div className="grid gap-2 md:grid-cols-[minmax(220px,.75fr)_minmax(0,1.25fr)] md:items-end md:gap-8">
+        <div><p className="text-[10px] font-semibold uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">{family.label} çalışma alanı</p><h2 className="mt-1 text-[18px] font-semibold text-slate-950 dark:text-white">Bu alanın modülleri</h2></div>
+        <p className="max-w-3xl text-[12px] leading-5 text-slate-500 dark:text-slate-400">{family.description}</p>
       </div>
     </div>
-    <div className={`grid gap-3 p-3 sm:p-4 ${visibleItems.length===2?"md:grid-cols-2":visibleItems.length===3?"md:grid-cols-3":"md:grid-cols-2 xl:grid-cols-3"}`}>
-      {visibleItems.map((item,index)=>{const Icon=routeIcons[item.href]||ChevronRight;const active=item.href===activeHref;return <Link key={item.href} href={item.href} data-workspace-module={item.href} className={`group relative min-h-[112px] overflow-hidden rounded-xl border p-4 transition-all duration-200 ${active?"border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-teal-50/70 shadow-[0_8px_22px_rgba(79,70,229,.10)] ring-1 ring-indigo-100 dark:border-indigo-700 dark:from-indigo-950/35 dark:via-slate-900 dark:to-teal-950/20 dark:ring-indigo-900":"border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_8px_22px_rgba(15,23,42,.07)] dark:border-slate-700 dark:bg-slate-950/40 dark:hover:border-indigo-800"}`}>
-        {active&&<span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-white"><CheckCircle2 className="h-3 w-3"/>Şu an</span>}
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm transition-transform group-hover:scale-105 dark:bg-slate-100 dark:text-slate-900"><Icon className="h-5 w-5" strokeWidth={1.8}/></div>
-        <div className="mt-3 pr-16"><div className="flex items-center gap-2"><span className="text-[10px] font-bold text-slate-300 dark:text-slate-600">{String(index+1).padStart(2,"0")}</span><h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{item.label}</h3></div><p className="mt-1.5 text-[11px] leading-[1.15rem] text-slate-500 dark:text-slate-400">{item.description}</p></div>
-        <span className={`absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg transition-all ${active?"bg-indigo-600 text-white":"bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 dark:bg-slate-800 dark:group-hover:bg-indigo-950"}`}><ChevronRight className="h-4 w-4"/></span>
+    <div className={`grid gap-2.5 p-3 sm:p-4 ${visibleItems.length===2?"md:grid-cols-2":visibleItems.length===3?"md:grid-cols-3":"md:grid-cols-2 xl:grid-cols-3"}`}>
+      {visibleItems.map((item,index)=>{const Icon=routeIcons[item.href]||ChevronRight;const active=item.href===activeHref;return <Link key={item.href} href={item.href} data-workspace-module={item.href} data-active={active?"true":"false"} className="futurehr-family-card group relative min-h-[124px] overflow-hidden border p-4">
+        {active&&<span className="futurehr-family-current absolute right-3 top-3 inline-flex items-center gap-1 px-2 py-1 text-[9px] font-semibold uppercase tracking-[.06em]"><CheckCircle2 className="h-3 w-3"/>Şu an</span>}
+        <div className="futurehr-family-card-icon flex h-9 w-9 items-center justify-center"><Icon className="h-[18px] w-[18px]" strokeWidth={1.65}/></div>
+        <div className="mt-3 pr-14"><div className="flex items-baseline gap-2"><span className="text-[10px] font-semibold tabular-nums text-slate-300 dark:text-slate-600">{String(index+1).padStart(2,"0")}</span><h3 className="text-[14px] font-semibold tracking-[-.015em] text-slate-950 dark:text-slate-100">{item.label}</h3></div><p className="mt-1.5 text-[12px] leading-[1.2rem] text-slate-500 dark:text-slate-400">{item.description}</p></div>
+        <span className="futurehr-family-arrow absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center"><ChevronRight className="h-4 w-4"/></span>
       </Link>;})}
     </div>
   </section>;

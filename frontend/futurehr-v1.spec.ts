@@ -122,7 +122,7 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page.getByText(/kalibrasyon aşamasında/i)).toBeVisible();
   });
 
-  test("1366x768 sidebar fully fits above user footer", async ({ page }) => {
+  test("1366x768 sidebar fits and keeps professional readable typography", async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await openDemo(page);
     const result = await page.evaluate(() => {
@@ -130,12 +130,21 @@ test.describe("FutureHR V1 demo quality gate", () => {
       const footer = document.querySelector(".futurehr-sidebar-footer");
       const links = Array.from(nav?.querySelectorAll("a") || []);
       const last = links.at(-1);
-      if (!nav || !footer || !last) return null;
-      return { lastBottom:last.getBoundingClientRect().bottom, footerTop:footer.getBoundingClientRect().top, sidebarBottom:(document.querySelector('[data-testid="app-sidebar"]') as HTMLElement)?.getBoundingClientRect().bottom };
+      const first = links[0] as HTMLElement | undefined;
+      if (!nav || !footer || !last || !first) return null;
+      return {
+        lastBottom:last.getBoundingClientRect().bottom,
+        footerTop:footer.getBoundingClientRect().top,
+        sidebarBottom:(document.querySelector('[data-testid="app-sidebar"]') as HTMLElement)?.getBoundingClientRect().bottom,
+        fontSize:parseFloat(getComputedStyle(first).fontSize),
+        rowHeight:first.getBoundingClientRect().height,
+      };
     });
     expect(result).not.toBeNull();
     expect(result!.lastBottom).toBeLessThanOrEqual(result!.footerTop + 1);
     expect(result!.footerTop).toBeLessThanOrEqual(result!.sidebarBottom + 1);
+    expect(result!.fontSize).toBeGreaterThanOrEqual(12);
+    expect(result!.rowHeight).toBeGreaterThanOrEqual(32);
   });
 
   test("mobile shell has no horizontal overflow and menu opens", async ({ page }) => {
@@ -147,10 +156,11 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page.getByTestId("app-sidebar")).toHaveCSS("transform", "none");
   });
 
-  test("Copilot opens with explainable decision prompt", async ({ page }) => {
+  test("Copilot opens as explainable decision support", async ({ page }) => {
     await openDemo(page);
-    await page.getByRole("button", { name: "FutureHR AI Copilot'u aç" }).click();
-    await expect(page.getByRole("heading", { name: "FutureHR AI Copilot" })).toBeVisible();
+    await page.getByRole("button", { name: "FutureHR Copilot'u aç" }).click();
+    await expect(page.getByRole("heading", { name: "FutureHR Copilot" })).toBeVisible();
     await expect(page.getByPlaceholder(/Pelin Yılmaz için neden/)).toBeVisible();
+    await expect(page.getByText(/Kanıtı birleştirir; kararı insana bırakır/)).toBeVisible();
   });
 });

@@ -1,0 +1,409 @@
+/* FutureHR — Human Enterprise UI
+   A restrained visual layer for trust-heavy HR decisions.
+   Principles: flat surfaces, editorial hierarchy, semantic colour only,
+   quiet motion, readable density, and no decorative AI gradients. */
+
+:root {
+  --fh-ink: #17212b;
+  --fh-ink-strong: #0c141c;
+  --fh-canvas: #f6f6f3;
+  --fh-surface: #ffffff;
+  --fh-surface-muted: #f0f2f1;
+  --fh-line: #dfe3e1;
+  --fh-line-strong: #cfd5d2;
+  --fh-accent: #2f6664;
+  --fh-accent-hover: #255452;
+  --fh-accent-soft: #edf4f2;
+  --fh-muted: #66737e;
+  --fh-radius-sm: 7px;
+  --fh-radius: 10px;
+  --fh-radius-lg: 12px;
+  --fh-motion: 150ms;
+}
+
+.dark {
+  --fh-ink: #dce4e8;
+  --fh-ink-strong: #f6f8f9;
+  --fh-canvas: #0f151b;
+  --fh-surface: #141b22;
+  --fh-surface-muted: #19222a;
+  --fh-line: #2a353e;
+  --fh-line-strong: #36434d;
+  --fh-accent: #79aaa6;
+  --fh-accent-hover: #8ebbb7;
+  --fh-accent-soft: #172b2a;
+  --fh-muted: #93a0aa;
+}
+
+body {
+  background: var(--fh-canvas);
+  color: var(--fh-ink);
+}
+
+/* Editorial hierarchy: serif is reserved for decision-page headlines only. */
+h1,
+.futurehr-editorial-title {
+  font-family: var(--font-editorial), Georgia, "Times New Roman", serif;
+  font-weight: 560;
+  letter-spacing: -.035em;
+}
+
+h2 {
+  letter-spacing: -.022em;
+}
+
+p, td, th, input, select, textarea, button, a {
+  text-rendering: optimizeLegibility;
+}
+
+/* Flat enterprise surfaces: borders carry structure, not glow or depth. */
+.enterprise-card,
+.premium-table-card,
+.module-native-content > .rounded-2xl,
+.module-native-content > .rounded-xl {
+  border-color: var(--fh-line) !important;
+  border-radius: var(--fh-radius-lg) !important;
+  box-shadow: none !important;
+}
+
+.enterprise-card:hover {
+  border-color: var(--fh-line-strong);
+}
+
+.enterprise-eyebrow {
+  color: var(--fh-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .11em;
+}
+
+/* Sidebar: larger, calmer, enterprise-readable. */
+[data-testid="app-sidebar"] {
+  border-right-color: rgba(255,255,255,.08) !important;
+  box-shadow: none !important;
+}
+
+.futurehr-sidebar-section {
+  color: #718091 !important;
+  font-size: 10px !important;
+  line-height: 14px !important;
+  letter-spacing: .12em !important;
+}
+
+.futurehr-sidebar-item {
+  min-height: 40px !important;
+  border-radius: 9px !important;
+  font-size: 13.5px !important;
+  line-height: 20px !important;
+  transition: background-color var(--fh-motion) ease, color var(--fh-motion) ease, border-color var(--fh-motion) ease !important;
+}
+
+.futurehr-sidebar-item:hover {
+  transform: none !important;
+}
+
+.futurehr-sidebar-item > span.absolute {
+  background: #78a9a5 !important;
+  width: 2px !important;
+}
+
+.futurehr-sidebar-item svg {
+  width: 17px !important;
+  height: 17px !important;
+}
+
+.futurehr-sidebar-user > div:first-child {
+  background: #1d2934 !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: none !important;
+}
+
+/* Do not collapse typography on ordinary laptop heights. */
+@media (min-width:1024px) and (max-height:1050px) {
+  .futurehr-sidebar-brand { height: 56px !important; }
+  .futurehr-sidebar-brand img { height: 34px !important; }
+  .futurehr-sidebar-nav { padding-top: 7px !important; padding-bottom: 5px !important; }
+  .futurehr-sidebar-section { margin-top: 7px !important; margin-bottom: 2px !important; font-size: 9px !important; line-height: 12px !important; }
+  .futurehr-sidebar-item { min-height: 36px !important; height: 36px !important; margin-bottom: 1px !important; font-size: 12.75px !important; }
+  .futurehr-sidebar-item svg { width: 16px !important; height: 16px !important; }
+  .futurehr-sidebar-footer { padding: 7px 10px !important; }
+  .futurehr-sidebar-user { padding-top: 5px !important; padding-bottom: 5px !important; }
+  .futurehr-sidebar-logout { height: 32px !important; font-size: 12px !important; }
+}
+
+@media (min-width:1024px) and (max-height:860px) {
+  .futurehr-sidebar-brand { height: 50px !important; }
+  .futurehr-sidebar-brand img { height: 31px !important; }
+  .futurehr-sidebar-nav { padding-top: 4px !important; padding-bottom: 3px !important; }
+  .futurehr-sidebar-section { margin-top: 4px !important; margin-bottom: 1px !important; font-size: 8.5px !important; line-height: 10px !important; }
+  .futurehr-sidebar-item { min-height: 32px !important; height: 32px !important; font-size: 12px !important; }
+  .futurehr-sidebar-item svg { width: 15px !important; height: 15px !important; }
+  .futurehr-sidebar-footer { padding: 5px 9px !important; }
+  .futurehr-sidebar-user > div:first-child { width: 30px !important; height: 30px !important; }
+  .futurehr-sidebar-logout { height: 29px !important; }
+}
+
+/* Module guidance is functional, not decorative. */
+.module-hero {
+  border-color: var(--fh-line) !important;
+  border-radius: var(--fh-radius) !important;
+  box-shadow: none !important;
+}
+
+.module-hero > div > div:first-child > span:first-child {
+  background: var(--module-accent, var(--fh-accent)) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.module-hero [class*="rounded-md"] {
+  background: var(--fh-surface-muted) !important;
+  border-color: var(--fh-line) !important;
+}
+
+/* Shared module navigator: readable, flat, obvious without neon cues. */
+.futurehr-family-nav {
+  border: 1px solid var(--fh-line);
+  border-radius: var(--fh-radius-lg);
+  background: var(--fh-surface);
+  box-shadow: none;
+}
+
+.futurehr-family-nav-header {
+  border-bottom: 1px solid var(--fh-line);
+  background: var(--fh-surface);
+}
+
+.futurehr-family-card {
+  border-color: var(--fh-line) !important;
+  border-radius: var(--fh-radius) !important;
+  background: var(--fh-surface) !important;
+  box-shadow: none !important;
+  transition: border-color var(--fh-motion) ease, background-color var(--fh-motion) ease, transform var(--fh-motion) ease !important;
+}
+
+.futurehr-family-card:hover {
+  transform: translateY(-1px) !important;
+  border-color: #bfc9c6 !important;
+  background: #fbfcfb !important;
+}
+
+.dark .futurehr-family-card:hover { background: #172028 !important; }
+
+.futurehr-family-card[data-active="true"] {
+  border-color: #8fb1ad !important;
+  background: var(--fh-accent-soft) !important;
+  box-shadow: inset 3px 0 0 var(--fh-accent) !important;
+}
+
+.futurehr-family-card-icon {
+  border: 1px solid var(--fh-line) !important;
+  border-radius: 8px !important;
+  background: var(--fh-surface-muted) !important;
+  color: var(--fh-ink) !important;
+  box-shadow: none !important;
+}
+
+.futurehr-family-current {
+  border-radius: 5px !important;
+  background: transparent !important;
+  color: var(--fh-accent) !important;
+  border: 1px solid #b9cfcc !important;
+}
+
+.futurehr-family-arrow {
+  border-radius: 7px !important;
+  background: transparent !important;
+  color: var(--fh-muted) !important;
+}
+
+/* Dashboard: editorial rhythm instead of a wall of equal cards. */
+.futurehr-dashboard {
+  max-width: 1540px;
+  margin: 0 auto;
+}
+
+.futurehr-editorial-header {
+  position: relative;
+  padding: 8px 0 18px;
+  border-bottom: 1px solid var(--fh-line);
+}
+
+.futurehr-editorial-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .18;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+  mask-image: linear-gradient(to right, transparent, #000 30%, #000 70%, transparent);
+}
+
+.futurehr-dashboard-lede {
+  margin-top: 9px;
+  max-width: 760px;
+  color: var(--fh-ink-strong);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(18px, 1.45vw, 24px);
+  line-height: 1.25;
+  letter-spacing: -.025em;
+}
+
+.futurehr-dashboard .enterprise-card {
+  border-radius: var(--fh-radius-lg) !important;
+  box-shadow: none !important;
+}
+
+.futurehr-dashboard .enterprise-card [class*="rounded-full"] {
+  box-shadow: none !important;
+}
+
+/* Copilot: decision-support side panel, not an AI toy. */
+button[aria-label="FutureHR AI Copilot'u aç"] {
+  border: 1px solid #24313c !important;
+  border-radius: 8px !important;
+  background: #17212b !important;
+  color: #f6f8f9 !important;
+  box-shadow: none !important;
+  letter-spacing: -.01em;
+}
+
+button[aria-label="FutureHR AI Copilot'u aç"]:hover {
+  background: #24313c !important;
+  transform: translateY(-1px);
+}
+
+button[aria-label="FutureHR AI Copilot'u aç"] > svg {
+  display: none;
+}
+
+button[aria-label="FutureHR AI Copilot'u aç"]::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #86b3af;
+}
+
+button[aria-label="FutureHR AI Copilot'u aç"] + div aside {
+  border-left-color: var(--fh-line) !important;
+  background: var(--fh-canvas) !important;
+  box-shadow: -8px 0 28px rgba(12,20,28,.08) !important;
+}
+
+button[aria-label="FutureHR AI Copilot'u aç"] + div aside [class*="bg-gradient"] {
+  background-image: none !important;
+}
+
+button[aria-label="FutureHR AI Copilot'u aç"] + div aside [class*="from-indigo"],
+button[aria-label="FutureHR AI Copilot'u aç"] + div aside [class*="from-violet"] {
+  background-image: none !important;
+  background-color: var(--fh-surface) !important;
+}
+
+button[aria-label="FutureHR AI Copilot'u aç"] + div aside [class*="rounded-2xl"] {
+  border-radius: var(--fh-radius) !important;
+  box-shadow: none !important;
+}
+
+button[aria-label="FutureHR AI Copilot'u aç"] + div aside [class*="text-indigo"],
+button[aria-label="FutureHR AI Copilot'u aç"] + div aside [class*="text-violet"] {
+  color: var(--fh-accent) !important;
+}
+
+/* Data tables: denser typography, calmer headers, semantic status only. */
+.premium-table-card,
+:where(main,.module-native-content) .overflow-hidden:has(> .overflow-x-auto > table:not(.no-premium-table)),
+:where(main,.module-native-content) .rounded-2xl:has(> .overflow-x-auto > table:not(.no-premium-table)) {
+  border-radius: var(--fh-radius-lg) !important;
+  box-shadow: none !important;
+}
+
+.premium-table-header,
+.dark .premium-table-header {
+  background: var(--fh-surface) !important;
+}
+
+:where(main,.module-native-content) table:not(.no-premium-table),
+.premium-data-table {
+  font-size: 12.5px !important;
+}
+
+:where(main,.module-native-content) table:not(.no-premium-table) thead th,
+.premium-data-table thead th,
+.dark :where(main,.module-native-content) table:not(.no-premium-table) thead th,
+.dark .premium-data-table thead th {
+  background: var(--fh-surface-muted) !important;
+  color: #64717b !important;
+  font-size: 9.5px !important;
+  letter-spacing: .065em !important;
+}
+
+:where(main,.module-native-content) table:not(.no-premium-table) tbody tr:nth-child(even) td,
+.premium-data-table tbody tr:nth-child(even) td {
+  background: var(--fh-surface) !important;
+}
+
+:where(main,.module-native-content) table:not(.no-premium-table) tbody tr:hover td,
+.premium-data-table tbody tr:hover td {
+  background: #f6f8f7 !important;
+}
+
+.dark :where(main,.module-native-content) table:not(.no-premium-table) tbody tr:hover td,
+.dark .premium-data-table tbody tr:hover td {
+  background: #182129 !important;
+}
+
+:where(main,.module-native-content) table:not(.no-premium-table) tbody tr:hover td:first-child,
+.premium-data-table tbody tr:hover td:first-child {
+  box-shadow: inset 2px 0 0 var(--fh-accent) !important;
+}
+
+.premium-avatar {
+  border-radius: 8px !important;
+  background: var(--fh-surface-muted) !important;
+  color: var(--fh-ink) !important;
+  box-shadow: none !important;
+}
+
+.premium-progress > span {
+  background: var(--fh-accent) !important;
+}
+
+.premium-status {
+  border-radius: 6px !important;
+  padding: 4px 7px !important;
+  font-weight: 700 !important;
+}
+
+.premium-status::before {
+  width: 4px !important;
+  height: 4px !important;
+}
+
+/* Buttons and links: precise micro-interactions, never floating/bouncy. */
+main a[href],
+main button:not([disabled]),
+header button:not([disabled]) {
+  transition-duration: var(--fh-motion) !important;
+  transition-timing-function: cubic-bezier(.2,.7,.2,1) !important;
+}
+
+main a[href]:active,
+main button:not([disabled]):active,
+header button:not([disabled]):active {
+  transform: translateY(1px);
+}
+
+/* Decorative gradients are suppressed in the application chrome and primary workspaces.
+   Semantic charts may still use their own colour scales. */
+[data-testid="app-shell"] [class*="bg-gradient-to-"],
+.module-workspace [class*="bg-gradient-to-"] {
+  background-image: none !important;
+}
+
+@media (max-width:640px) {
+  .futurehr-editorial-header { padding-bottom: 14px; }
+  .futurehr-dashboard-lede { font-size: 18px; }
+  .futurehr-family-card { min-height: 104px !important; }
+}

@@ -32,36 +32,30 @@ export default function ProductHealthStrip() {
     );
   }, [revision]);
 
-  // Veri hazırlığı şirket çapı bir yönetişim göstergesidir. Yönetici/personel
-  // dashboard'larında gereksiz şirket geneli sinyal ve erişilemeyen düzeltme linki göstermeyiz.
   if (currentUserRole !== "ceo" && currentUserRole !== "hr_admin") return null;
 
   const topIssue = health.issues.find((issue) => issue.severity !== "bilgi") || health.issues[0];
-  const tone = health.score >= 85
-    ? "border-emerald-200 bg-emerald-50/80 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-200"
-    : health.score >= 70
-      ? "border-blue-200 bg-blue-50/80 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200"
-      : "border-amber-200 bg-amber-50/80 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200";
+  const statusClass = health.score >= 85 ? "text-emerald-700" : health.score >= 70 ? "text-slate-600" : "text-amber-700";
 
   return (
-    <section className={`mb-4 rounded-2xl border px-4 py-3 ${tone}`}>
+    <section className="mb-5 border-b border-slate-200 pb-4 dark:border-slate-800">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow-sm dark:bg-slate-900/60">
-            {health.score >= 85 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
+          <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${statusClass}`}>
+            {health.score >= 85 ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.1em]">V1 Veri Hazırlığı</p>
-              <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold dark:bg-slate-900/60">{health.score}/100 · {health.band}</span>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">Veri hazırlığı</p>
+              <span className={`border-l border-slate-200 pl-2 text-[10px] font-semibold tabular-nums dark:border-slate-700 ${statusClass}`}>{health.score}/100 · {health.band}</span>
             </div>
-            <p className="mt-1 text-[11px] leading-5 opacity-80">{topIssue?.title}: {topIssue?.detail}</p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">{topIssue?.title}: {topIssue?.detail}</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold">
-          <span className="inline-flex items-center gap-1 rounded-lg bg-white/60 px-2.5 py-1.5 dark:bg-slate-900/50"><Database className="h-3 w-3" />Performans %{health.metrics.performanceCoverage}</span>
-          <span className="inline-flex items-center gap-1 rounded-lg bg-white/60 px-2.5 py-1.5 dark:bg-slate-900/50"><ShieldCheck className="h-3 w-3" />Kanıt %{health.metrics.evidenceCoverage}</span>
-          {topIssue?.route && <Link href={topIssue.route} className="rounded-lg bg-slate-950 px-3 py-1.5 text-white hover:bg-indigo-700 dark:bg-white dark:text-slate-950">{topIssue.severity === "bilgi" ? "Özeti kullan" : "Eksik veriyi düzelt"}</Link>}
+        <div className="flex flex-wrap items-center gap-3 text-[10px] font-semibold text-slate-500">
+          <span className="inline-flex items-center gap-1.5"><Database className="h-3 w-3" />Performans %{health.metrics.performanceCoverage}</span>
+          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3 w-3" />Kanıt %{health.metrics.evidenceCoverage}</span>
+          {topIssue?.route && <Link href={topIssue.route} className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-white dark:border-slate-700 dark:text-slate-200">{topIssue.severity === "bilgi" ? "Özeti kullan" : "Eksik veriyi düzelt"}</Link>}
         </div>
       </div>
     </section>
