@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
@@ -18,6 +18,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const editorial = Source_Serif_4({
+  variable: "--font-editorial",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "FutureHR | İnsan ve Yetenek Karar Platformu",
   description:
@@ -33,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${editorial.variable} antialiased`}
       >
         <ThemeProvider>
           <AuthProvider>
@@ -49,7 +55,7 @@ export default function RootLayout({
             closeButton
             toastOptions={{
               className:
-                "bg-white/80 backdrop-blur-xl border border-white/30 shadow-xl text-slate-800 dark:bg-slate-800/80 dark:text-slate-100 dark:border-slate-700",
+                "border border-slate-200 bg-white text-slate-800 shadow-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
             }}
           />
           <ToastInterceptor />
