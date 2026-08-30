@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { publicAIStatus, runStructuredAI } from "../../../../lib/ai/resilient-provider";
 
 export const runtime = "nodejs";
 
 type Confidence = "düşük" | "orta" | "yüksek";
 type Severity = "kritik" | "yüksek" | "orta" | "bilgi";
-type Provider = "groq" | "openai" | "rules";
 
 type Priority = {
   severity: Severity;
@@ -55,8 +55,6 @@ const SCHEMA = {
 } as const;
 
 const ROUTES = new Set(["/dashboard", "/degerlendirme", "/kalibrasyon", "/yetenek-matrisi", "/gelisim", "/egitim", "/gelisim-analitigi", "/kariyer", "/yedekleme", "/maas", "/calisan-deneyimi", "/organizasyon", "/ise-alim"]);
-const unique = <T,>(values: T[]) => Array.from(new Set(values));
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function safeContext(value: any): any {
   if (Array.isArray(value)) return value.slice(0, 32).map(safeContext);
@@ -67,22 +65,6 @@ function safeContext(value: any): any {
     if (!blocked.has(key)) out[key] = safeContext(child);
   });
   return out;
-}
-
-function providerInfo(): { provider: Provider; configured: boolean; model: string } {
-  if (process.env.GROQ_API_KEY) return { provider: "groq", configured: true, model: process.env.GROQ_MODEL || groqModels()[0] };
-  if (process.env.OPENAI_API_KEY) return { provider: "openai", configured: true, model: process.env.OPENAI_MODEL || "gpt-5-mini" };
-  return { provider: "rules", configured: false, model: "rule-based" };
-}
-
-function groqModels() {
-  return unique([
-    ...(process.env.GROQ_MODEL ? [process.env.GROQ_MODEL] : []),
-    "qwen/qwen3.8-27b",
-    "openai/gpt-oss-20b",
-    "openai/gpt-oss-120b",
-    "qwen/qwen3.6-27b",
-  ]);
 }
 
 function prompt(question: string, context: any) {
@@ -104,14 +86,8 @@ Görevin:
 - İşe alma, işten çıkarma, terfi, ücret artışı, disiplin veya halef ataması için nihai karar verme; kişileri otomatik sıralama/eleme yapma.
 - Kanıt güveni düşükse bunu açıkça söyle; eksik veriyi gerçek veri gibi doldurma.
 - "Kanıt Güveni" kişinin kalitesi değil, veri kapsamı/izlenebilirliği anlamına gelir.
-- Kısa ol; en fazla 4 öncelik, 4 aksiyon, 4 veri açığı üret.`;
-}
-
-function groqPrompt(question: string, context: any) {
-  return `${prompt(question, context)}
-
-Yalnızca tek geçerli JSON nesnesi döndür, markdown yazma:
-{"answer":"kısa yönetici cevabı","confidence":"düşük|orta|yüksek","confidenceReason":"veri kapsamı gerekçesi","priorities":[{"severity":"kritik|yüksek|orta|bilgi","title":"başlık","evidence":"kanıt","action":"insan aksiyonu","route":"/route"}],"nextActions":["aksiyon"],"evidenceGaps":["veri açığı"],"guardrail":"Bu çıktı nihai İK kararı değildir."}`;
+- Kısa ol; en fazla 4 öncelik, 4 aksiyon, 4 veri açığı üret.
+- Yalnızca JSON schema ile uyumlu tek bir JSON nesnesi üret.`;
 }
 
 function parseJsonLoose(text: string | null): any {
@@ -126,25 +102,25 @@ function parseJsonLoose(text: string | null): any {
   return null;
 }
 
-function normalize(value: any, fallback: CopilotAnalysis): CopilotAnalysis {
-  if (!value || typeof value !== "object") return fallback;
-  const confidence: Confidence = ["düşük", "orta", "yüksek"].includes(value.confidence) ? value.confidence : fallback.confidence;
+function normalize(value: any, fallbackValue: CopilotAnalysis): CopilotAnalysis {
+  if (!value || typeof value !== "object") return fallbackValue;
+  const confidence: Confidence = ["düşük", "orta", "yüksek"].includes(value.confidence) ? value.confidence : fallbackValue.confidence;
   const priorities: Priority[] = Array.isArray(value.priorities) ? value.priorities.slice(0, 4).map((item: any) => ({
     severity: (["kritik", "yüksek", "orta", "bilgi"].includes(item?.severity) ? item.severity : "orta") as Severity,
     title: String(item?.title || "İncelenecek sinyal").slice(0, 180),
     evidence: String(item?.evidence || "Kanıt belirtilmedi.").slice(0, 360),
     action: String(item?.action || "İlgili modülde insan doğrulaması yapın.").slice(0, 360),
     route: ROUTES.has(String(item?.route)) ? String(item.route) : "/dashboard",
-  })) : fallback.priorities;
+  })) : fallbackValue.priorities;
   const list = (input: any, backup: string[]) => Array.isArray(input) ? input.filter((item) => typeof item === "string" && item.trim()).slice(0, 4) : backup;
   return {
-    answer: typeof value.answer === "string" ? value.answer.slice(0, 900) : fallback.answer,
+    answer: typeof value.answer === "string" ? value.answer.slice(0, 900) : fallbackValue.answer,
     confidence,
-    confidenceReason: typeof value.confidenceReason === "string" ? value.confidenceReason.slice(0, 500) : fallback.confidenceReason,
+    confidenceReason: typeof value.confidenceReason === "string" ? value.confidenceReason.slice(0, 500) : fallbackValue.confidenceReason,
     priorities,
-    nextActions: list(value.nextActions, fallback.nextActions),
-    evidenceGaps: list(value.evidenceGaps, fallback.evidenceGaps),
-    guardrail: typeof value.guardrail === "string" ? value.guardrail.slice(0, 500) : fallback.guardrail,
+    nextActions: list(value.nextActions, fallbackValue.nextActions),
+    evidenceGaps: list(value.evidenceGaps, fallbackValue.evidenceGaps),
+    guardrail: typeof value.guardrail === "string" ? value.guardrail.slice(0, 500) : fallbackValue.guardrail,
   };
 }
 
@@ -171,90 +147,31 @@ function fallback(context: any): CopilotAnalysis {
   };
 }
 
-function retryAfterMs(response: Response): number {
-  const seconds = Number(response.headers.get("retry-after"));
-  return Number.isFinite(seconds) && seconds >= 0 ? Math.min(3500, Math.ceil(seconds * 1000) + 120) : 2100;
+export async function GET() {
+  return NextResponse.json(publicAIStatus());
 }
-
-async function groqRequest(apiKey: string, model: string, question: string, context: any, jsonMode: boolean) {
-  const body: Record<string, any> = {
-    model,
-    messages: [
-      { role: "system", content: "Sen FutureHR Türkiye İK Karar Zekâsı Copilot'usun. Yalnızca verilen kanıta dayan ve geçerli JSON üret." },
-      { role: "user", content: groqPrompt(question, context) },
-    ],
-    temperature: 0,
-    max_completion_tokens: 700,
-    service_tier: "auto",
-  };
-  if (jsonMode) body.response_format = { type: "json_object" };
-  return fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-}
-
-async function callGroq(question: string, context: any) {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return null;
-  const errors: string[] = [];
-  for (const model of groqModels()) {
-    try {
-      let response = await groqRequest(apiKey, model, question, context, true);
-      if (response.status === 429) { await sleep(retryAfterMs(response)); response = await groqRequest(apiKey, model, question, context, true); }
-      if (response.ok) {
-        const payload = await response.json();
-        const text = payload?.choices?.[0]?.message?.content;
-        if (typeof text === "string" && parseJsonLoose(text)) return { text, model };
-      }
-      if (response.status === 400 || response.status === 422 || response.ok) {
-        response = await groqRequest(apiKey, model, question, context, false);
-        if (response.status === 429) { await sleep(retryAfterMs(response)); response = await groqRequest(apiKey, model, question, context, false); }
-        if (response.ok) {
-          const payload = await response.json();
-          const text = payload?.choices?.[0]?.message?.content;
-          if (typeof text === "string" && parseJsonLoose(text)) return { text, model };
-        }
-      }
-      throw new Error(`Groq ${model} ${response.status}`);
-    } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
-  }
-  throw new Error(errors.slice(-2).join(" | ") || "Groq modelleri yanıt vermedi.");
-}
-
-async function callOpenAI(question: string, context: any) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  const model = process.env.OPENAI_MODEL || "gpt-5-mini";
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, input: prompt(question, context), max_output_tokens: 700, store: false, text: { verbosity: "low", format: { type: "json_schema", name: "futurehr_copilot", strict: true, schema: SCHEMA } } }),
-  });
-  if (!response.ok) throw new Error(`OpenAI ${response.status}`);
-  const payload = await response.json();
-  const text = typeof payload?.output_text === "string" ? payload.output_text : (payload?.output || []).flatMap((item: any) => item?.content || []).map((item: any) => item?.text || "").join("\n");
-  return { text, model };
-}
-
-export async function GET() { return NextResponse.json(providerInfo()); }
 
 export async function POST(request: NextRequest) {
   let body: any;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Geçersiz JSON" }, { status: 400 }); }
   const question = String(body?.question || "").trim().slice(0, 700);
   if (!question) return NextResponse.json({ error: "Soru gerekli" }, { status: 400 });
+
   const context = safeContext(body?.context || {});
   const rules = fallback(context);
-  const info = providerInfo();
-  if (!info.configured) return NextResponse.json({ mode: "rules", ...info, analysis: rules, note: "AI anahtarı tanımlı olmadığı için kural bazlı Copilot kullanılıyor." });
-
-  const providers: Array<"groq" | "openai"> = process.env.GROQ_API_KEY ? ["groq", ...(process.env.OPENAI_API_KEY ? ["openai" as const] : [])] : ["openai"];
-  let lastError = "";
-  for (const provider of providers) {
-    try {
-      const result = provider === "groq" ? await callGroq(question, context) : await callOpenAI(question, context);
-      const parsed = parseJsonLoose(result?.text || null);
-      if (!parsed) { lastError = `${provider} geçerli JSON üretemedi.`; continue; }
-      return NextResponse.json({ mode: "ai", provider, configured: true, model: result?.model, analysis: normalize(parsed, rules) });
-    } catch (error) { lastError = error instanceof Error ? error.message : String(error); console.error(`${provider} copilot request failed`, lastError); }
+  const status = publicAIStatus();
+  if (!status.configured) {
+    return NextResponse.json({ mode: "rules", provider: "rules", configured: false, model: "rule-based", analysis: rules, note: "AI sağlayıcısı yapılandırılmadığı için güvenli kural motoru kullanılıyor." });
   }
-  return NextResponse.json({ mode: "rules", provider: info.provider, configured: true, model: info.model, analysis: rules, note: `AI servisine erişilemedi; güvenli kural motoru kullanıldı.${lastError ? ` (${lastError.slice(0, 140)})` : ""}` });
+
+  try {
+    const result = await runStructuredAI({ prompt: prompt(question, context), schema: SCHEMA as any, schemaName: "futurehr_copilot", maxTokens: 900 });
+    const parsed = parseJsonLoose(result.text);
+    if (!parsed) throw new Error("AI yanıtı JSON olarak ayrıştırılamadı");
+    const analysis = normalize(parsed, rules);
+    return NextResponse.json({ mode: "ai", provider: result.provider, configured: true, model: result.model, latencyMs: result.latencyMs, analysis, failoverUsed: result.attempts.some((item) => !item.ok) });
+  } catch (error: any) {
+    console.error("AI copilot provider chain failed", error?.attempts || error?.message || error);
+    return NextResponse.json({ mode: "rules", provider: status.primary || "rules", configured: true, model: "fallback", analysis: rules, note: "AI bağlantısı geçici olarak kullanılamıyor. Mevcut veriler güvenli karar kurallarıyla gösteriliyor." });
+  }
 }
