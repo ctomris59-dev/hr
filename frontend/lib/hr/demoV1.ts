@@ -75,6 +75,9 @@ export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
     [1, 0].forEach((period) => {
       const perf = performanceScores(index + 1, period);
       const scores = competencyScores(index + 1, period);
+      // Demo akışında Pelin'in doğrulanmış analitik gelişim müdahalesinin
+      // yeniden ölçüm sonrası farkını görünür kılan kontrollü bir örnek bulunur.
+      if (person["Ad Soyad"] === "Pelin Yılmaz") scores.ANA = period ? 3.2 : 3.9;
       const competency = round2(Object.values(scores).reduce((sum: number, value: any) => sum + Number(value), 0) / COMP_CODES.length);
       history360.push({
         id: `eval-${person.id}-${period}`, employee_id: person.id, Personel: person["Ad Soyad"], evaluator: person["Yönetici 1"] || "Yönetim Kurulu", evaluation_type: "FutureHR V1 Demo",
@@ -140,7 +143,8 @@ export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
     const person = organization.find((item) => item["Ad Soyad"] === blueprint.employee);
     const intervention = findDevelopmentIntervention(blueprint.trainingId);
     const completed = blueprint.stage === "verified" || blueprint.stage === "submitted" || blueprint.stage === "completed";
-    const transferEvidence = blueprint.stage === "verified"
+    const verifiedDemo = blueprint.stage === "verified";
+    const transferEvidence = verifiedDemo
       ? "Gerçek üretim problemi üzerinde kök neden analizi uygulandı; alternatif nedenler ayrıştırıldı ve seçilen aksiyon sonrası hata tekrarında düşüş gözlendi. Yönetici çalışma çıktısını gözden geçirdi."
       : blueprint.stage === "submitted"
         ? "Kalite kontrol adımında iki aşamalı checklist uygulandı; tekrar eden hata örnekleri kaydedildi ve yeni kontrol rutininin sonuçları yönetici incelemesine sunuldu."
@@ -152,21 +156,21 @@ export function buildFutureHRV1DemoData(currentUser?: any): FutureHRV1DemoData {
       trainingName: intervention?.name || "Gelişim müdahalesi",
       source: index % 3 === 0 ? "Gelişim Planı" : "Yetkinlik açığı",
       assignedBy: person?.["Yönetici 1"] || hrManagerName,
-      assignedAt: isoDateMonthsAgo(2),
+      assignedAt: verifiedDemo ? isoDateMonthsAgo(6) : isoDateMonthsAgo(2),
       dueDate: isoDateDaysFromNow(30 + index * 3).slice(0, 10),
       status: completed ? "Tamamlandı" : blueprint.stage === "in-progress" ? "Devam Ediyor" : "Atandı",
-      completedAt: completed ? isoDateMonthsAgo(1) : undefined,
+      completedAt: completed ? (verifiedDemo ? isoDateMonthsAgo(5) : isoDateMonthsAgo(1)) : undefined,
       competencyCode: intervention?.competencyCode,
       developmentLevel: intervention?.level,
       interventionType: intervention?.type,
       transferTask: intervention?.transferTask,
       successMetric: intervention?.successMetric,
-      reassessDueAt: completed ? isoDateDaysFromNow(intervention?.reassessDays || 60) : undefined,
+      reassessDueAt: completed ? (verifiedDemo ? isoDateMonthsAgo(3) : isoDateDaysFromNow(intervention?.reassessDays || 60)) : undefined,
       transferEvidence,
-      transferSubmittedAt: transferEvidence ? isoDateDaysFromNow(-10) : undefined,
-      managerVerified: blueprint.stage === "verified",
-      verifiedAt: blueprint.stage === "verified" ? isoDateDaysFromNow(-5) : undefined,
-      verifiedBy: blueprint.stage === "verified" ? person?.["Yönetici 1"] || hrManagerName : undefined,
+      transferSubmittedAt: transferEvidence ? (verifiedDemo ? isoDateMonthsAgo(4) : isoDateDaysFromNow(-10)) : undefined,
+      managerVerified: verifiedDemo,
+      verifiedAt: verifiedDemo ? isoDateMonthsAgo(4) : undefined,
+      verifiedBy: verifiedDemo ? person?.["Yönetici 1"] || hrManagerName : undefined,
     };
   });
 
