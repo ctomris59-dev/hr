@@ -1,52 +1,10 @@
-export const COMPENSATION_STAGES = [
-  "DRAFT_SIMULATION",
-  "MANAGER_INPUT",
-  "BUDGET_REVIEW",
-  "APPROVAL",
-  "FINALIZED",
-  "EFFECTIVE",
-] as const;
-
-export type CompensationStage = (typeof COMPENSATION_STAGES)[number];
-
-export const COMPENSATION_STAGE_LABELS: Record<CompensationStage, string> = {
-  DRAFT_SIMULATION: "Simülasyon",
-  MANAGER_INPUT: "Yönetici Talepleri",
-  BUDGET_REVIEW: "Bütçe Kontrolü",
-  APPROVAL: "Onay",
-  FINALIZED: "Kesinleştirme",
-  EFFECTIVE: "Yeni Ücret Dönemi",
-};
-
-export interface CompensationCycle {
-  id: string;
-  name: string;
-  stage: CompensationStage;
-  createdAt: string;
-  effectiveDate?: string;
-  scenario?: "A" | "B" | "C" | "D";
-  inflationRate?: number;
-  results?: any[];
-  managerRequests?: any[];
-  approvedBy?: string;
-  finalizedAt?: string;
-  appliedAt?: string;
-}
-
-export function nextCompensationStage(stage: CompensationStage): CompensationStage {
-  const index = COMPENSATION_STAGES.indexOf(stage);
-  return COMPENSATION_STAGES[Math.min(index + 1, COMPENSATION_STAGES.length - 1)];
-}
-
-export function canApplySalaryChanges(stage: CompensationStage): boolean {
-  return stage === "FINALIZED";
-}
-
-export function createCompensationCycle(name: string): CompensationCycle {
-  return {
-    id: `cycle-${Date.now()}`,
-    name,
-    stage: "DRAFT_SIMULATION",
-    createdAt: new Date().toISOString(),
-  };
-}
+export const COMPENSATION_STAGES = ["DRAFT_SIMULATION","MANAGER_INPUT","BUDGET_REVIEW","APPROVAL","FINALIZED","EFFECTIVE"] as const;
+export type CompensationStage=(typeof COMPENSATION_STAGES)[number];
+export const COMPENSATION_STAGE_LABELS:Record<CompensationStage,string>={DRAFT_SIMULATION:"Simülasyon",MANAGER_INPUT:"Yönetici Talepleri",BUDGET_REVIEW:"Bütçe Kontrolü",APPROVAL:"CEO Onayı",FINALIZED:"Kesinleştirme",EFFECTIVE:"Yeni Ücret Dönemi"};
+export interface CompensationCycle { id:string; name:string; stage:CompensationStage; createdAt:string; effectiveDate?:string; managerDeadline?:string; budgetLimit?:number; scenario?:"A"|"B"|"C"|"D"; inflationRate?:number; results?:any[]; managerRequests?:any[]; approvedBy?:string; finalizedAt?:string; appliedAt?:string; stageHistory?:Array<{stage:CompensationStage;at:string;by?:string}>; }
+function currentRole(){if(typeof window==="undefined")return"";try{return String(JSON.parse(localStorage.getItem("hr_current_user")||"{}").role||"").toUpperCase();}catch{return"";}}
+export function allowedCompensationTransition(stage:CompensationStage,role=currentRole()) { const executive=role==="CEO"; const hr=role==="IK"||role==="HR"||role==="HR_ADMIN"; if(stage==="DRAFT_SIMULATION"||stage==="MANAGER_INPUT")return executive||hr;if(stage==="BUDGET_REVIEW")return executive||hr;if(stage==="APPROVAL")return executive;if(stage==="FINALIZED")return executive||hr;return false; }
+export function nextCompensationStage(stage:CompensationStage):CompensationStage{if(!allowedCompensationTransition(stage))return stage;const index=COMPENSATION_STAGES.indexOf(stage);return COMPENSATION_STAGES[Math.min(index+1,COMPENSATION_STAGES.length-1)];}
+export function canApplySalaryChanges(stage:CompensationStage):boolean{const role=currentRole();return stage==="FINALIZED"&&(role==="CEO"||role==="IK"||role==="HR"||role==="HR_ADMIN");}
+export function createCompensationCycle(name:string):CompensationCycle{const now=new Date();const deadline=new Date(now);deadline.setDate(deadline.getDate()+21);const effective=new Date(now);effective.setMonth(effective.getMonth()+1,1);return{id:`cycle-${Date.now()}`,name,stage:"DRAFT_SIMULATION",createdAt:now.toISOString(),managerDeadline:deadline.toISOString().slice(0,10),effectiveDate:effective.toISOString().slice(0,10),stageHistory:[{stage:"DRAFT_SIMULATION",at:now.toISOString()}]};}
+export function compensationProgress(cycle:CompensationCycle){const index=COMPENSATION_STAGES.indexOf(cycle.stage);return Math.round(((index+1)/COMPENSATION_STAGES.length)*100);}
