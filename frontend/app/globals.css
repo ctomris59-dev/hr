@@ -2,6 +2,7 @@
 @import "./module-viz.css";
 @import "./premium-tables.css";
 @import "./human-enterprise.css";
+@import "./human-enterprise-final.css";
 
 :root{--background:#f5f7fa;--foreground:#172033;--surface:#fff;--surface-subtle:#f8fafc;--card-bg:#fff;--card-border:#e2e8f0;--primary:#4f46e5;--primary-hover:#4338ca;--primary-soft:#eef2ff;--secondary:#1e293b;--accent:#6366f1;--muted:#f1f5f9;--muted-foreground:#64748b;--border:#e2e8f0;--success:#15803d;--warning:#b45309;--danger:#dc2626;--radius:.75rem;--shadow-card:0 1px 2px rgba(15,23,42,.04),0 6px 20px rgba(15,23,42,.035)}
 @theme inline{--color-background:var(--background);--color-foreground:var(--foreground);--color-card-bg:var(--card-bg);--color-card-border:var(--card-border);--color-primary:var(--primary);--color-secondary:var(--secondary);--color-accent:var(--accent);--color-muted:var(--muted);--color-muted-foreground:var(--muted-foreground);--color-border:var(--border);--font-sans:var(--font-geist-sans),-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;--font-heading:var(--font-geist-sans),-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;--font-mono:var(--font-geist-mono);--radius-card:var(--radius)}
