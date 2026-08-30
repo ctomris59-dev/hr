@@ -1,3 +1,6 @@
+import "server-only";
+import { getSecureUserFromSession, isSaasMode } from "../saasAuthServer";
+
 export type AIProviderName = "groq" | "openai";
 
 export type StructuredAIResult = {
@@ -50,6 +53,16 @@ export function defaultOpenAIModel() {
 function sanitizeError(value: unknown) {
   const text = value instanceof Error ? value.message : String(value || "Bilinmeyen hata");
   return text.replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [redacted]").slice(0, 500);
+}
+
+async function ensureAuthorizedInSaasMode() {
+  if (!isSaasMode()) return;
+  const user = await getSecureUserFromSession();
+  if (!user) {
+    const error = new Error("Authenticated SaaS session required for AI request");
+    (error as any).code = "AI_AUTH_REQUIRED";
+    throw error;
+  }
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
@@ -189,6 +202,7 @@ async function runOpenAI(request: StructuredAIRequest) {
 }
 
 export async function runStructuredAI(request: StructuredAIRequest): Promise<StructuredAIResult> {
+  await ensureAuthorizedInSaasMode();
   const attempts: StructuredAIResult["attempts"] = [];
 
   if (process.env.GROQ_API_KEY) {
