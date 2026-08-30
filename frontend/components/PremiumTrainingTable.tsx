@@ -1,8 +1,11 @@
 "use client";
 
-import { BookOpen, CalendarDays, CheckCircle2, ClipboardCheck, GraduationCap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BookOpen, CalendarDays, CheckCircle2, ClipboardCheck, GraduationCap, RefreshCcw, TrendingDown, TrendingUp } from "lucide-react";
 import { findDevelopmentIntervention } from "@/lib/hr/developmentLibrary";
 import { learningEvidenceLabel, learningEvidenceState } from "@/lib/hr/learningEvidence";
+import { learningImpactForAssignment, learningImpactSummary, type LearningImpactResult } from "@/lib/hr/learningImpact";
+import { getStorageData, STORAGE_KEYS } from "@/app/utils/storage";
 
 export interface PremiumTrainingRow {
   id: string;
@@ -31,7 +34,7 @@ function initials(name: string) {
   return String(name || "FH").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "FH";
 }
 
-function formatDate(value?: string) {
+function formatDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
@@ -42,6 +45,19 @@ function evidenceClass(state: ReturnType<typeof learningEvidenceState>) {
   if (state === "transfer-submitted") return "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300";
   if (state === "completed") return "bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-950/30 dark:text-sky-300";
   return "bg-slate-50 text-slate-500 ring-slate-100 dark:bg-slate-800 dark:text-slate-400";
+}
+
+function impactClass(impact: LearningImpactResult) {
+  if (impact.state === "measured" && impact.direction === "improved") return "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300";
+  if (impact.state === "measured" && impact.direction === "declined") return "bg-red-50 text-red-700 ring-red-100 dark:bg-red-950/30 dark:text-red-300";
+  if (impact.state === "due" || impact.state === "baseline-missing") return "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-300";
+  if (impact.state === "scheduled") return "bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-300";
+  return "bg-slate-50 text-slate-500 ring-slate-100 dark:bg-slate-800 dark:text-slate-400";
+}
+
+function deltaLabel(value: number | null) {
+  if (value === null) return "—";
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
 }
 
 export default function PremiumTrainingTable({
@@ -61,6 +77,17 @@ export default function PremiumTrainingTable({
   onEvidence?: (item: PremiumTrainingRow) => void;
   overdue: (item: PremiumTrainingRow) => boolean;
 }) {
+  const [history, setHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    const reload = () => setHistory(getStorageData<any[]>(STORAGE_KEYS.HISTORY_360, []));
+    reload();
+    window.addEventListener("dataUpdated", reload);
+    return () => window.removeEventListener("dataUpdated", reload);
+  }, []);
+
+  const impactById = useMemo(() => new Map(rows.map((item) => [item.id, learningImpactForAssignment(item, history)])), [rows, history]);
+  const impactSummary = useMemo(() => learningImpactSummary(rows, history), [rows, history]);
   const verifiedCount = rows.filter((item) => learningEvidenceState(item) === "verified").length;
   const pendingEvidenceCount = rows.filter((item) => ["completed", "transfer-submitted"].includes(learningEvidenceState(item))).length;
   const overdueCount = rows.filter(overdue).length;
@@ -82,12 +109,15 @@ export default function PremiumTrainingTable({
           {overdueCount > 0 && <span className="premium-status premium-status-red">{overdueCount} geciken</span>}
           {pendingEvidenceCount > 0 && <span className="premium-status premium-status-blue">{pendingEvidenceCount} kanıt bekliyor</span>}
           {verifiedCount > 0 && <span className="premium-status premium-status-green">{verifiedCount} doğrulanmış</span>}
+          {impactSummary.due > 0 && <span className="premium-status premium-status-red">{impactSummary.due} yeniden ölçüm gerekli</span>}
+          {impactSummary.measured > 0 && <span className="premium-status premium-status-green">{impactSummary.measured} etki ölçüldü</span>}
+          {impactSummary.averageDelta !== null && <span className="premium-table-meta">Ort. Δ {deltaLabel(impactSummary.averageDelta)}</span>}
         </div>
       </div>
 
       {rows.length ? (
         <div className="overflow-x-auto">
-          <table className="premium-data-table min-w-[1080px]">
+          <table className="premium-data-table min-w-[1260px]">
             <thead>
               <tr>
                 <th className="text-left">Çalışan</th>
@@ -96,6 +126,7 @@ export default function PremiumTrainingTable({
                 <th className="text-left">Son Tarih / Ölçüm</th>
                 <th className="text-left">Öğrenme</th>
                 <th className="text-left">Kanıt Durumu</th>
+                <th className="text-left">Etki / Yeniden Ölçüm</th>
                 {(editable || onEvidence) && <th className="text-right">İşlem</th>}
               </tr>
             </thead>
@@ -104,6 +135,7 @@ export default function PremiumTrainingTable({
                 const intervention = findDevelopmentIntervention(item.trainingId);
                 const isOverdue = overdue(item);
                 const state = learningEvidenceState(item);
+                const impact = impactById.get(item.id) ?? learningImpactForAssignment(item, history);
                 const statusLabel = isOverdue ? "Gecikti" : item.status;
                 const statusClass = item.status === "Tamamlandı"
                   ? "premium-status-green"
@@ -165,6 +197,21 @@ export default function PremiumTrainingTable({
                         {learningEvidenceLabel(state)}
                       </span>
                       {state === "verified" && item.verifiedBy && <p className="premium-cell-secondary mt-1">{item.verifiedBy} · {formatDate(item.verifiedAt)}</p>}
+                    </td>
+                    <td>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-semibold ring-1 ${impactClass(impact)}`}>
+                        {impact.state === "measured" && impact.direction === "improved" ? <TrendingUp className="h-3 w-3" /> : impact.state === "measured" && impact.direction === "declined" ? <TrendingDown className="h-3 w-3" /> : <RefreshCcw className="h-3 w-3" />}
+                        {impact.label}
+                      </span>
+                      {impact.state === "measured" ? (
+                        <p className="premium-cell-secondary mt-1">{impact.competency}: {impact.baseline?.toFixed(2)} → {impact.post?.toFixed(2)} · Δ {deltaLabel(impact.delta)}</p>
+                      ) : impact.state === "scheduled" ? (
+                        <p className="premium-cell-secondary mt-1">{impact.daysUntilDue !== null ? `${Math.max(0, impact.daysUntilDue)} gün` : formatDate(impact.reassessDueAt)} sonra</p>
+                      ) : impact.state === "due" ? (
+                        <p className="premium-cell-secondary mt-1">Başlangıç {impact.baseline?.toFixed(2)} · yeni ölçüm bekleniyor</p>
+                      ) : impact.state === "baseline-missing" ? (
+                        <p className="premium-cell-secondary mt-1">Müdahale öncesi karşılaştırma verisi yok</p>
+                      ) : null}
                     </td>
                     {(editable || onEvidence) && (
                       <td className="text-right">
