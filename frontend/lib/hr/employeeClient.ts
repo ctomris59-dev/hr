@@ -18,7 +18,7 @@ export type SaaSEmployee = {
 };
 
 export type EmployeeDirectoryRow = {
-  id: string;
+  id?: string | number;
   externalId?: string | null;
   "Ad Soyad": string;
   Departman: string;
@@ -73,7 +73,11 @@ export function employeeMutationPayload(input: {
   manager2Name?: string;
   employees: EmployeeDirectoryRow[];
 }) {
-  const byName = new Map(input.employees.map((employee) => [employee["Ad Soyad"], String(employee.id)]));
+  const byName = new Map(
+    input.employees
+      .filter((employee) => employee.id !== undefined && employee.id !== null)
+      .map((employee) => [employee["Ad Soyad"], String(employee.id)]),
+  );
   return {
     full_name: input.name.trim(),
     department: input.department || null,
