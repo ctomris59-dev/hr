@@ -15,10 +15,7 @@
 @media(max-width:640px){body{overflow-x:hidden}.enterprise-card{border-radius:.625rem}.module-workspace{min-width:0}.module-hero{border-radius:.625rem!important}.module-hero p{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}.module-native-content{min-width:0}.module-native-content table{font-size:11px}.module-native-content input,.module-native-content select,.module-native-content textarea{max-width:100%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
-/* Human Enterprise UI — final production polish.
-   This layer intentionally sits after all imports so legacy utility classes
-   cannot re-introduce template-like density, glow, pills or micro typography. */
-
+/* Human Enterprise UI — final production polish. */
 .futurehr-family-nav{margin-bottom:1rem!important;border-radius:10px!important}
 .futurehr-family-nav-header{background:var(--surface)!important}
 .futurehr-family-card{min-height:96px!important;border-radius:9px!important}
@@ -33,6 +30,12 @@
 .futurehr-workflow-step+.futurehr-workflow-step{padding-left:12px}
 .futurehr-workflow-step+.futurehr-workflow-step::before{content:"";position:absolute;left:0;top:50%;width:1px;height:14px;transform:translateY(-50%);background:var(--border)}
 .futurehr-workflow-step b{font-size:9.5px;letter-spacing:.03em}
+
+/* Shared page hierarchy. */
+.futurehr-page-header{padding:2px 0 1px}
+.futurehr-page-eyebrow{color:var(--muted-foreground);font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase}
+.futurehr-page-title{margin-top:4px;color:var(--foreground);font-family:var(--font-editorial),Georgia,"Times New Roman",serif;font-size:27px;line-height:1.1;font-weight:560;letter-spacing:-.035em}
+.futurehr-page-lede{margin-top:6px;max-width:980px;color:var(--muted-foreground);font-size:13px;line-height:1.55}
 
 /* Prefer readable enterprise density to tiny dashboard typography. */
 .module-native-content [class~="text-[9px]"]{font-size:10.5px!important;line-height:15px!important}
@@ -50,6 +53,53 @@
 .module-native-content button[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-green"]):not([class*="bg-emerald"]):not([class*="bg-amber"]),
 .module-native-content a[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-green"]):not([class*="bg-emerald"]):not([class*="bg-amber"]){background-image:none!important;background-color:var(--primary)!important;border-radius:8px!important;box-shadow:none!important}
 .module-native-content button[class*="border"]:not([class*="text-white"]){box-shadow:none!important}
+
+/* Standardize legacy page headers without changing their information architecture. */
+.module-native-content>.space-y-5>div:first-child>p:first-child,
+.module-native-content>.space-y-5>div:first-child>div:first-child>p:first-child{color:var(--muted-foreground)!important;font-size:10.5px!important;line-height:15px!important;letter-spacing:.11em!important}
+.module-native-content>.space-y-5>div:first-child>h1,
+.module-native-content>.space-y-5>div:first-child>h2,
+.module-native-content>.space-y-5>div:first-child>div:first-child>h1,
+.module-native-content>.space-y-5>div:first-child>div:first-child>h2{color:var(--foreground)!important;font-size:27px!important;line-height:1.1!important;font-weight:560!important;letter-spacing:-.035em!important}
+
+/* Performance: compact permission notice and system-consistent progression. */
+.workspace-degerlendirme .module-native-content>.space-y-5>div:nth-child(2){padding:11px 14px!important;border-color:var(--fh-line)!important;background:var(--fh-surface)!important;color:var(--fh-ink)!important;box-shadow:inset 2px 0 0 var(--fh-accent)!important}
+.workspace-degerlendirme .module-native-content>.space-y-5>div:nth-child(2) p{color:var(--fh-muted)!important}
+
+/* Recruitment: remove purple demo/prototype language from the visual hierarchy. */
+.workspace-ise-alim .module-native-content [class*="border-violet-200"]{border-color:var(--fh-line)!important}
+.workspace-ise-alim .module-native-content [class*="bg-violet-50"]{background:var(--fh-surface)!important}
+.workspace-ise-alim .module-native-content span[class*="bg-violet-600"],
+.workspace-ise-alim .module-native-content span[class*="bg-violet-100"]{background:transparent!important;border:1px solid var(--fh-line)!important;color:var(--fh-muted)!important;font-weight:650!important}
+.workspace-ise-alim .module-native-content [class*="text-violet-600"],
+.workspace-ise-alim .module-native-content [class*="text-violet-700"]{color:var(--fh-accent)!important}
+.workspace-ise-alim .module-native-content [class*="ring-violet"]{--tw-ring-color:rgba(47,102,100,.16)!important}
+.workspace-ise-alim .module-native-content [class*="border-violet-400"]{border-color:#8fb1ad!important}
+@media(min-width:1280px){.workspace-ise-alim .module-native-content [class*="xl:grid-cols-7"]{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+
+/* Admin: demo controls read as operational tooling, not an AI demo card. */
+.workspace-admin .module-native-content [class*="border-indigo-200"],
+.workspace-admin .module-native-content [class*="border-indigo-100"]{border-color:var(--fh-line)!important}
+.workspace-admin .module-native-content [class*="bg-indigo-50"]{background:var(--fh-surface)!important}
+.workspace-admin .module-native-content span[class*="bg-indigo-100"]{background:transparent!important;border:1px solid var(--fh-line)!important;color:var(--fh-muted)!important;font-weight:650!important}
+.workspace-admin .module-native-content [class*="text-indigo-700"]{color:var(--fh-accent)!important}
+
+/* Salary and organization: neutral analytical chrome; status colours remain semantic. */
+.workspace-maas .module-native-content>div[class*="border-teal-200"]{border-color:var(--fh-line)!important;background:var(--fh-surface)!important}
+.workspace-maas .module-native-content>div[class*="border-teal-200"] span[class*="bg-white"]{border-color:var(--fh-line)!important}
+.workspace-organizasyon .module-native-content [class*="bg-blue-50"],
+.workspace-organizasyon .module-native-content [class*="bg-violet-50"]{background:var(--fh-surface-muted)!important;color:var(--fh-ink)!important}
+.workspace-organizasyon .module-native-content [class*="text-blue-600"],
+.workspace-organizasyon .module-native-content [class*="text-violet-600"]{color:var(--fh-muted)!important}
+
+/* Employee experience: keep informational side cards compact. */
+.workspace-deneyim .module-native-content [class*="rounded-2xl"][class*="p-5"],
+.workspace-deneyim .module-native-content [class*="rounded-xl"][class*="p-5"]{padding:16px!important}
+
+/* Dashboard quick links should not compete with the decision headline. */
+.futurehr-editorial-header>div:last-child{gap:5px!important}
+.futurehr-editorial-header>div:last-child a{height:32px!important;padding-left:10px!important;padding-right:10px!important;font-size:10.5px!important;background:transparent!important;border-color:var(--fh-line)!important;color:var(--fh-muted)!important}
+.futurehr-editorial-header>div:last-child a:hover{border-color:var(--fh-line-strong)!important;background:var(--fh-surface-muted)!important;color:var(--fh-ink)!important}
 
 /* Laptop heights should stay readable; the sidebar can scroll instead of shrinking text. */
 @media(min-width:1024px) and (max-height:1050px){
@@ -71,4 +121,5 @@
   .futurehr-family-card{min-height:92px!important}
   .futurehr-workflow-steps{white-space:normal}
   .futurehr-workflow-step+.futurehr-workflow-step{padding-left:10px}
+  .futurehr-page-title{font-size:24px}
 }
