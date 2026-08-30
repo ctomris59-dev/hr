@@ -1,153 +1,46 @@
 "use client";
 
 import { ChangeEvent, useRef, useState } from "react";
-import { Download, FileSpreadsheet, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload, X } from "lucide-react";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "@/app/utils/storage";
+import { createImportSnapshot } from "@/lib/hr/importSnapshots";
 
-const HEADERS = ["Personel Kodu", "Ad Soyad", "Departman", "Pozisyon", "1. Yönetici", "2. Yönetici", "İşe Giriş Tarihi"];
-
-function normalize(value: unknown) {
-  return String(value ?? "").trim().toLocaleLowerCase("tr-TR");
-}
-
-function toDateString(value: unknown) {
-  if (!value) return "";
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  const raw = String(value).trim();
-  const parsed = new Date(raw);
-  return Number.isNaN(parsed.getTime()) ? raw : parsed.toISOString().slice(0, 10);
-}
+const HEADERS = ["Personel Kodu", "Ad Soyad", "Departman", "Pozisyon", "1. Yönetici", "2. Yönetici", "İşe Giriş Tarihi", "Lokasyon", "Şube", "Maliyet Merkezi", "Çalışan Tipi", "İşgücü Tipi", "Kadro Durumu"];
+type Pending = { fileName:string; next:any[]; created:number; updated:number; skipped:number; warnings:string[]; errors:string[]; rows:number };
+const normalize = (value: unknown) => String(value ?? "").trim().toLocaleLowerCase("tr-TR");
+function toDateString(value: unknown) { if (!value) return ""; if (value instanceof Date) return value.toISOString().slice(0,10); const raw=String(value).trim(); const parsed=new Date(raw); return Number.isNaN(parsed.getTime())?raw:parsed.toISOString().slice(0,10); }
 
 async function downloadWorkbook(rows: any[], filename: string) {
   const ExcelJS = await import("exceljs");
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Organizasyon");
-  sheet.addRow(HEADERS);
-  rows.forEach((person) => sheet.addRow([
-    person.id || person.employee_id || "",
-    person["Ad Soyad"] || person.name || "",
-    person.Departman || person.department || "",
-    person.Pozisyon || person.position || "",
-    person["Yönetici 1"] || "",
-    person["Yönetici 2"] || "",
-    person["İşe Giriş Tarihi"] || person.hireDate || "",
-  ]));
-  sheet.getRow(1).font = { bold: true };
-  sheet.views = [{ state: "frozen", ySplit: 1 }];
-  sheet.columns = [16, 28, 22, 28, 26, 26, 18].map((width) => ({ width }));
-  const notes = workbook.addWorksheet("Açıklamalar");
-  notes.addRows([
-    ["FutureHR Organizasyon Şablonu"],
-    ["Zorunlu alanlar", "Ad Soyad, Departman, Pozisyon"],
-    ["Personel Kodu", "Varsa mutlaka kullanın. Aynı kod tekrar yüklendiğinde mevcut kayıt güncellenir."],
-    ["Yönetici alanları", "Sistemdeki çalışan adlarıyla aynı yazılması önerilir."],
-    ["İşe Giriş Tarihi", "YYYY-AA-GG biçimi önerilir."],
-  ]);
-  notes.getColumn(1).width = 28;
-  notes.getColumn(2).width = 90;
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
+  const workbook = new ExcelJS.Workbook(); const sheet = workbook.addWorksheet("Organizasyon"); sheet.addRow(HEADERS);
+  rows.forEach((p)=>sheet.addRow([p.id||p.employee_id||"",p["Ad Soyad"]||p.name||"",p.Departman||p.department||"",p.Pozisyon||p.position||"",p["Yönetici 1"]||"",p["Yönetici 2"]||"",p["İşe Giriş Tarihi"]||p.hireDate||"",p.Lokasyon||"",p["Şube"]||"",p["Maliyet Merkezi"]||"",p["Çalışan Tipi"]||"",p["İşgücü Tipi"]||"",p["Kadro Durumu"]||""]));
+  sheet.getRow(1).font={bold:true}; sheet.views=[{state:"frozen",ySplit:1}]; sheet.columns=[16,28,22,28,26,26,18,18,18,20,18,18,18].map(width=>({width}));
+  const notes=workbook.addWorksheet("Açıklamalar"); notes.addRows([["FutureHR Organizasyon Şablonu"],["Zorunlu alanlar","Ad Soyad, Departman, Pozisyon"],["Personel Kodu","Mümkünse benzersiz ve değişmeyen kod kullanın."],["Yönetici alanları","FutureHR'daki çalışan adıyla birebir eşleşmesi önerilir."],["Türkiye alanları","Lokasyon, Şube, Maliyet Merkezi, Çalışan Tipi, İşgücü Tipi (Beyaz/Mavi Yaka), Kadro Durumu opsiyoneldir."],["Güvenli aktarım","FutureHR önce dry-run/önizleme yapar; onay sonrası uygular ve geri alma snapshotı oluşturur."]]); notes.getColumn(1).width=28; notes.getColumn(2).width=100;
+  const buffer=await workbook.xlsx.writeBuffer(); const url=URL.createObjectURL(new Blob([buffer as BlobPart],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})); const a=document.createElement("a"); a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
 }
+function errorReport(pending: Pending) { const lines=["FutureHR Organizasyon Import Hata Raporu",`Dosya;${pending.fileName}`,`Okunan satır;${pending.rows}`,"",...pending.errors.map(x=>`HATA;${x}`),...pending.warnings.map(x=>`UYARI;${x}`)]; const url=URL.createObjectURL(new Blob(["\uFEFF"+lines.join("\n")],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="FutureHR_Organizasyon_Hata_Raporu.csv";a.click();URL.revokeObjectURL(url); }
 
 export default function OrganizationExcelExchange() {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [status, setStatus] = useState("");
-  const [busy, setBusy] = useState(false);
+  const inputRef=useRef<HTMLInputElement|null>(null); const [status,setStatus]=useState(""); const [busy,setBusy]=useState(false); const [pending,setPending]=useState<Pending|null>(null);
+  const downloadBlank=()=>downloadWorkbook([],"FutureHR_Organizasyon_Bos_Sablon.xlsx"); const downloadCurrent=()=>downloadWorkbook(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART,[]),"FutureHR_Organizasyon_Mevcut_Liste.xlsx");
 
-  const downloadBlank = () => downloadWorkbook([], "FutureHR_Organizasyon_Bos_Sablon.xlsx");
-  const downloadCurrent = () => downloadWorkbook(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []), "FutureHR_Organizasyon_Mevcut_Liste.xlsx");
-
-  const importFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setBusy(true);
-    setStatus("");
-    try {
-      const ExcelJS = await import("exceljs");
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load((await file.arrayBuffer()) as any);
-      const sheet = workbook.getWorksheet("Organizasyon") || workbook.worksheets[0];
-      if (!sheet) throw new Error("Organizasyon çalışma sayfası bulunamadı.");
-
-      const headerMap = new Map<string, number>();
-      sheet.getRow(1).eachCell((cell, col) => headerMap.set(normalize(cell.value), col));
-      const col = (name: string) => headerMap.get(normalize(name));
-      if (!col("Ad Soyad") || !col("Departman") || !col("Pozisyon")) throw new Error("Ad Soyad, Departman ve Pozisyon sütunları zorunludur.");
-
-      const current = getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []);
-      const next = [...current];
-      let created = 0;
-      let updated = 0;
-      let skipped = 0;
-
-      for (let rowNo = 2; rowNo <= sheet.rowCount; rowNo += 1) {
-        const row = sheet.getRow(rowNo);
-        const value = (name: string) => {
-          const index = col(name);
-          return index ? row.getCell(index).value : undefined;
-        };
-        const name = String(value("Ad Soyad") ?? "").trim();
-        const department = String(value("Departman") ?? "").trim();
-        const position = String(value("Pozisyon") ?? "").trim();
-        if (!name && !department && !position) continue;
-        if (!name || !department || !position) { skipped += 1; continue; }
-        const personCode = String(value("Personel Kodu") ?? "").trim();
-        const existingIndex = next.findIndex((item) =>
-          (personCode && String(item.id || item.employee_id || "").trim() === personCode) || normalize(item["Ad Soyad"]) === normalize(name)
-        );
-        const record = {
-          ...(existingIndex >= 0 ? next[existingIndex] : {}),
-          id: personCode || (existingIndex >= 0 ? next[existingIndex]?.id : `emp-${Date.now()}-${rowNo}`),
-          "Ad Soyad": name,
-          Departman: department,
-          Pozisyon: position,
-          "Yönetici 1": String(value("1. Yönetici") ?? "").trim() || undefined,
-          "Yönetici 2": String(value("2. Yönetici") ?? "").trim() || undefined,
-          "İşe Giriş Tarihi": toDateString(value("İşe Giriş Tarihi")) || undefined,
-          imported_at: new Date().toISOString(),
-          import_file: file.name,
-        };
-        if (existingIndex >= 0) { next[existingIndex] = record; updated += 1; }
-        else { next.push(record); created += 1; }
-      }
-
-      const message = `${created + updated} kayıt hazır: ${created} yeni, ${updated} güncelleme, ${skipped} eksik satır.`;
-      if (!window.confirm(`${message}\n\nDeğişiklikler organizasyon verisine uygulansın mı?`)) {
-        setStatus(`Aktarım iptal edildi. ${message}`);
-        return;
-      }
-      setStorageData(STORAGE_KEYS.ORG_CHART, next);
-      window.dispatchEvent(new CustomEvent("dataUpdated"));
-      setStatus(`Aktarım tamamlandı. ${message}`);
-    } catch (error) {
-      setStatus(`Aktarım başarısız: ${error instanceof Error ? error.message : "Bilinmeyen hata"}`);
-    } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
+  const importFile=async(event:ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(!file)return;setBusy(true);setStatus("");setPending(null);try{
+    if(file.size>8*1024*1024) throw new Error("Dosya 8 MB sınırını aşıyor.");
+    const ExcelJS=await import("exceljs");const workbook=new ExcelJS.Workbook();await workbook.xlsx.load((await file.arrayBuffer()) as any);const sheet=workbook.getWorksheet("Organizasyon")||workbook.worksheets[0];if(!sheet)throw new Error("Organizasyon çalışma sayfası bulunamadı.");if(sheet.rowCount>10001)throw new Error("Demo aktarım sınırı 10.000 veri satırıdır.");
+    const headerMap=new Map<string,number>();sheet.getRow(1).eachCell((cell,col)=>headerMap.set(normalize(cell.value),col));const col=(name:string)=>headerMap.get(normalize(name));if(!col("Ad Soyad")||!col("Departman")||!col("Pozisyon"))throw new Error("Ad Soyad, Departman ve Pozisyon sütunları zorunludur.");
+    const current=getStorageData<any[]>(STORAGE_KEYS.ORG_CHART,[]);const next=[...current];const fileCodes=new Set<string>();const fileNames=new Set<string>();const errors:string[]=[];const warnings:string[]=[];let created=0,updated=0,skipped=0,rows=0;
+    for(let rowNo=2;rowNo<=sheet.rowCount;rowNo+=1){const row=sheet.getRow(rowNo);const value=(name:string)=>{const i=col(name);return i?row.getCell(i).value:undefined};const name=String(value("Ad Soyad")??"").trim();const department=String(value("Departman")??"").trim();const position=String(value("Pozisyon")??"").trim();if(!name&&!department&&!position)continue;rows+=1;const personCode=String(value("Personel Kodu")??"").trim();
+      if(!name||!department||!position){errors.push(`Satır ${rowNo}: zorunlu alan eksik.`);skipped+=1;continue;} const nName=normalize(name); if(fileNames.has(nName)){errors.push(`Satır ${rowNo}: dosya içinde mükerrer Ad Soyad (${name}).`);skipped+=1;continue;} fileNames.add(nName); if(personCode){if(fileCodes.has(personCode)){errors.push(`Satır ${rowNo}: mükerrer Personel Kodu (${personCode}).`);skipped+=1;continue;}fileCodes.add(personCode);}
+      const existingIndex=next.findIndex(item=>(personCode&&String(item.id||item.employee_id||"").trim()===personCode)||normalize(item["Ad Soyad"])===nName);const manager1=String(value("1. Yönetici")??"").trim();const manager2=String(value("2. Yönetici")??"").trim();const record={...(existingIndex>=0?next[existingIndex]:{}),id:personCode||(existingIndex>=0?next[existingIndex]?.id:`emp-${Date.now()}-${rowNo}`),"Ad Soyad":name,Departman:department,Pozisyon:position,"Yönetici 1":manager1||undefined,"Yönetici 2":manager2||undefined,"İşe Giriş Tarihi":toDateString(value("İşe Giriş Tarihi"))||undefined,Lokasyon:String(value("Lokasyon")??"").trim()||undefined,"Şube":String(value("Şube")??"").trim()||undefined,"Maliyet Merkezi":String(value("Maliyet Merkezi")??"").trim()||undefined,"Çalışan Tipi":String(value("Çalışan Tipi")??"").trim()||undefined,"İşgücü Tipi":String(value("İşgücü Tipi")??"").trim()||undefined,"Kadro Durumu":String(value("Kadro Durumu")??"").trim()||undefined,imported_at:new Date().toISOString(),import_file:file.name}; if(existingIndex>=0){next[existingIndex]=record;updated+=1}else{next.push(record);created+=1}
     }
-  };
+    const knownNames=new Set(next.map(item=>normalize(item["Ad Soyad"])));next.forEach((item)=>{[item["Yönetici 1"],item["Yönetici 2"]].filter(Boolean).forEach((manager:any)=>{if(!knownNames.has(normalize(manager)))warnings.push(`${item["Ad Soyad"]}: yönetici '${manager}' çalışan listesinde bulunamadı.`);});});
+    setPending({fileName:file.name,next,created,updated,skipped,warnings:Array.from(new Set(warnings)).slice(0,50),errors,rows});
+  }catch(error){setStatus(`Aktarım okunamadı: ${error instanceof Error?error.message:"Bilinmeyen hata"}`);}finally{setBusy(false);if(inputRef.current)inputRef.current.value="";}};
 
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"><FileSpreadsheet className="h-4 w-4" /></span>
-          <div><p className="text-sm font-semibold text-slate-900 dark:text-white">Toplu organizasyon verisi</p><p className="mt-1 text-[11px] leading-5 text-slate-500">Boş şablonu veya mevcut çalışan listesini Excel olarak indirin; yetkili kişi doldurup aynı ekrandan geri yüklesin.</p></div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={downloadBlank} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"><Download className="h-3.5 w-3.5" />Boş şablon</button>
-          <button type="button" onClick={downloadCurrent} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"><Download className="h-3.5 w-3.5" />Mevcut liste</button>
-          <input ref={inputRef} type="file" accept=".xlsx" onChange={importFile} className="hidden" />
-          <button type="button" disabled={busy} onClick={() => inputRef.current?.click()} className="inline-flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"><Upload className="h-3.5 w-3.5" />{busy ? "Okunuyor…" : "Excel yükle"}</button>
-        </div>
-      </div>
-      {status && <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-[11px] text-slate-600 dark:bg-slate-950/40 dark:text-slate-300">{status}</p>}
-    </div>
-  );
+  const apply=()=>{if(!pending||pending.errors.length)return;createImportSnapshot(`Organizasyon aktarımı · ${pending.fileName}`,"organization-excel",[STORAGE_KEYS.ORG_CHART]);setStorageData(STORAGE_KEYS.ORG_CHART,pending.next);window.dispatchEvent(new CustomEvent("dataUpdated"));setStatus(`Aktarım tamamlandı: ${pending.created} yeni, ${pending.updated} güncellendi.`);setPending(null);};
+
+  return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"><div className="flex items-start gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"><FileSpreadsheet className="h-4 w-4"/></span><div><p className="text-sm font-semibold">Toplu organizasyon verisi</p><p className="mt-1 text-[11px] leading-5 text-slate-500">Excel → dry-run → hata/duplicate kontrolü → önizleme → açık onay → snapshot/geri alma.</p></div></div><div className="flex flex-wrap gap-2"><button onClick={downloadBlank} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold"><Download className="h-3.5 w-3.5"/>Boş şablon</button><button onClick={downloadCurrent} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold"><Download className="h-3.5 w-3.5"/>Mevcut liste</button><input ref={inputRef} type="file" accept=".xlsx" onChange={importFile} className="hidden"/><button disabled={busy} onClick={()=>inputRef.current?.click()} className="inline-flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white disabled:opacity-50"><Upload className="h-3.5 w-3.5"/>{busy?"Kontrol ediliyor…":"Excel yükle"}</button></div></div>
+    {pending&&<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/50"><div className="flex items-start justify-between"><div><p className="text-[10px] font-bold uppercase text-slate-400">Dry-run sonucu</p><p className="mt-1 text-xs font-semibold">{pending.rows} satır · {pending.created} yeni · {pending.updated} güncelleme · {pending.skipped} atlanan</p></div><button onClick={()=>setPending(null)} className="text-slate-400"><X className="h-4 w-4"/></button></div><div className="mt-3 grid gap-2 sm:grid-cols-2"><div className={`rounded-lg p-2 text-[10px] ${pending.errors.length?"bg-red-50 text-red-700":"bg-emerald-50 text-emerald-700"}`}>{pending.errors.length?<><AlertTriangle className="mr-1 inline h-3.5 w-3.5"/>{pending.errors.length} bloklayıcı hata</>:<><CheckCircle2 className="mr-1 inline h-3.5 w-3.5"/>Bloklayıcı hata yok</>}</div><div className="rounded-lg bg-amber-50 p-2 text-[10px] text-amber-700">{pending.warnings.length} yönetici/veri uyarısı</div></div>{(pending.errors.length>0||pending.warnings.length>0)&&<button onClick={()=>errorReport(pending)} className="mt-2 text-[10px] font-semibold text-indigo-600">Hata/uyarı raporunu indir</button>}<div className="mt-3 flex justify-end"><button disabled={pending.errors.length>0} onClick={apply} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Kontrol edilen veriyi uygula</button></div></div>}
+    {status&&<p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-[11px] text-slate-600 dark:bg-slate-950/40 dark:text-slate-300">{status}</p>}
+  </div>;
 }
