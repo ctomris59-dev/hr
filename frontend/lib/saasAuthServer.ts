@@ -54,6 +54,20 @@ function cookieOptions(maxAge: number) {
   };
 }
 
+export function isSameOriginRequest(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true; // Server-to-server and same-origin navigations may omit Origin.
+  try {
+    const originUrl = new URL(origin);
+    const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+    if (!forwardedHost) return false;
+    return originUrl.host === forwardedHost && originUrl.protocol.replace(":", "") === forwardedProto;
+  } catch {
+    return false;
+  }
+}
+
 export async function backendFetch(path: string, init: RequestInit = {}) {
   const url = new URL(path, backendBaseUrl());
   return fetch(url, {
@@ -142,4 +156,16 @@ export async function fetchWithSession(path: string, init: RequestInit = {}) {
   }
 
   return response;
+}
+
+export async function getSecureUserFromSession(): Promise<SecureUser | null> {
+  if (!isSaasMode()) return null;
+  try {
+    const response = await fetchWithSession("/api/v1/auth/me");
+    if (!response?.ok) return null;
+    const user = await response.json().catch(() => null);
+    return user?.id && user?.tenant_id && user?.role ? (user as SecureUser) : null;
+  } catch {
+    return null;
+  }
 }
