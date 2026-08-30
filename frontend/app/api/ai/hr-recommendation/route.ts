@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { publicAIStatus, runStructuredAI } from "../../../../lib/ai/resilient-provider";
 
 export const runtime = "nodejs";
 
 type RecommendationKind = "talent" | "recruitment" | "performance" | "development" | "career" | "succession";
 type Confidence = "düşük" | "orta" | "yüksek";
-type AIProvider = "groq" | "openai" | "rules";
 
 interface DecisionAnalysis {
   summary: string;
@@ -29,16 +29,7 @@ const ANALYSIS_SCHEMA = {
     interviewQuestions: { type: "array", items: { type: "string" }, maxItems: 4 },
     guardrail: { type: "string" },
   },
-  required: [
-    "summary",
-    "confidence",
-    "confidenceReason",
-    "evidenceStrengths",
-    "evidenceGaps",
-    "nextActions",
-    "interviewQuestions",
-    "guardrail",
-  ],
+  required: ["summary", "confidence", "confidenceReason", "evidenceStrengths", "evidenceGaps", "nextActions", "interviewQuestions", "guardrail"],
   additionalProperties: false,
 } as const;
 
@@ -196,16 +187,10 @@ function fallbackAnalysis(kind: RecommendationKind, context: any): DecisionAnaly
 function safeContext(value: any): any {
   if (Array.isArray(value)) return value.slice(0, 24).map(safeContext);
   if (!value || typeof value !== "object") return value;
-
-  const blockedKeys = new Set([
-    "name", "email", "phone", "address", "tc", "tckn", "nationalId", "birthDate", "birthday",
-    "age", "gender", "sex", "religion", "ethnicity", "race", "health", "disability", "politics",
-  ]);
-
+  const blockedKeys = new Set(["name", "fullName", "email", "phone", "address", "tc", "tckn", "nationalId", "birthDate", "birthday", "age", "gender", "sex", "religion", "ethnicity", "race", "health", "disability", "politics", "salary", "maas", "ücret", "ucret"]);
   const out: Record<string, any> = {};
   Object.entries(value).forEach(([key, item]) => {
-    if (blockedKeys.has(key)) return;
-    out[key] = safeContext(item);
+    if (!blockedKeys.has(key)) out[key] = safeContext(item);
   });
   return out;
 }
@@ -240,39 +225,8 @@ Kurallar:
 - Güçlü ve eksik/doğrulanacak kanıtları ayrı yaz.
 - Aksiyonlar ölçülebilir ve somut olsun.
 - Güven seviyesi veri kapsamını ifade etsin, kişinin kalitesini değil.
-- En fazla 4 kanıt, 4 eksik, 4 aksiyon ve 4 soru üret.`;
-}
-
-function buildGroqPrompt(kind: RecommendationKind, context: any): string {
-  return `${buildPrompt(kind, context)}
-
-Yalnızca tek bir geçerli JSON nesnesi döndür; markdown veya ek açıklama yazma:
-{
-  "summary":"kısa özet",
-  "confidence":"düşük|orta|yüksek",
-  "confidenceReason":"gerekçe",
-  "evidenceStrengths":["kanıt"],
-  "evidenceGaps":["eksik"],
-  "nextActions":["aksiyon"],
-  "interviewQuestions":["soru"],
-  "guardrail":"Bu çıktı nihai İK kararı değildir."
-}`;
-}
-
-function extractOpenAIResponseText(payload: any): string | null {
-  if (typeof payload?.output_text === "string" && payload.output_text.trim()) return payload.output_text.trim();
-  const chunks: string[] = [];
-  for (const item of payload?.output || []) {
-    for (const content of item?.content || []) {
-      if (typeof content?.text === "string") chunks.push(content.text);
-    }
-  }
-  return chunks.join("\n").trim() || null;
-}
-
-function extractGroqResponseText(payload: any): string | null {
-  const text = payload?.choices?.[0]?.message?.content;
-  return typeof text === "string" && text.trim() ? text.trim() : null;
+- En fazla 4 kanıt, 4 eksik, 4 aksiyon ve 4 soru üret.
+- Yalnızca JSON schema ile uyumlu tek bir JSON nesnesi üret.`;
 }
 
 function parseJsonLoose(text: string | null): any {
@@ -282,13 +236,8 @@ function parseJsonLoose(text: string | null): any {
   const firstBrace = text.indexOf("{");
   const lastBrace = text.lastIndexOf("}");
   if (firstBrace >= 0 && lastBrace > firstBrace) attempts.push(text.slice(firstBrace, lastBrace + 1));
-
   for (const candidate of attempts) {
-    try {
-      return JSON.parse(candidate);
-    } catch {
-      // Continue.
-    }
+    try { return JSON.parse(candidate); } catch {}
   }
   return null;
 }
@@ -296,10 +245,7 @@ function parseJsonLoose(text: string | null): any {
 function normalizeAnalysis(value: any, fallback: DecisionAnalysis): DecisionAnalysis {
   if (!value || typeof value !== "object") return fallback;
   const confidence: Confidence = ["düşük", "orta", "yüksek"].includes(value.confidence) ? value.confidence : fallback.confidence;
-  const list = (input: any, backup: string[]) => Array.isArray(input)
-    ? input.filter((item) => typeof item === "string" && item.trim()).slice(0, 4)
-    : backup;
-
+  const list = (input: any, backup: string[]) => Array.isArray(input) ? input.filter((item) => typeof item === "string" && item.trim()).slice(0, 4) : backup;
   return {
     summary: typeof value.summary === "string" ? value.summary : fallback.summary,
     confidence,
@@ -312,148 +258,13 @@ function normalizeAnalysis(value: any, fallback: DecisionAnalysis): DecisionAnal
   };
 }
 
-const unique = <T,>(values: T[]) => Array.from(new Set(values));
-
-function groqModels(): string[] {
-  return unique([
-    ...(process.env.GROQ_MODEL ? [process.env.GROQ_MODEL] : []),
-    "qwen/qwen3.8-27b",
-    "openai/gpt-oss-20b",
-    "openai/gpt-oss-120b",
-    "qwen/qwen3.6-27b",
-  ]);
-}
-
-function providerInfo(): { provider: AIProvider; configured: boolean; model: string } {
-  if (process.env.GROQ_API_KEY) {
-    return { provider: "groq", configured: true, model: process.env.GROQ_MODEL || groqModels()[0] };
-  }
-  if (process.env.OPENAI_API_KEY) {
-    return { provider: "openai", configured: true, model: process.env.OPENAI_MODEL || "gpt-5-mini" };
-  }
-  return { provider: "rules", configured: false, model: "rule-based" };
-}
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function retryAfterMs(response: Response): number {
-  const raw = response.headers.get("retry-after");
-  const seconds = raw ? Number(raw) : Number.NaN;
-  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(3500, Math.ceil(seconds * 1000) + 120);
-  return 2100;
-}
-
-async function groqRequest(apiKey: string, model: string, kind: RecommendationKind, context: any, jsonMode: boolean) {
-  const body: Record<string, any> = {
-    model,
-    messages: [
-      { role: "system", content: "Sen FutureHR İK karar destek motorusun. Yalnızca geçerli JSON üret." },
-      { role: "user", content: buildGroqPrompt(kind, context) },
-    ],
-    temperature: 0,
-    max_completion_tokens: 650,
-    service_tier: "auto",
-  };
-  if (jsonMode) body.response_format = { type: "json_object" };
-
-  return fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
-
-async function runGroqModel(apiKey: string, model: string, kind: RecommendationKind, context: any) {
-  let response = await groqRequest(apiKey, model, kind, context, true);
-
-  if (response.status === 429) {
-    await sleep(retryAfterMs(response));
-    response = await groqRequest(apiKey, model, kind, context, true);
-  }
-
-  if (response.ok) {
-    const payload = await response.json();
-    const text = extractGroqResponseText(payload);
-    if (parseJsonLoose(text)) return { text, model };
-  }
-
-  if (response.status === 400 || response.status === 422 || response.ok) {
-    response = await groqRequest(apiKey, model, kind, context, false);
-    if (response.status === 429) {
-      await sleep(retryAfterMs(response));
-      response = await groqRequest(apiKey, model, kind, context, false);
-    }
-    if (response.ok) {
-      const payload = await response.json();
-      const text = extractGroqResponseText(payload);
-      if (parseJsonLoose(text)) return { text, model };
-    }
-  }
-
-  const errorText = response.ok ? "Geçerli JSON üretilemedi." : await response.text();
-  throw new Error(`Groq ${model} ${response.status}: ${errorText.slice(0, 500)}`);
-}
-
-async function callGroq(kind: RecommendationKind, context: any) {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return null;
-
-  const errors: string[] = [];
-  for (const model of groqModels()) {
-    try {
-      return await runGroqModel(apiKey, model, kind, context);
-    } catch (error) {
-      errors.push(error instanceof Error ? error.message : String(error));
-    }
-  }
-  throw new Error(errors.slice(-2).join(" | ") || "Groq modelleri yanıt vermedi.");
-}
-
-async function callOpenAI(kind: RecommendationKind, context: any) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  const model = process.env.OPENAI_MODEL || "gpt-5-mini";
-
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      input: buildPrompt(kind, context),
-      max_output_tokens: 650,
-      store: false,
-      text: {
-        verbosity: "low",
-        format: {
-          type: "json_schema",
-          name: "futurehr_decision_support",
-          strict: true,
-          schema: ANALYSIS_SCHEMA,
-        },
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI ${response.status}: ${errorText.slice(0, 500)}`);
-  }
-
-  const payload = await response.json();
-  return { text: extractOpenAIResponseText(payload), model };
-}
-
 export async function GET() {
-  return NextResponse.json(providerInfo());
+  return NextResponse.json(publicAIStatus());
 }
 
 export async function POST(request: NextRequest) {
   let body: any;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Geçersiz JSON" }, { status: 400 });
-  }
+  try { body = await request.json(); } catch { return NextResponse.json({ error: "Geçersiz JSON" }, { status: 400 }); }
 
   const kind = (body?.kind || "talent") as RecommendationKind;
   const allowed: RecommendationKind[] = ["talent", "recruitment", "performance", "development", "career", "succession"];
@@ -461,62 +272,20 @@ export async function POST(request: NextRequest) {
 
   const context = safeContext(body?.context || {});
   const fallback = fallbackAnalysis(kind, context);
-  const info = providerInfo();
+  const status = publicAIStatus();
 
-  if (!info.configured) {
-    return NextResponse.json({
-      mode: "rules",
-      provider: "rules",
-      configured: false,
-      model: info.model,
-      analysis: fallback,
-      recommendation: fallback.summary,
-      note: "GROQ_API_KEY veya OPENAI_API_KEY tanımlı olmadığı için kural bazlı yedek analiz gösteriliyor.",
-    });
+  if (!status.configured) {
+    return NextResponse.json({ mode: "rules", provider: "rules", configured: false, model: "rule-based", analysis: fallback, recommendation: fallback.summary, note: "AI sağlayıcısı yapılandırılmadığı için güvenli kural motoru kullanılıyor." });
   }
 
-  const providers: Array<"groq" | "openai"> = process.env.GROQ_API_KEY
-    ? ["groq", ...(process.env.OPENAI_API_KEY ? ["openai" as const] : [])]
-    : ["openai"];
-
-  let lastError = "";
-  for (const provider of providers) {
-    try {
-      const result = provider === "groq" ? await callGroq(kind, context) : await callOpenAI(kind, context);
-      if (!result?.text) {
-        lastError = `${provider} boş yanıt verdi.`;
-        continue;
-      }
-
-      const parsed = parseJsonLoose(result.text);
-      if (!parsed) {
-        lastError = `${provider} geçerli JSON üretemedi.`;
-        continue;
-      }
-
-      const analysis = normalizeAnalysis(parsed, fallback);
-      return NextResponse.json({
-        mode: "ai",
-        provider,
-        configured: true,
-        model: result.model,
-        analysis,
-        recommendation: analysis.summary,
-        note: provider === "groq" && result.model !== info.model ? `Ana Groq modeli limitte olduğu için ${result.model} otomatik kullanıldı.` : undefined,
-      });
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : String(error);
-      console.error(`${provider} recommendation request failed`, lastError);
-    }
+  try {
+    const result = await runStructuredAI({ prompt: buildPrompt(kind, context), schema: ANALYSIS_SCHEMA as any, schemaName: "futurehr_decision_support", maxTokens: 850 });
+    const parsed = parseJsonLoose(result.text);
+    if (!parsed) throw new Error("AI yanıtı JSON olarak ayrıştırılamadı");
+    const analysis = normalizeAnalysis(parsed, fallback);
+    return NextResponse.json({ mode: "ai", provider: result.provider, configured: true, model: result.model, latencyMs: result.latencyMs, analysis, recommendation: analysis.summary, failoverUsed: result.attempts.some((item) => !item.ok) });
+  } catch (error: any) {
+    console.error("AI recommendation provider chain failed", error?.attempts || error?.message || error);
+    return NextResponse.json({ mode: "rules", provider: status.primary || "rules", configured: true, model: "fallback", analysis: fallback, recommendation: fallback.summary, note: "AI bağlantısı geçici olarak kullanılamıyor. Mevcut veriler güvenli karar kurallarıyla gösteriliyor." });
   }
-
-  return NextResponse.json({
-    mode: "rules",
-    provider: info.provider,
-    configured: true,
-    model: info.model,
-    analysis: fallback,
-    recommendation: fallback.summary,
-    note: `AI servisine erişilemedi; kural bazlı yedek analiz gösteriliyor.${lastError ? ` (${lastError.split("\n")[0].slice(0, 180)})` : ""}`,
-  });
 }
