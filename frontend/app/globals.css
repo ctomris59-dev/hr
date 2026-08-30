@@ -10,7 +10,65 @@
 *{border-color:var(--border);box-sizing:border-box}html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}body{background:var(--background);color:var(--foreground);font-family:var(--font-sans);min-height:100vh;font-feature-settings:"cv02","cv03","cv04","cv11";-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}h2,h3,h4,h5,h6{font-family:var(--font-heading);letter-spacing:-.02em}button,a,input,select,textarea{transition-property:color,background-color,border-color,box-shadow,opacity,transform;transition-duration:150ms;transition-timing-function:cubic-bezier(.2,.7,.2,1)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid rgba(47,102,100,.32);outline-offset:2px}::selection{background:rgba(47,102,100,.16)}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px;border:2px solid transparent;background-clip:padding-box}::-webkit-scrollbar-thumb:hover{background:#94a3b8;border:2px solid transparent;background-clip:padding-box}.dark ::-webkit-scrollbar-thumb{background:#475569;border:2px solid transparent;background-clip:padding-box}
 .enterprise-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:10px;box-shadow:none}.enterprise-panel-header{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:1rem 1.125rem;border-bottom:1px solid var(--card-border)}.enterprise-eyebrow{color:var(--muted-foreground);font-size:.625rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase}.enterprise-title{color:var(--foreground);font-weight:650;letter-spacing:-.025em}
 .futurehr-sidebar-nav{scrollbar-width:none}.futurehr-sidebar-nav::-webkit-scrollbar{display:none}
-@media(min-width:1024px){.futurehr-sidebar-nav{overflow:hidden}}
+@media(min-width:1024px){.futurehr-sidebar-nav{overflow-y:auto;overflow-x:hidden}}
 @media(max-width:1023px){.futurehr-sidebar-nav{overflow-y:auto}.module-native-content{min-width:0}}
 @media(max-width:640px){body{overflow-x:hidden}.enterprise-card{border-radius:.625rem}.module-workspace{min-width:0}.module-hero{border-radius:.625rem!important}.module-hero p{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}.module-native-content{min-width:0}.module-native-content table{font-size:11px}.module-native-content input,.module-native-content select,.module-native-content textarea{max-width:100%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Human Enterprise UI — final production polish.
+   This layer intentionally sits after all imports so legacy utility classes
+   cannot re-introduce template-like density, glow, pills or micro typography. */
+
+.futurehr-family-nav{margin-bottom:1rem!important;border-radius:10px!important}
+.futurehr-family-nav-header{background:var(--surface)!important}
+.futurehr-family-card{min-height:96px!important;border-radius:9px!important}
+.futurehr-family-card[data-active="true"]{border-color:#91b0ad!important;background:var(--primary-soft)!important;box-shadow:inset 2px 0 0 var(--primary)!important}
+.futurehr-family-current-inline{color:var(--primary)!important}
+.futurehr-family-card-icon{border-radius:7px!important;box-shadow:none!important}
+.futurehr-family-arrow{background:transparent!important;border-radius:6px!important}
+.futurehr-family-card:hover{transform:none!important}
+
+.futurehr-workflow-steps{white-space:nowrap}
+.futurehr-workflow-step{position:relative}
+.futurehr-workflow-step+.futurehr-workflow-step{padding-left:12px}
+.futurehr-workflow-step+.futurehr-workflow-step::before{content:"";position:absolute;left:0;top:50%;width:1px;height:14px;transform:translateY(-50%);background:var(--border)}
+.futurehr-workflow-step b{font-size:9.5px;letter-spacing:.03em}
+
+/* Prefer readable enterprise density to tiny dashboard typography. */
+.module-native-content [class~="text-[9px]"]{font-size:10.5px!important;line-height:15px!important}
+.module-native-content [class~="text-[10px]"]{font-size:11px!important;line-height:16px!important}
+.module-native-content [class~="text-[11px]"]{font-size:12px!important;line-height:17px!important}
+.module-native-content [class~="text-[12px]"]{font-size:12.5px!important;line-height:18px!important}
+.module-native-content input,.module-native-content select,.module-native-content textarea{border-color:var(--border)!important;border-radius:8px!important;box-shadow:none!important}
+.module-native-content button,.module-native-content a{box-shadow:none!important}
+.module-native-content button[class*="rounded-full"],.module-native-content a[class*="rounded-full"],.module-native-content span[class*="rounded-full"]:not(.premium-status){border-radius:7px!important}
+.module-native-content [class*="shadow-"]{box-shadow:none!important}
+.module-native-content [class*="rounded-3xl"],.module-native-content [class*="rounded-2xl"]{border-radius:10px!important}
+.module-native-content [class*="bg-gradient-to-"]{background-image:none!important}
+
+/* Primary actions are deliberate; secondary actions stay quiet. */
+.module-native-content button[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-green"]):not([class*="bg-emerald"]):not([class*="bg-amber"]),
+.module-native-content a[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-green"]):not([class*="bg-emerald"]):not([class*="bg-amber"]){background-image:none!important;background-color:var(--primary)!important;border-radius:8px!important;box-shadow:none!important}
+.module-native-content button[class*="border"]:not([class*="text-white"]){box-shadow:none!important}
+
+/* Laptop heights should stay readable; the sidebar can scroll instead of shrinking text. */
+@media(min-width:1024px) and (max-height:1050px){
+  .futurehr-sidebar-section{font-size:9.5px!important;line-height:13px!important}
+  .futurehr-sidebar-item{min-height:36px!important;height:36px!important;font-size:13px!important;line-height:19px!important}
+  .futurehr-sidebar-item svg{width:16px!important;height:16px!important}
+}
+@media(min-width:1024px) and (max-height:860px){
+  .futurehr-sidebar-section{font-size:9px!important;line-height:12px!important}
+  .futurehr-sidebar-item{min-height:34px!important;height:34px!important;font-size:12.5px!important;line-height:18px!important}
+  .futurehr-sidebar-item svg{width:15.5px!important;height:15.5px!important}
+  .futurehr-sidebar-user-role{font-size:10px!important}
+}
+
+@media(max-width:1280px){
+  .futurehr-family-card{min-height:94px!important}
+}
+@media(max-width:640px){
+  .futurehr-family-card{min-height:92px!important}
+  .futurehr-workflow-steps{white-space:normal}
+  .futurehr-workflow-step+.futurehr-workflow-step{padding-left:10px}
+}
