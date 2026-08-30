@@ -1,223 +1,57 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, Check, X, CheckCircle2, XCircle, Info, AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, Bell, CheckCircle2, Info, X, XCircle } from "lucide-react";
 import { useNotifications, type NotificationType } from "../context/NotificationContext";
 
-function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Az önce";
-  if (diffMins < 60) return `${diffMins} dk önce`;
-  if (diffHours < 24) return `${diffHours} saat önce`;
-  if (diffDays < 7) return `${diffDays} gün önce`;
+function relative(date: Date) {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000), hours = Math.floor(diff / 3600000), days = Math.floor(diff / 86400000);
+  if (mins < 1) return "Az önce"; if (mins < 60) return `${mins} dk önce`; if (hours < 24) return `${hours} saat önce`; if (days < 7) return `${days} gün önce`;
   return date.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 }
-
-function getNotificationIcon(type: NotificationType) {
-  switch (type) {
-    case "success":
-      return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-    case "error":
-      return <XCircle className="w-4 h-4 text-red-500" />;
-    case "warning":
-      return <AlertTriangle className="w-4 h-4 text-amber-500" />;
-    case "info":
-    default:
-      return <Info className="w-4 h-4 text-blue-500" />;
-  }
-}
-
-function getNotificationColor(type: NotificationType): string {
-  switch (type) {
-    case "success":
-      return "bg-green-500";
-    case "error":
-      return "bg-red-500";
-    case "warning":
-      return "bg-amber-500";
-    case "info":
-    default:
-      return "bg-blue-500";
-  }
+function Icon({ type }: { type: NotificationType }) {
+  if (type === "success") return <CheckCircle2 className="h-4 w-4 text-emerald-500"/>;
+  if (type === "error") return <XCircle className="h-4 w-4 text-red-500"/>;
+  if (type === "warning") return <AlertTriangle className="h-4 w-4 text-amber-500"/>;
+  return <Info className="h-4 w-4 text-blue-500"/>;
 }
 
 export default function NotificationBell() {
+  const router = useRouter();
   const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const [panelStyle, setPanelStyle] = useState<{ top: number; left: number } | null>(null);
-  const PANEL_WIDTH = 320;
-  const PANEL_MARGIN = 8;
-  const PANEL_OFFSET = 8;
+  const [style, setStyle] = useState<{top:number;left:number}|null>(null);
 
-  const updatePanelPosition = () => {
-    const button = buttonRef.current;
-    if (!button) return;
-    const rect = button.getBoundingClientRect();
-    const left = Math.min(
-      Math.max(rect.right - PANEL_WIDTH, PANEL_MARGIN),
-      window.innerWidth - PANEL_WIDTH - PANEL_MARGIN
-    );
-    let top = rect.bottom + PANEL_OFFSET;
-    const panel = panelRef.current;
-    if (panel) {
-      const height = panel.offsetHeight;
-      if (top + height > window.innerHeight - PANEL_MARGIN) {
-        top = Math.max(PANEL_MARGIN, rect.top - height - PANEL_OFFSET);
-      }
-    }
-    setPanelStyle({ top, left });
+  const position = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const width = Math.min(360, window.innerWidth - 16);
+    setStyle({ top: rect.bottom + 8, left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)) });
+  };
+  useEffect(() => {
+    if (!open) return;
+    position();
+    const close = (event: MouseEvent) => { const node = event.target as Node; if (!buttonRef.current?.contains(node) && !panelRef.current?.contains(node)) setOpen(false); };
+    const update = () => position();
+    document.addEventListener("mousedown", close); window.addEventListener("resize", update); window.addEventListener("scroll", update, true);
+    return () => { document.removeEventListener("mousedown", close); window.removeEventListener("resize", update); window.removeEventListener("scroll", update, true); };
+  }, [open, notifications.length]);
+
+  const activate = (item: any) => {
+    if (!item.read) markAsRead(item.id);
+    if (item.link) { setOpen(false); router.push(item.link); }
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      if (buttonRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      setIsOpen(false);
-    }
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    updatePanelPosition();
-    const frame = requestAnimationFrame(updatePanelPosition);
-    const handleResize = () => updatePanelPosition();
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleResize, true);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleResize, true);
-    };
-  }, [isOpen, notifications.length]);
-
-  return (
-    <div className="relative">
-      {/* Bell Button */}
-      <button
-        ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 group"
-      >
-        <Bell className="h-4 w-4 text-slate-600 dark:text-slate-300" />
-        
-        {/* Badge */}
-        {unreadCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </button>
-
-      {/* Dropdown Panel */}
-      {isOpen &&
-        createPortal(
-        <div
-          ref={panelRef}
-          style={panelStyle ?? undefined}
-          className="fixed z-[9999] w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.14)] dark:border-slate-700 dark:bg-slate-900"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bildirimler</h3>
-            <div className="flex items-center gap-2">
-              {notifications.length > 0 && (
-                <button
-                  onClick={clearAll}
-                  className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
-                >
-                  Temizle
-                </button>
-              )}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Notifications List */}
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <Bell className="w-12 h-12 text-indigo-300 dark:text-indigo-700 mx-auto mb-2" />
-                <p className="text-sm text-slate-400 dark:text-slate-500">Henüz bildirim yok</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => {
-                      if (!notification.read) {
-                        markAsRead(notification.id);
-                      }
-                    }}
-                    className={`px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group ${
-                      !notification.read ? "bg-indigo-50/40 dark:bg-indigo-950/10" : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Color Bar */}
-                      <div className={`w-1 h-full ${getNotificationColor(notification.type)} rounded-full flex-shrink-0`} />
-                      
-                      {/* Icon */}
-                      <div className="flex-shrink-0 mt-0.5">
-                        {getNotificationIcon(notification.type)}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${!notification.read ? "font-semibold text-slate-900 dark:text-slate-100" : "text-slate-700 dark:text-slate-300"}`}>
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                          {formatRelativeTime(notification.timestamp)}
-                        </p>
-                      </div>
-
-                      {/* Read Indicator */}
-                      {!notification.read && (
-                        <div className="w-2 h-2 bg-indigo-500 dark:bg-indigo-400 rounded-full flex-shrink-0 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          {notifications.length > 0 && (
-            <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                {unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}
-              </p>
-            </div>
-          )}
-        </div>,
-        document.body
-      )}
-    </div>
-  );
+  return <div className="relative">
+    <button ref={buttonRef} onClick={() => setOpen((value) => !value)} aria-label="Bildirimler" className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><Bell className="h-4 w-4"/>{unreadCount>0&&<span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-slate-900">{unreadCount>9?"9+":unreadCount}</span>}</button>
+    {open && createPortal(<div ref={panelRef} style={style||undefined} className="fixed z-[9999] w-[min(360px,calc(100vw-16px))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,.18)] dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800"><div><h3 className="text-sm font-semibold">Bildirimler</h3><p className="mt-0.5 text-[10px] text-slate-400">Gerçek FutureHR iş olaylarından üretilir.</p></div><div className="flex items-center gap-2">{notifications.length>0&&<button onClick={clearAll} className="text-[10px] font-semibold text-slate-500 hover:text-slate-800">Tümünü okundu say</button>}<button onClick={()=>setOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-4 w-4"/></button></div></div>
+      <div className="max-h-[420px] overflow-y-auto">{notifications.length===0?<div className="px-4 py-8 text-center"><Bell className="mx-auto h-8 w-8 text-slate-200"/><p className="mt-2 text-xs text-slate-400">Şu anda aksiyon bekleyen bildirim yok.</p></div>:<div className="divide-y divide-slate-100 dark:divide-slate-800">{notifications.map((item)=><button key={item.id} type="button" onClick={()=>activate(item)} className={`flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 ${!item.read?"bg-indigo-50/40 dark:bg-indigo-950/10":""}`}><span className="mt-0.5"><Icon type={item.type}/></span><span className="min-w-0 flex-1"><span className={`block text-xs leading-5 ${!item.read?"font-semibold text-slate-900 dark:text-white":"text-slate-600 dark:text-slate-300"}`}>{item.message}</span><span className="mt-1 flex items-center gap-2 text-[9px] text-slate-400"><span>{relative(item.timestamp)}</span>{item.source&&<span>· {item.source}</span>}{item.link&&<span className="font-semibold text-indigo-500">Aç →</span>}</span></span>{!item.read&&<span className="mt-2 h-2 w-2 rounded-full bg-indigo-500"/>}</button>)}</div>}</div>
+    </div>, document.body)}
+  </div>;
 }
-
