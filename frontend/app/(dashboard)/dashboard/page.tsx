@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  AlertTriangle, BarChart3, CheckCircle2, Crown, Heart, LayoutDashboard, Scale, ShieldCheck,
+  AlertTriangle, BarChart3, CheckCircle2, Crown, GraduationCap, Heart, LayoutDashboard, Scale, ShieldCheck,
   Star, Target, TrendingDown, TrendingUp, Users,
 } from "lucide-react";
 import { useData } from "../../../context/DataContext";
@@ -14,6 +14,7 @@ import { latestEvaluationMap, normalizeEmployeeName } from "../../../lib/hr/empl
 import { buildTalentDecisionSnapshot } from "../../../lib/hr/talentDecisionChain";
 import { getCareerRole } from "../../../lib/hr/careerArchitecture";
 import { rankSuccessors } from "../../../lib/hr/succession";
+import { learningImpactSummary } from "../../../lib/hr/learningImpact";
 import { getPulseAnalytics, type PulseAnalyticsResponse } from "../../services/surveyService";
 import GlassCard from "../../../components/ui/GlassCard";
 import CountUp from "../../../components/ui/CountUp";
@@ -32,6 +33,10 @@ function isCompleted(plan: any) {
   return /tamam|completed|done|closed/.test(status) || Number(plan?.progress || plan?.ilerleme || 0) >= 100;
 }
 function pct(part: number, total: number) { return total ? Math.round((part / total) * 100) : 0; }
+function signed(value: number | null) {
+  if (value === null) return "—";
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
+}
 
 export default function DashboardPage() {
   const { orgData, history360, loading } = useData();
@@ -69,7 +74,6 @@ export default function DashboardPage() {
   const avgPerformance = performanceRows.length ? performanceRows.reduce((sum, row) => sum + row.snapshot.performance.score, 0) / performanceRows.length : 0;
   const performanceCoverage = pct(performanceRows.length, snapshots.length);
   const lowEvidence = snapshots.filter(({ snapshot }) => snapshot.evidence.score < 60);
-  const stars = snapshots.filter(({ snapshot }) => snapshot.talent.nineBox === "Yıldız Oyuncu");
   const calibrationRequired = snapshots.filter(({ person }) => {
     const evaluation = latest.get(normalizeEmployeeName(person?.["Ad Soyad"]));
     const kpi = Number(evaluation?.kpi_score), manager = Number(evaluation?.manager_performance_score);
@@ -87,6 +91,10 @@ export default function DashboardPage() {
 
   const development = getStorageData<any[]>(STORAGE_KEYS.DEVELOPMENT_PLANS, []);
   const overduePlans = development.filter((plan) => { const due = dueDate(plan); return Boolean(due && due.getTime() < Date.now() && !isCompleted(plan)); });
+  const trainingAssignments = getStorageData<any[]>(STORAGE_KEYS.TRAINING_ASSIGNMENTS, []);
+  const scopedNames = new Set(scopedOrg.map((person) => String(person?.["Ad Soyad"] || "")));
+  const scopedTrainingAssignments = trainingAssignments.filter((item) => scopedNames.has(String(item?.employee || "")));
+  const learningImpact = learningImpactSummary(scopedTrainingAssignments, history360 || []);
 
   const departments = useMemo(() => {
     const map = new Map<string, number[]>();
@@ -110,8 +118,8 @@ export default function DashboardPage() {
   return (
     <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.3}} className="space-y-4 pb-4">
       <header className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-        <div><div className="flex items-center gap-2"><span className="enterprise-eyebrow">İK Karar Merkezi</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="text-[10px] text-slate-400">FutureHR V1</span></div><h1 className="mt-1 text-[24px] font-semibold tracking-[-.03em] text-slate-950 dark:text-white">Yönetici Özeti</h1><p className="mt-1 text-xs text-slate-500">Aynı çalışan veri zincirinden performans, kanıt, yetenek, halefiyet ve deneyim sinyalleri.</p></div>
-        <div className="flex flex-wrap gap-2"><ActionLink href="/kalibrasyon" icon={Scale} label="Kalibrasyon"/><ActionLink href="/yetenek-matrisi" icon={Star} label="Yetenek & 9-Box"/><ActionLink href="/yedekleme" icon={Crown} label="Halefiyet"/><ActionLink href="/maas" icon={Target} label="Ücret Kararları"/></div>
+        <div><div className="flex items-center gap-2"><span className="enterprise-eyebrow">İK Karar Merkezi</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="text-[10px] text-slate-400">FutureHR V1</span></div><h1 className="mt-1 text-[24px] font-semibold tracking-[-.03em] text-slate-950 dark:text-white">Yönetici Özeti</h1><p className="mt-1 text-xs text-slate-500">Aynı çalışan veri zincirinden performans, kanıt, yetenek, halefiyet, gelişim etkisi ve deneyim sinyalleri.</p></div>
+        <div className="flex flex-wrap gap-2"><ActionLink href="/kalibrasyon" icon={Scale} label="Kalibrasyon"/><ActionLink href="/yetenek-matrisi" icon={Star} label="Yetenek & 9-Box"/><ActionLink href="/yedekleme" icon={Crown} label="Halefiyet"/><ActionLink href="/egitim" icon={GraduationCap} label="Gelişim Etkisi"/><ActionLink href="/maas" icon={Target} label="Ücret Kararları"/></div>
       </header>
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -128,6 +136,7 @@ export default function DashboardPage() {
             <DecisionRow href="/kalibrasyon" icon={Scale} tone={calibrationRequired.length ? "amber" : "green"} title="Performans kalibrasyonu" detail={calibrationRequired.length ? `${calibrationRequired.length} çalışanda KPI ile yönetici gözlemi farkı ≥ 0,75.` : "Belirgin KPI-yönetici puan farkı bulunmuyor."} />
             <DecisionRow href="/yedekleme" icon={Crown} tone={successionRisk.length ? "red" : "green"} title="Kritik rol sürekliliği" detail={successionRisk.length ? `${successionRisk.length} kritik rolde yüksek kanıtla 'Şimdi hazır' halef bulunmuyor.` : "Kritik roller için hazır halef sinyali mevcut."} />
             <DecisionRow href="/gelisim" icon={Target} tone={overduePlans.length ? "amber" : "green"} title="Gelişim aksiyonları" detail={overduePlans.length ? `${overduePlans.length} gelişim planının hedef tarihi geçti.` : "Gecikmiş açık gelişim planı bulunmuyor."} />
+            <DecisionRow href="/egitim" icon={GraduationCap} tone={learningImpact.due ? "amber" : "green"} title="Gelişim etkisi / yeniden ölçüm" detail={learningImpact.due ? `${learningImpact.due} doğrulanmış gelişim müdahalesinde yeniden ölçüm zamanı geldi.` : learningImpact.measured ? `${learningImpact.measured} müdahalenin etkisi ölçüldü; pozitif gelişim oranı %${learningImpact.positiveRate ?? 0}.` : "Doğrulanmış gelişimlerde henüz gecikmiş yeniden ölçüm bulunmuyor."} />
             <DecisionRow href="/degerlendirme" icon={ShieldCheck} tone={lowEvidence.length ? "amber" : "green"} title="Kanıt kalitesi" detail={lowEvidence.length ? `${lowEvidence.length} çalışanın Evidence Score'u 60 altında; karar öncesi ek kanıt önerilir.` : "Karar zincirinde düşük Evidence Score kaydı bulunmuyor."} />
           </div>
         </section>
@@ -137,6 +146,19 @@ export default function DashboardPage() {
           {pulseLatest ? <div className="mt-4"><div className="flex items-end justify-between"><div><p className="text-[28px] font-semibold tracking-[-.04em]">{pulseLatest.average_score?.toFixed(1).replace(".",",") || "—"}<span className="ml-1 text-xs text-slate-400">/10</span></p><p className="mt-1 text-[10px] text-slate-400">{pulseLatest.count} anonim yanıt · k≥{pulse?.anonymity.threshold || 5}</p></div>{pulseDelta !== null && pulseDelta !== undefined && <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold ${pulseDelta >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>{pulseDelta>=0?<TrendingUp className="h-3 w-3"/>:<TrendingDown className="h-3 w-3"/>}{pulseDelta>=0?"+":""}{pulseDelta.toFixed(1)}</span>}</div><div className="mt-3 rounded-xl bg-slate-50 p-3 text-[11px] leading-5 text-slate-600 dark:bg-slate-950/50 dark:text-slate-300">{pulse?.lowestDriver ? `En düşük driver: ${pulse.lowestDriver.label} · ${pulse.lowestDriver.average.toFixed(1)}/5.` : "Driver verisi yeni haftalık check-in'lerle oluşur."}</div><Link href="/calisan-deneyimi" className="mt-3 inline-flex text-[11px] font-semibold text-indigo-600">Anonim driver analizini aç →</Link></div> : <div className="mt-4 rounded-xl border border-dashed border-slate-200 p-4 text-xs text-slate-500">Anonimlik eşiğini geçen mikro-pulse verisi henüz yok. <Link href="/calisan-deneyimi" className="font-semibold text-indigo-600">Check-in ekranı →</Link></div>}
         </section>
       </div>
+
+      <section className="enterprise-card overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+          <div className="flex items-start gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/30"><GraduationCap className="h-5 w-5"/></span><div><p className="enterprise-eyebrow">Learning Impact</p><h2 className="mt-1 text-sm font-semibold">Gelişim müdahalelerinin ölçülen etkisi</h2><p className="mt-1 text-[10px] leading-4 text-slate-400">Yalnız doğrulanmış işe transfer kanıtı + karşılaştırılabilir yeniden ölçüm sonuçları kullanılır.</p></div></div>
+          <Link href="/egitim" className="inline-flex h-8 items-center justify-center rounded-lg border border-violet-200 bg-violet-50 px-3 text-[10px] font-semibold text-violet-700 hover:bg-violet-100">Eğitim & Gelişim →</Link>
+        </div>
+        <div className="grid grid-cols-2 gap-px bg-slate-100 md:grid-cols-4 dark:bg-slate-800">
+          <ImpactStat label="Doğrulanmış kanıt" value={String(learningImpact.verified)} note="işe transfer doğrulandı" />
+          <ImpactStat label="Yeniden ölçülen" value={String(learningImpact.measured)} note={learningImpact.due ? `${learningImpact.due} ölçüm bekliyor` : "gecikmiş ölçüm yok"} warning={learningImpact.due > 0} />
+          <ImpactStat label="Pozitif gelişim" value={learningImpact.positiveRate === null ? "—" : `%${learningImpact.positiveRate}`} note={learningImpact.measured ? `${learningImpact.improved}/${learningImpact.measured} ölçümde artış` : "ölçüm oluşmadı"} positive={learningImpact.positiveRate !== null && learningImpact.positiveRate >= 60} />
+          <ImpactStat label="Ort. yetkinlik değişimi" value={signed(learningImpact.averageDelta)} note="5 puanlık ölçekte · nedensellik iddiası değil" positive={learningImpact.averageDelta !== null && learningImpact.averageDelta >= 0.15} warning={learningImpact.averageDelta !== null && learningImpact.averageDelta < 0} />
+        </div>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="enterprise-card p-4"><div className="flex items-center justify-between"><div><p className="enterprise-eyebrow">Yakın takip</p><h2 className="mt-1 text-sm font-semibold">Performans & kanıt öncelikleri</h2></div><AlertTriangle className="h-4 w-4 text-amber-500"/></div><div className="mt-3 space-y-2">{lowPerformers.slice(0,4).map(({person,snapshot})=><Link key={person.id || person["Ad Soyad"]} href="/degerlendirme" className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5 hover:border-indigo-200 dark:border-slate-800"><div className="min-w-0"><p className="truncate text-xs font-semibold">{person["Ad Soyad"]}</p><p className="mt-0.5 truncate text-[10px] text-slate-400">{person.Departman} · Evidence %{snapshot.evidence.score}</p></div><span className="rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">{snapshot.performance.score.toFixed(1)}</span></Link>)}{!lowPerformers.length && <EmptyGood text="3,5 altında performans sinyali yok."/>}</div></section>
@@ -148,6 +170,9 @@ export default function DashboardPage() {
 
 function MetricCard({label,value,note,icon:Icon,positive,warning}:{label:string;value:string|number;note:string;icon:any;positive?:boolean;warning?:boolean}) {
   return <GlassCard className="p-4"><div className="flex items-start justify-between"><div><p className="enterprise-eyebrow">{label}</p><p className="mt-3 text-[28px] font-semibold leading-none tracking-[-.04em] text-slate-950 dark:text-white">{typeof value === "number" ? <CountUp value={value}/> : value}</p><p className={`mt-2 text-[10px] ${warning?"text-amber-600":positive?"text-emerald-600":"text-slate-400"}`}>{note}</p></div><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-indigo-600 dark:bg-slate-800"><Icon className="h-4 w-4"/></span></div></GlassCard>;
+}
+function ImpactStat({label,value,note,positive,warning}:{label:string;value:string;note:string;positive?:boolean;warning?:boolean}) {
+  return <div className="bg-white p-4 dark:bg-slate-900"><p className="text-[10px] font-semibold uppercase tracking-[.08em] text-slate-400">{label}</p><p className={`mt-2 text-2xl font-semibold tracking-[-.03em] ${warning?"text-amber-600":positive?"text-emerald-600":"text-slate-950 dark:text-white"}`}>{value}</p><p className={`mt-1 text-[10px] ${warning?"text-amber-600":positive?"text-emerald-600":"text-slate-400"}`}>{note}</p></div>;
 }
 function ActionLink({href,icon:Icon,label}:{href:string;icon:any;label:string}) { return <Link href={href} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"><Icon className="h-3.5 w-3.5"/>{label}</Link>; }
 function DecisionRow({href,icon:Icon,tone,title,detail}:{href:string;icon:any;tone:"red"|"amber"|"green";title:string;detail:string}) {
