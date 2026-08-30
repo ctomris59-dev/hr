@@ -37,6 +37,23 @@ class EmployeeView(EmployeeCreate):
     active: bool
 
 
+def _validate_manager_reference(db: Session, *, tenant_id: str, employee_id: str | None, field_name: str) -> None:
+    if not employee_id:
+        return
+    manager = db.scalar(
+        select(EmployeeModel.id).where(
+            EmployeeModel.id == employee_id,
+            EmployeeModel.tenant_id == tenant_id,
+            EmployeeModel.active.is_(True),
+        )
+    )
+    if not manager:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{field_name} must reference an active employee in the same company",
+        )
+
+
 @router.get("", response_model=list[EmployeeView])
 def list_employees(
     principal: Principal = Depends(require_roles("CEO", "IK")),
@@ -65,6 +82,9 @@ def create_employee(
         )
         if existing:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Employee external ID already exists")
+
+    _validate_manager_reference(db, tenant_id=principal.tenant_id, employee_id=payload.manager_employee_id, field_name="manager_employee_id")
+    _validate_manager_reference(db, tenant_id=principal.tenant_id, employee_id=payload.second_manager_employee_id, field_name="second_manager_employee_id")
 
     employee = EmployeeModel(tenant_id=principal.tenant_id, **payload.model_dump())
     db.add(employee)
