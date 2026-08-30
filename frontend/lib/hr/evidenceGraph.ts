@@ -44,7 +44,7 @@ const SOURCE_LABELS: Record<EvidenceSource, string> = {
   history: "Geçmiş trend",
   profile: "Çalışan profili / tercih",
   "role-model": "Rol hedef modeli",
-  development: "Gelişim / öğrenme kanıtı",
+  development: "Doğrulanmış gelişim / öğrenme kanıtı",
   derived: "Türetilmiş gösterge",
   other: "Diğer kanıt",
 };
@@ -68,10 +68,10 @@ function classify(path: string): { source: EvidenceSource; direct: boolean; weig
   if (/history|trend|evaluationdate|date/.test(p)) return { source: "history", direct: true, weight: 0.95 };
   if (/aspiration|mobility|career_aspiration|careeraspiration|profile/.test(p)) return { source: "profile", direct: true, weight: 0.8 };
   if (/roletarget|rolefit|role_target|targetprofile|referencecount|source$/.test(p)) return { source: "role-model", direct: false, weight: 0.7 };
-  // Öneri/reçete geleceğe dönük bir tasarımdır; tamamlanmış kanıt gibi puanlanmamalıdır.
-  if (/prescription|recommend|öneri|reçete/.test(p)) return { source: "derived", direct: false, weight: 0.35 };
-  // Tamamlanan öğrenme, transfer görevi ve gelişim planı doğrudan gelişim kanıtıdır.
-  if (/completedlearning|learningevidence|trainingevidence|transfer(evidence|task)|reassessdue|plan|development|successmetric/.test(p)) return { source: "development", direct: true, weight: 0.8 };
+  // Öneri, reçete ve henüz doğrulanmamış öğrenme geleceğe/pipeline'a dönük sinyaldir; kanıt puanı üretmez.
+  if (/prescription|recommend|öneri|reçete|pending.*learning|completedlearning/.test(p)) return { source: "derived", direct: false, weight: 0.35 };
+  // Yalnız doğrulanmış öğrenme bağlamı ve gerçek işe transfer kanıtı doğrudan gelişim kanıtıdır.
+  if (/verifiedlearningevidence|trainingevidence|transfer(evidence|task)|reassessdue|plan|development|successmetric/.test(p)) return { source: "development", direct: true, weight: 0.8 };
   if (/readiness|potential|score|index|band|difference|fit|risk|summary/.test(p)) return { source: "derived", direct: false, weight: 0.45 };
   return { source: "other", direct: false, weight: 0.35 };
 }
@@ -130,7 +130,7 @@ const REQUIRED_BY_KIND: Record<string, Array<{ sources: EvidenceSource[]; label:
   development: [
     { sources: ["assessment"], label: "Yetkinlik açığı" },
     { sources: ["role-model"], label: "Rol hedefi" },
-    { sources: ["development"], label: "Ölçülebilir gelişim / öğrenme kanıtı" },
+    { sources: ["development"], label: "Doğrulanmış işe transfer kanıtı" },
   ],
   recruitment: [
     { sources: ["assessment"], label: "Test / yetkinlik kanıtı" },
@@ -148,7 +148,7 @@ export function buildEvidenceGraph(kind: string, context: Record<string, unknown
   const directWeight = directNodes.reduce((sum, node) => sum + node.weight, 0);
   const sourceCoverage = Math.round(Math.min(100, (sources.size / 5) * 100));
   const directEvidenceShare = Math.round(Math.min(100, (directWeight / totalWeight) * 100));
-  const traceNodes = nodes.filter((node) => /date|version|source|reference|quality|confidence/i.test(node.path));
+  const traceNodes = nodes.filter((node) => /date|version|source|reference|quality|confidence|verified/i.test(node.path));
   const traceability = Math.round(Math.min(100, 25 + traceNodes.length * 15));
   const humanNodes = nodes.filter((node) => ["manager", "interview", "work-sample"].includes(node.source));
   const humanEvidence = Math.round(Math.min(100, humanNodes.length * 28));
