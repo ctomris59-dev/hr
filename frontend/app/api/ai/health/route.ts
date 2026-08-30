@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { publicAIStatus, runStructuredAI } from "../../../../../lib/ai/resilient-provider";
+import { publicAIStatus, runStructuredAI } from "../../../../lib/ai/resilient-provider";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
