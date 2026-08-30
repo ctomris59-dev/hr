@@ -14,7 +14,7 @@ import { latestEvaluationMap, normalizeEmployeeName } from "../../../lib/hr/empl
 import { buildTalentDecisionSnapshot } from "../../../lib/hr/talentDecisionChain";
 import { getCareerRole } from "../../../lib/hr/careerArchitecture";
 import { rankSuccessors } from "../../../lib/hr/succession";
-import { learningImpactSummary } from "../../../lib/hr/learningImpact";
+import { buildDevelopmentAnalytics } from "../../../lib/hr/developmentAnalytics";
 import { getPulseAnalytics, type PulseAnalyticsResponse } from "../../services/surveyService";
 import GlassCard from "../../../components/ui/GlassCard";
 import CountUp from "../../../components/ui/CountUp";
@@ -94,7 +94,8 @@ export default function DashboardPage() {
   const trainingAssignments = getStorageData<any[]>(STORAGE_KEYS.TRAINING_ASSIGNMENTS, []);
   const scopedNames = new Set(scopedOrg.map((person) => String(person?.["Ad Soyad"] || "")));
   const scopedTrainingAssignments = trainingAssignments.filter((item) => scopedNames.has(String(item?.employee || "")));
-  const learningImpact = learningImpactSummary(scopedTrainingAssignments, history360 || []);
+  const developmentAnalytics = buildDevelopmentAnalytics(scopedTrainingAssignments, history360 || [], { period: 12 });
+  const learningImpact = developmentAnalytics.summary;
 
   const departments = useMemo(() => {
     const map = new Map<string, number[]>();
@@ -119,7 +120,7 @@ export default function DashboardPage() {
     <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.3}} className="space-y-4 pb-4">
       <header className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div><div className="flex items-center gap-2"><span className="enterprise-eyebrow">İK Karar Merkezi</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="text-[10px] text-slate-400">FutureHR V1</span></div><h1 className="mt-1 text-[24px] font-semibold tracking-[-.03em] text-slate-950 dark:text-white">Yönetici Özeti</h1><p className="mt-1 text-xs text-slate-500">Aynı çalışan veri zincirinden performans, kanıt, yetenek, halefiyet, gelişim etkisi ve deneyim sinyalleri.</p></div>
-        <div className="flex flex-wrap gap-2"><ActionLink href="/kalibrasyon" icon={Scale} label="Kalibrasyon"/><ActionLink href="/yetenek-matrisi" icon={Star} label="Yetenek & 9-Box"/><ActionLink href="/yedekleme" icon={Crown} label="Halefiyet"/><ActionLink href="/egitim" icon={GraduationCap} label="Gelişim Etkisi"/><ActionLink href="/maas" icon={Target} label="Ücret Kararları"/></div>
+        <div className="flex flex-wrap gap-2"><ActionLink href="/kalibrasyon" icon={Scale} label="Kalibrasyon"/><ActionLink href="/yetenek-matrisi" icon={Star} label="Yetenek & 9-Box"/><ActionLink href="/yedekleme" icon={Crown} label="Halefiyet"/><ActionLink href="/gelisim-analitigi" icon={GraduationCap} label="Gelişim Etkisi"/><ActionLink href="/maas" icon={Target} label="Ücret Kararları"/></div>
       </header>
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -136,7 +137,7 @@ export default function DashboardPage() {
             <DecisionRow href="/kalibrasyon" icon={Scale} tone={calibrationRequired.length ? "amber" : "green"} title="Performans kalibrasyonu" detail={calibrationRequired.length ? `${calibrationRequired.length} çalışanda KPI ile yönetici gözlemi farkı ≥ 0,75.` : "Belirgin KPI-yönetici puan farkı bulunmuyor."} />
             <DecisionRow href="/yedekleme" icon={Crown} tone={successionRisk.length ? "red" : "green"} title="Kritik rol sürekliliği" detail={successionRisk.length ? `${successionRisk.length} kritik rolde yüksek kanıtla 'Şimdi hazır' halef bulunmuyor.` : "Kritik roller için hazır halef sinyali mevcut."} />
             <DecisionRow href="/gelisim" icon={Target} tone={overduePlans.length ? "amber" : "green"} title="Gelişim aksiyonları" detail={overduePlans.length ? `${overduePlans.length} gelişim planının hedef tarihi geçti.` : "Gecikmiş açık gelişim planı bulunmuyor."} />
-            <DecisionRow href="/egitim" icon={GraduationCap} tone={learningImpact.due ? "amber" : "green"} title="Gelişim etkisi / yeniden ölçüm" detail={learningImpact.due ? `${learningImpact.due} doğrulanmış gelişim müdahalesinde yeniden ölçüm zamanı geldi.` : learningImpact.measured ? `${learningImpact.measured} müdahalenin etkisi ölçüldü; pozitif gelişim oranı %${learningImpact.positiveRate ?? 0}.` : "Doğrulanmış gelişimlerde henüz gecikmiş yeniden ölçüm bulunmuyor."} />
+            <DecisionRow href="/gelisim-analitigi" icon={GraduationCap} tone={learningImpact.reassessmentDue ? "amber" : "green"} title="Gelişim etkisi / yeniden ölçüm" detail={learningImpact.reassessmentDue ? `${learningImpact.reassessmentDue} doğrulanmış gelişim müdahalesinde yeniden ölçüm zamanı geldi.` : learningImpact.measured ? `${learningImpact.measured} müdahale yeniden ölçüldü; pozitif değişim oranı %${learningImpact.positiveRate ?? 0}.` : "Doğrulanmış gelişimlerde henüz gecikmiş yeniden ölçüm bulunmuyor."} />
             <DecisionRow href="/degerlendirme" icon={ShieldCheck} tone={lowEvidence.length ? "amber" : "green"} title="Kanıt kalitesi" detail={lowEvidence.length ? `${lowEvidence.length} çalışanın Evidence Score'u 60 altında; karar öncesi ek kanıt önerilir.` : "Karar zincirinde düşük Evidence Score kaydı bulunmuyor."} />
           </div>
         </section>
@@ -150,13 +151,18 @@ export default function DashboardPage() {
       <section className="enterprise-card overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
           <div className="flex items-start gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/30"><GraduationCap className="h-5 w-5"/></span><div><p className="enterprise-eyebrow">Learning Impact</p><h2 className="mt-1 text-sm font-semibold">Gelişim müdahalelerinin ölçülen etkisi</h2><p className="mt-1 text-[10px] leading-4 text-slate-400">Yalnız doğrulanmış işe transfer kanıtı + karşılaştırılabilir yeniden ölçüm sonuçları kullanılır.</p></div></div>
-          <Link href="/egitim" className="inline-flex h-8 items-center justify-center rounded-lg border border-violet-200 bg-violet-50 px-3 text-[10px] font-semibold text-violet-700 hover:bg-violet-100">Eğitim & Gelişim →</Link>
+          <Link href="/gelisim-analitigi" className="inline-flex h-8 items-center justify-center rounded-lg border border-violet-200 bg-violet-50 px-3 text-[10px] font-semibold text-violet-700 hover:bg-violet-100">Detaylı etkinlik analizi →</Link>
         </div>
         <div className="grid grid-cols-2 gap-px bg-slate-100 md:grid-cols-4 dark:bg-slate-800">
           <ImpactStat label="Doğrulanmış kanıt" value={String(learningImpact.verified)} note="işe transfer doğrulandı" />
-          <ImpactStat label="Yeniden ölçülen" value={String(learningImpact.measured)} note={learningImpact.due ? `${learningImpact.due} ölçüm bekliyor` : "gecikmiş ölçüm yok"} warning={learningImpact.due > 0} />
+          <ImpactStat label="Yeniden ölçülen" value={String(learningImpact.measured)} note={learningImpact.reassessmentDue ? `${learningImpact.reassessmentDue} ölçüm bekliyor` : "gecikmiş ölçüm yok"} warning={learningImpact.reassessmentDue > 0} />
           <ImpactStat label="Pozitif gelişim" value={learningImpact.positiveRate === null ? "—" : `%${learningImpact.positiveRate}`} note={learningImpact.measured ? `${learningImpact.improved}/${learningImpact.measured} ölçümde artış` : "ölçüm oluşmadı"} positive={learningImpact.positiveRate !== null && learningImpact.positiveRate >= 60} />
           <ImpactStat label="Ort. yetkinlik değişimi" value={signed(learningImpact.averageDelta)} note="5 puanlık ölçekte · nedensellik iddiası değil" positive={learningImpact.averageDelta !== null && learningImpact.averageDelta >= 0.15} warning={learningImpact.averageDelta !== null && learningImpact.averageDelta < 0} />
+        </div>
+        <div className="grid gap-2 border-t border-slate-100 bg-slate-50/60 p-3 text-[10px] md:grid-cols-3 dark:border-slate-800 dark:bg-slate-950/30">
+          <p><strong className="text-slate-700 dark:text-slate-200">En güçlü yetkinlik sinyali:</strong> {developmentAnalytics.signals.strongestCompetency ? `${developmentAnalytics.signals.strongestCompetency.label} · ${signed(developmentAnalytics.signals.strongestCompetency.averageDelta)} · n=${developmentAnalytics.signals.strongestCompetency.measured}` : "ölçüm bekleniyor"}</p>
+          <p><strong className="text-slate-700 dark:text-slate-200">En güçlü yöntem sinyali:</strong> {developmentAnalytics.signals.strongestMethod ? `${developmentAnalytics.signals.strongestMethod.label} · ${signed(developmentAnalytics.signals.strongestMethod.averageDelta)}` : "ölçüm bekleniyor"}</p>
+          <p><strong className="text-slate-700 dark:text-slate-200">Ölçüm kapsamı:</strong> {learningImpact.measurementRate === null ? "—" : `%${learningImpact.measurementRate}`} doğrulanmış müdahale yeniden ölçüldü.</p>
         </div>
       </section>
 
