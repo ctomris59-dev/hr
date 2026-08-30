@@ -63,13 +63,13 @@ export default function WelcomeWidget() {
     <div className="min-w-0 flex items-center gap-3">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{greeting}{user?.name ? `, ${user.name}` : ""}</p>
-          {user && <span className="hidden rounded-md bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.08em] text-slate-500 sm:inline-flex dark:bg-slate-800 dark:text-slate-300">{roleLabel}</span>}
+          <p className="futurehr-welcome-title truncate font-semibold text-slate-800 dark:text-slate-100">{greeting}{user?.name ? `, ${user.name}` : ""}</p>
+          {user && <span className="futurehr-welcome-role hidden rounded-md border border-slate-200 bg-transparent px-2 py-0.5 font-bold uppercase tracking-[.08em] text-slate-500 sm:inline-flex dark:border-slate-700 dark:text-slate-300">{roleLabel}</span>}
         </div>
-        <p className="mt-0.5 hidden truncate text-[10px] text-slate-400 sm:block">{scope}</p>
+        <p className="futurehr-welcome-scope mt-0.5 hidden truncate text-slate-400 sm:block">{scope}</p>
       </div>
       <div className="hidden h-5 w-px bg-slate-200 lg:block dark:bg-slate-700" />
-      <div className="hidden items-center gap-1.5 text-[11px] text-slate-400 lg:flex"><Clock3 className="h-3.5 w-3.5"/><span>{dateText} · {timeText}</span></div>
+      <div className="futurehr-welcome-time hidden items-center gap-1.5 text-slate-400 lg:flex"><Clock3 className="h-3.5 w-3.5"/><span>{dateText} · {timeText}</span></div>
     </div>
   );
 }
