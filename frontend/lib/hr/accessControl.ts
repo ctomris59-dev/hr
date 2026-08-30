@@ -5,7 +5,7 @@ export type DataScope = "NONE" | "SELF" | "DIRECT_REPORTS" | "DEPARTMENT" | "COM
 export type SensitiveDomain = "salary" | "talent" | "succession";
 export type ModuleKey =
   | "dashboard" | "leave" | "experience" | "organization" | "jobArchitecture" | "performance" | "calibration" | "talent" | "training"
-  | "development" | "career" | "succession" | "salary" | "recruitment" | "assessment"
+  | "development" | "developmentAnalytics" | "career" | "succession" | "salary" | "recruitment" | "assessment"
   | "team" | "admin" | "governance" | "dataImport" | "managerSalary" | "accessArchitecture";
 
 export interface CompanyAccessPolicy {
@@ -53,6 +53,7 @@ export const MODULE_DEFINITIONS: Array<{ key: ModuleKey; label: string; route: s
   { key: "talent", label: "Yetenek & 9-Box", route: "/yetenek-matrisi", sensitive: "talent" },
   { key: "training", label: "Eğitim", route: "/egitim" },
   { key: "development", label: "Gelişim Planı", route: "/gelisim" },
+  { key: "developmentAnalytics", label: "Gelişim Etkinliği", route: "/gelisim-analitigi" },
   { key: "career", label: "Kariyer Yolu", route: "/kariyer" },
   { key: "succession", label: "Halefiyet & Yedekleme", route: "/yedekleme", sensitive: "succession" },
   { key: "salary", label: "Ücret Karar Merkezi", route: "/maas", sensitive: "salary" },
