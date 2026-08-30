@@ -33,6 +33,7 @@ const menuItems = [
   { href: "/yetenek-matrisi", label: "Yetenek & 9-Box", icon: BarChart3, section: "Performans & Yetenek" },
   { href: "/egitim", label: "Eğitim", icon: BookOpen, section: "Gelişim" },
   { href: "/gelisim", label: "Gelişim Planı", icon: Clock, section: "Gelişim" },
+  { href: "/gelisim-analitigi", label: "Gelişim Etkinliği", icon: BarChart3, section: "Gelişim" },
   { href: "/kariyer", label: "Kariyer Yolu", icon: MapPin, section: "Gelişim" },
   { href: "/yedekleme", label: "Halefiyet & Yedekleme", icon: Crown, section: "Gelişim" },
   { href: "/maas", label: "Ücret Karar Merkezi", icon: DollarSign, section: "Karar & Operasyon" },
