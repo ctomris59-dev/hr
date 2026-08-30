@@ -31,6 +31,13 @@ const routeIcons:Record<string,LucideIcon>={
   "/ayarlar/yetki-mimarisi":SlidersHorizontal,
 };
 
+function gridClass(count:number){
+  if(count===2)return "md:grid-cols-2";
+  if(count===3)return "md:grid-cols-3";
+  if(count===5)return "md:grid-cols-2 xl:grid-cols-5";
+  return "md:grid-cols-2 xl:grid-cols-4";
+}
+
 export default function ModuleFamilyNavigator({pathname}:{pathname:string}){
   const{currentUserRole}=useAuth();
   const family=familyForPath(pathname);
@@ -45,7 +52,7 @@ export default function ModuleFamilyNavigator({pathname}:{pathname:string}){
         <p className="max-w-3xl text-[12px] leading-[1.15rem] text-slate-500 dark:text-slate-400">{family.description}</p>
       </div>
     </div>
-    <div className={`grid gap-2 p-3 ${visibleItems.length===2?"md:grid-cols-2":visibleItems.length===3?"md:grid-cols-3":"md:grid-cols-2 xl:grid-cols-4"}`}>
+    <div className={`grid gap-2 p-3 ${gridClass(visibleItems.length)}`}>
       {visibleItems.map((item,index)=>{const Icon=routeIcons[item.href]||ChevronRight;const active=item.href===activeHref;return <Link key={item.href} href={item.href} data-workspace-module={item.href} data-active={active?"true":"false"} className="futurehr-family-card group relative min-h-[96px] overflow-hidden border px-3.5 py-3">
         <div className="flex items-start gap-3">
           <div className="futurehr-family-card-icon flex h-8 w-8 shrink-0 items-center justify-center"><Icon className="h-4 w-4" strokeWidth={1.65}/></div>
