@@ -30,10 +30,28 @@ jobs:
         run: |
           npm install --package-lock-only --ignore-scripts
           npm audit fix --package-lock-only --ignore-scripts || true
+      - name: Apply Playwright compatibility fixes
+        if: startsWith(github.ref, 'refs/heads/feature/dependency-security-hardening')
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("demo-inspector.spec.ts")
+          text = p.read_text()
+          text = text.replace(
+              '  trainingAssignments: string | null;\n  leaveRequests: string | null;',
+              '  trainingAssignments?: string | null;\n  leaveRequests?: string | null;'
+          )
+          old = '''  await page.waitForFunction(\n    (selector, count) => {\n      const el = document.querySelector(selector) as HTMLSelectElement | null;\n      return !!el && el.options.length >= count;\n    },\n    `[data-testid="${testId}"]`,\n    minCount\n  );'''
+          new = '''  await page.waitForFunction(\n    ({ selector, count }) => {\n      const el = document.querySelector(selector) as HTMLSelectElement | null;\n      return !!el && el.options.length >= count;\n    },\n    { selector: `[data-testid="${testId}"]`, count: minCount }\n  );'''
+          if old not in text:
+              raise SystemExit("waitForFunction compatibility block not found")
+          text = text.replace(old, new)
+          p.write_text(text)
+          PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git diff --cached --quiet || git commit -m "Refresh hardened dependency lockfile"
+          git add package.json package-lock.json demo-inspector.spec.ts
+          git diff --cached --quiet || git commit -m "Align tests with hardened dependencies"
           git push origin HEAD:feature/dependency-security-hardening
       - name: Install dependencies
         run: npm ci
