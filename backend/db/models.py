@@ -1,7 +1,7 @@
 """Core relational models for FutureHR SaaS mode.
 
 These tables deliberately cover only the stable platform backbone: company,
-employee master data and user identity.  Performance, talent, evidence and other
+employee master data and user identity. Performance, talent, evidence and other
 modules will be migrated onto this backbone in later steps.
 """
 from __future__ import annotations
@@ -91,6 +91,8 @@ class UserModel(Base):
     role: Mapped[str] = mapped_column(String(48), default="PERSONEL", nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     token_version: Mapped[int] = mapped_column(default=1, nullable=False)
+    failed_login_attempts: Mapped[int] = mapped_column(default=0, nullable=False)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
