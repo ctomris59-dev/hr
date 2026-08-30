@@ -1,0 +1,89 @@
+/* Final compatibility pass for legacy module-viz styles.
+   This file intentionally loads last. */
+
+.module-hero,
+.module-hero-icon,
+.module-focus-card,
+.module-workflow {
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.module-hero::before {
+  background: var(--module-accent, var(--fh-accent)) !important;
+  height: 2px !important;
+}
+
+.module-hero-glow { display: none !important; }
+
+.module-native-content [class*="bg-white"][class*="border"][class*="rounded-xl"],
+.module-native-content [class*="bg-white"][class*="border"][class*="rounded-2xl"],
+.module-native-content [class*="bg-white"][class*="border"][class*="rounded-3xl"] {
+  border-color: var(--fh-line) !important;
+  border-radius: var(--fh-radius-lg) !important;
+  box-shadow: none !important;
+}
+
+.module-native-content .rounded-3xl,
+.module-native-content .rounded-2xl {
+  border-radius: var(--fh-radius-lg) !important;
+}
+
+.module-native-content button[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]),
+.module-native-content a[class*="text-white"]:not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]) {
+  background-image: none !important;
+  background-color: var(--module-accent, var(--fh-accent)) !important;
+  border-color: transparent !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+}
+
+.module-native-content button[class*="text-white"]:not(:disabled):hover,
+.module-native-content a[class*="text-white"]:hover {
+  filter: brightness(.94);
+  box-shadow: none !important;
+}
+
+/* Current Copilot selector after the product-language cleanup. */
+button[aria-label="FutureHR Copilot'u aç"] {
+  border: 1px solid #24313c !important;
+  border-radius: 8px !important;
+  background: #17212b !important;
+  color: #f6f8f9 !important;
+  box-shadow: none !important;
+}
+
+button[aria-label="FutureHR Copilot'u aç"]:hover {
+  background: #24313c !important;
+  transform: translateY(-1px);
+}
+
+button[aria-label="FutureHR Copilot'u aç"] + div aside {
+  border-left-color: var(--fh-line) !important;
+  background: var(--fh-canvas) !important;
+  box-shadow: -8px 0 28px rgba(12,20,28,.08) !important;
+}
+
+/* Keep table/chart semantics while removing decorative Tailwind gradients
+   from navigation/chrome and card decoration. */
+[data-testid="app-sidebar"] [class*="bg-gradient-to-"],
+.module-hero [class*="bg-gradient-to-"],
+.futurehr-family-nav [class*="bg-gradient-to-"],
+button[aria-label="FutureHR Copilot'u aç"] + div aside [class*="bg-gradient-to-"] {
+  background-image: none !important;
+}
+
+/* Compact status UI should read as state, not decoration. */
+.module-native-content .premium-status,
+.futurehr-dashboard .premium-status {
+  box-shadow: none !important;
+}
+
+/* Text and numeric alignment is deliberately enterprise-like. */
+.futurehr-dashboard [class*="text-2xl"],
+.futurehr-dashboard [class*="text-3xl"],
+.premium-data-table td,
+.premium-data-table th {
+  font-variant-numeric: tabular-nums;
+}
