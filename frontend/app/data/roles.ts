@@ -31,22 +31,22 @@ export const REVERSE_ROLE_MAPPING: Record<UserRole, string[]> = {
 export const ROLE_ACCESS_CONFIG: Record<UserRole, string[]> = {
   ceo: [
     "/dashboard", "/calisan-deneyimi", "/organizasyon", "/rol-mimarisi", "/degerlendirme", "/kalibrasyon", "/yetenek-matrisi", "/egitim",
-    "/gelisim", "/kariyer", "/yedekleme", "/maas", "/ise-alim", "/aday-testi",
+    "/gelisim", "/gelisim-analitigi", "/kariyer", "/yedekleme", "/maas", "/ise-alim", "/aday-testi",
     "/ekip-yonetimi", "/admin", "/izinler", "/ayarlar/roller",
     "/ayarlar/yetki-mimarisi", "/yonetici/maas-talep",
   ],
   hr_admin: [
     "/dashboard", "/calisan-deneyimi", "/organizasyon", "/rol-mimarisi", "/degerlendirme", "/kalibrasyon", "/yetenek-matrisi", "/egitim",
-    "/gelisim", "/kariyer", "/yedekleme", "/maas", "/ise-alim", "/aday-testi",
+    "/gelisim", "/gelisim-analitigi", "/kariyer", "/yedekleme", "/maas", "/ise-alim", "/aday-testi",
     "/ekip-yonetimi", "/admin", "/izinler", "/ayarlar/yetki-mimarisi",
     "/yonetici/maas-talep",
   ],
   director: [
-    "/dashboard", "/calisan-deneyimi", "/rol-mimarisi", "/degerlendirme", "/kalibrasyon", "/egitim", "/gelisim", "/kariyer",
+    "/dashboard", "/calisan-deneyimi", "/rol-mimarisi", "/degerlendirme", "/kalibrasyon", "/egitim", "/gelisim", "/gelisim-analitigi", "/kariyer",
     "/izinler", "/ekip-yonetimi", "/yonetici/maas-talep",
   ],
   manager: [
-    "/dashboard", "/calisan-deneyimi", "/rol-mimarisi", "/degerlendirme", "/kalibrasyon", "/egitim", "/gelisim", "/kariyer",
+    "/dashboard", "/calisan-deneyimi", "/rol-mimarisi", "/degerlendirme", "/kalibrasyon", "/egitim", "/gelisim", "/gelisim-analitigi", "/kariyer",
     "/izinler", "/ekip-yonetimi", "/yonetici/maas-talep",
   ],
   employee: [
