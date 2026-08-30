@@ -116,7 +116,6 @@ export const NAVIGATION_FAMILIES: NavigationFamily[] = [
       { href: "/admin/veri-aktarimi", label: "Veri Aktarımı", description: "Excel, Logo, Mikro ve Netsis dosyalarını kontrollü aktarın." },
       { href: "/admin/guven-kvkk", label: "Güven & KVKK", description: "AI audit, veri minimizasyonu, anonimlik ve saklama kontrolleri." },
       { href: "/ayarlar/yetki-mimarisi", label: "Yetki Mimarisi", description: "Rol, modül ve kapsam politikalarını yönetin." },
-      { href: "/ayarlar/roller", label: "Rol Ayarları", description: "Sistem rol yapılandırmasını yönetin." },
     ],
   },
 ];
