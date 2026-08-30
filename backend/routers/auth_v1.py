@@ -1,11 +1,11 @@
 """Versioned secure authentication endpoints for FutureHR SaaS mode.
 
-These endpoints are additive.  The current browser/localStorage demo login remains
+These endpoints are additive. The current browser/localStorage demo login remains
 untouched until the frontend is explicitly switched to secure auth.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -20,12 +20,15 @@ from core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_password,
     verify_password,
 )
 from db.models import EmployeeModel, TenantModel, UserModel
 
 settings = get_settings()
 router = APIRouter(prefix="/api/v1/auth", tags=["SaaS Auth"])
+# Hash once so unknown-user login attempts take the same password-verification path.
+DUMMY_PASSWORD_HASH = hash_password("FutureHR-Dummy-Password-2026!")
 
 
 class LoginRequest(BaseModel):
@@ -96,6 +99,22 @@ def _tokens(user: UserModel, tenant: TenantModel, db: Session) -> TokenResponse:
     )
 
 
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+def _register_failed_login(db: Session, user: UserModel | None, now: datetime) -> None:
+    if not user:
+        return
+    user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
+    if user.failed_login_attempts >= settings.LOGIN_MAX_ATTEMPTS:
+        user.locked_until = now + timedelta(minutes=settings.LOGIN_LOCK_MINUTES)
+        user.failed_login_attempts = 0
+    db.commit()
+
+
 @router.get("/status")
 def auth_status():
     """Public readiness endpoint; never exposes secrets or connection strings."""
@@ -110,6 +129,7 @@ def auth_status():
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     ensure_secure_auth_enabled()
+    now = datetime.now(timezone.utc)
 
     tenant = db.scalar(
         select(TenantModel).where(
@@ -118,6 +138,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         )
     )
     if not tenant:
+        verify_password(payload.password, DUMMY_PASSWORD_HASH)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid company or credentials")
 
     user = db.scalar(
@@ -127,10 +148,25 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             UserModel.active.is_(True),
         )
     )
-    if not user or not verify_password(payload.password, user.password_hash):
+
+    locked_until = _as_utc(user.locked_until) if user else None
+    if user and locked_until and locked_until > now:
+        retry_after = max(1, int((locked_until - now).total_seconds()))
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. Try again later.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    password_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
+    password_ok = verify_password(payload.password, password_hash)
+    if not user or not password_ok:
+        _register_failed_login(db, user, now)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid company or credentials")
 
-    user.last_login_at = datetime.now(timezone.utc)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    user.last_login_at = now
     db.commit()
     db.refresh(user)
     return _tokens(user, tenant, db)
