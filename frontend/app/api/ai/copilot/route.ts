@@ -54,7 +54,7 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const ROUTES = new Set(["/dashboard", "/degerlendirme", "/kalibrasyon", "/yetenek-matrisi", "/gelisim", "/egitim", "/kariyer", "/yedekleme", "/maas", "/calisan-deneyimi", "/organizasyon", "/ise-alim"]);
+const ROUTES = new Set(["/dashboard", "/degerlendirme", "/kalibrasyon", "/yetenek-matrisi", "/gelisim", "/egitim", "/gelisim-analitigi", "/kariyer", "/yedekleme", "/maas", "/calisan-deneyimi", "/organizasyon", "/ise-alim"]);
 const unique = <T,>(values: T[]) => Array.from(new Set(values));
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -98,6 +98,7 @@ Görevin:
 - Her öncelik için kanıt, insan tarafından yapılacak aksiyon ve ilgili FutureHR route'u ver.
 - Route sadece şu değerlerden biri olsun: ${Array.from(ROUTES).join(", ")}.
 - Performans kalibrasyonu, düşük kanıt güveni, kritik rol/halefiyet açığı, gelişim gecikmesi, doğrulanmış öğrenme ve yeniden ölçüm etkisi, ücret verisi/benchmark açığı ve çalışan deneyimi sinyallerini gerektiğinde birleştir.
+- Toplu gelişim etkinliği, yetkinlik bazlı değişim, yöntem karşılaştırması, transfer doğrulama oranı veya yeniden ölçüm kapsamı sorularında /gelisim-analitigi route'unu kullan.
 - learningAverageDelta ve learningPositiveRate yalnız doğrulanmış işe transfer kanıtı sonrasındaki karşılaştırılabilir yeniden ölçümleri özetler; bunları eğitimin nedensel etkisi olarak sunma.
 - Kişiler hakkında bilinmeyen özellik çıkarımı yapma. Hassas/korunan özellikleri kullanma veya tahmin etme.
 - İşe alma, işten çıkarma, terfi, ücret artışı, disiplin veya halef ataması için nihai karar verme; kişileri otomatik sıralama/eleme yapma.
@@ -152,7 +153,7 @@ function fallback(context: any): CopilotAnalysis {
   const priorities: Priority[] = [];
   if (Number(m.calibrationRequired || 0) > 0) priorities.push({ severity: "yüksek", title: "Performans kalibrasyonu", evidence: `${m.calibrationRequired} değerlendirmede KPI-yönetici farkı kalibrasyon eşiğini aşıyor.`, action: "Kalibrasyon Merkezi'nde somut davranış ve çıktı kanıtlarını karşılaştırın.", route: "/kalibrasyon" });
   if (Number(m.criticalRolesWithoutReadySuccessor || 0) > 0) priorities.push({ severity: "kritik", title: "Halefiyet açığı", evidence: `${m.criticalRolesWithoutReadySuccessor} kritik rolün şimdi hazır halefi bulunmuyor.`, action: "Kritik roller için 6–12 aylık hazırlık ve alternatif halef senaryosu oluşturun.", route: "/yedekleme" });
-  if (Number(m.learningReassessmentDue || 0) > 0) priorities.push({ severity: "yüksek", title: "Gelişim yeniden ölçümü", evidence: `${m.learningReassessmentDue} doğrulanmış gelişim müdahalesinde yeniden ölçüm zamanı geldi.`, action: "Eğitim & Gelişim ekranında aynı yetkinliği yeniden ölçün; sonucu başlangıç ölçümüyle karşılaştırın.", route: "/egitim" });
+  if (Number(m.learningReassessmentDue || 0) > 0) priorities.push({ severity: "yüksek", title: "Gelişim yeniden ölçümü", evidence: `${m.learningReassessmentDue} doğrulanmış gelişim müdahalesinde yeniden ölçüm zamanı geldi.`, action: "Gelişim Etkinliği ekranında gecikmiş yeniden ölçümleri tamamlayın ve yetkinlik bazında başlangıç/sonuç farkını inceleyin.", route: "/gelisim-analitigi" });
   if (Number(m.lowEvidenceEmployees || 0) > 0) priorities.push({ severity: "orta", title: "Kanıt kapsamı", evidence: `${m.lowEvidenceEmployees} çalışanda Kanıt Güveni %60'ın altında.`, action: "Karar öncesi eksik performans, yetkinlik veya rol kanıtlarını tamamlayın.", route: "/yetenek-matrisi" });
   if (Number(m.compensationDataWarnings || 0) > 0) priorities.push({ severity: "orta", title: "Ücret karar verisi", evidence: `${m.compensationDataWarnings} ücret satırında veri/benchmark uyarısı var.`, action: "Ücret Karar Merkezi'nde eksik maaş ve dış benchmark kayıtlarını doğrulayın.", route: "/maas" });
   const confidence: Confidence = Number(m.employeeCount || 0) > 0 ? "orta" : "düşük";
