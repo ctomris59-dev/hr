@@ -41,8 +41,6 @@ class Settings(BaseSettings):
     # Legacy/demo persistence
     DB_BASE_DIR: str = "database"
     DATA_MODE: str = "demo"  # demo | database
-    # In secure SaaS mode old unversioned data endpoints are blocked by default.
-    # This may only be enabled temporarily during a controlled migration.
     ALLOW_LEGACY_API_IN_SAAS: bool = False
 
     # SaaS database. Production should use PostgreSQL.
@@ -57,6 +55,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_MINUTES: int = 20
     REFRESH_TOKEN_DAYS: int = 7
     SAAS_AUTH_ENABLED: bool = False
+    LOGIN_MAX_ATTEMPTS: int = 5
+    LOGIN_LOCK_MINUTES: int = 15
 
     # API
     API_PREFIX: str = "/api"
@@ -106,6 +106,10 @@ class Settings(BaseSettings):
             issues.append("CORS_ORIGINS must explicitly list trusted origins")
         if self.ALLOW_LEGACY_API_IN_SAAS:
             issues.append("ALLOW_LEGACY_API_IN_SAAS must be false")
+        if self.LOGIN_MAX_ATTEMPTS < 3 or self.LOGIN_MAX_ATTEMPTS > 10:
+            issues.append("LOGIN_MAX_ATTEMPTS must be between 3 and 10")
+        if self.LOGIN_LOCK_MINUTES < 5:
+            issues.append("LOGIN_LOCK_MINUTES must be at least 5")
         return issues
 
     class Config:
