@@ -1,6 +1,19 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const DEFAULT_ROUTE_BY_ROLE = {
+  ceo: "/dashboard",
+  hr_admin: "/dashboard",
+  manager: "/dashboard",
+  employee: "/kariyer",
+} as const;
+
 async function openDemo(page: Page) {
+  // Product onboarding is intentionally excluded from business-flow E2E tests.
+  // addInitScript survives reloads/navigation and prevents the welcome modal from
+  // intercepting unrelated controls without changing real-user onboarding behavior.
+  await page.addInitScript(() => {
+    window.localStorage.setItem("fhr_demo_tour_seen_v1", "1");
+  });
   await page.goto("/");
   await page.getByRole("button", { name: "V1 Demo'yu Aç" }).click();
   await page.waitForURL(/\/dashboard/);
@@ -11,7 +24,12 @@ async function switchPersona(page: Page, role: "ceo" | "hr_admin" | "manager" | 
   const select = page.getByLabel("Demo persona seçimi");
   await expect(select).toBeVisible();
   await select.selectOption(role);
-  await page.waitForLoadState("domcontentloaded");
+  await expect.poll(async () => page.evaluate(() => {
+    try { return JSON.parse(localStorage.getItem("hr_current_user") || "null")?.role || null; }
+    catch { return null; }
+  })).toBe(role === "hr_admin" ? "IK" : role === "manager" ? "MANAGER" : role === "employee" ? "PERSONEL" : "CEO");
+  await page.waitForURL(new RegExp(`${DEFAULT_ROUTE_BY_ROLE[role].replace("/", "\\/")}(?:$|\\?)`));
+  await expect(select).toHaveValue(role);
 }
 
 test.describe("FutureHR V1 demo quality gate", () => {
