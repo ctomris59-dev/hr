@@ -2,16 +2,10 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../app/utils/storage";
-import { toScore } from "../lib/score";
+import { buildBusinessEvents } from "../lib/hr/businessEvents";
 
 export type NotificationType = "success" | "error" | "warning" | "info";
-
-export interface Toast {
-  id: string;
-  message: string;
-  type: NotificationType;
-}
-
+export interface Toast { id: string; message: string; type: NotificationType; }
 export interface Notification {
   id: number;
   message: string;
@@ -23,25 +17,24 @@ export interface Notification {
   link?: string;
   source?: string;
 }
-
 interface NotificationContextType {
   toasts: Toast[];
   showToast: (message: string, type?: NotificationType) => void;
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (
-    message: string,
-    type?: NotificationType,
-    options?: Pick<Notification, "targetUser" | "targetRole" | "link" | "source">
-  ) => void;
+  addNotification: (message: string, type?: NotificationType, options?: Pick<Notification, "targetUser" | "targetRole" | "link" | "source">) => void;
   markAsRead: (id: number) => void;
   clearAll: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
-
-const serialize = (items: Notification[]) =>
-  items.map((item) => ({ ...item, timestamp: item.timestamp instanceof Date ? item.timestamp.toISOString() : item.timestamp }));
+const BUSINESS_READ_KEY = "futurehr_business_event_read_v1";
+const serialize = (items: Notification[]) => items.map((item) => ({ ...item, timestamp: item.timestamp instanceof Date ? item.timestamp.toISOString() : item.timestamp }));
+function readBusinessIds(): number[] {
+  if (typeof window === "undefined") return [];
+  try { const value = JSON.parse(localStorage.getItem(BUSINESS_READ_KEY) || "[]"); return Array.isArray(value) ? value.map(Number).filter(Number.isFinite) : []; } catch { return []; }
+}
+function writeBusinessIds(ids: number[]) { if (typeof window !== "undefined") localStorage.setItem(BUSINESS_READ_KEY, JSON.stringify(Array.from(new Set(ids)).slice(-200))); }
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -49,84 +42,35 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [computedNotifications, setComputedNotifications] = useState<Notification[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const loadNotifications = useCallback(() => {
+  const loadStored = useCallback(() => {
     const stored = getStorageData<any[]>(STORAGE_KEYS.NOTIFICATIONS, []);
-    setNotifications(
-      stored.map((item) => ({
-        ...item,
-        id: Number(item.id) || Date.now(),
-        type: (item.type || "info") as NotificationType,
-        read: Boolean(item.read),
-        timestamp: item.timestamp ? new Date(item.timestamp) : new Date(),
-      }))
-    );
+    setNotifications(stored.map((item) => ({ ...item, id: Number(item.id) || Date.now(), type: (item.type || "info") as NotificationType, read: Boolean(item.read), timestamp: item.timestamp ? new Date(item.timestamp) : new Date() })));
+  }, []);
+  const loadUser = useCallback(() => setCurrentUser(getStorageData<any>(STORAGE_KEYS.CURRENT_USER, null)), []);
+  const recompute = useCallback(() => {
+    const user = getStorageData<any>(STORAGE_KEYS.CURRENT_USER, null);
+    if (!user) return setComputedNotifications([]);
+    const readIds = new Set(readBusinessIds());
+    setComputedNotifications(buildBusinessEvents(user).map((item) => ({ ...item, read: readIds.has(item.id) })));
   }, []);
 
   useEffect(() => {
-    loadNotifications();
-    const reload = () => loadNotifications();
-    window.addEventListener("notificationsUpdated", reload as EventListener);
-    window.addEventListener("storageCleared", reload as EventListener);
+    loadStored(); loadUser(); recompute();
+    const reloadStored = () => loadStored();
+    const reloadAll = () => { loadUser(); recompute(); };
+    window.addEventListener("notificationsUpdated", reloadStored as EventListener);
+    window.addEventListener("userChanged", reloadAll as EventListener);
+    window.addEventListener("dataUpdated", reloadAll as EventListener);
+    window.addEventListener("performanceCycleUpdated", reloadAll as EventListener);
+    window.addEventListener("storageCleared", reloadAll as EventListener);
     return () => {
-      window.removeEventListener("notificationsUpdated", reload as EventListener);
-      window.removeEventListener("storageCleared", reload as EventListener);
+      window.removeEventListener("notificationsUpdated", reloadStored as EventListener);
+      window.removeEventListener("userChanged", reloadAll as EventListener);
+      window.removeEventListener("dataUpdated", reloadAll as EventListener);
+      window.removeEventListener("performanceCycleUpdated", reloadAll as EventListener);
+      window.removeEventListener("storageCleared", reloadAll as EventListener);
     };
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    const loadUser = () => setCurrentUser(getStorageData<any>(STORAGE_KEYS.CURRENT_USER, null));
-    loadUser();
-    window.addEventListener("storage", loadUser);
-    window.addEventListener("userChanged", loadUser as EventListener);
-    return () => {
-      window.removeEventListener("storage", loadUser);
-      window.removeEventListener("userChanged", loadUser as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    const loadComputedNotifications = async () => {
-      if (!currentUser) return setComputedNotifications([]);
-      const userName = currentUser?.name || currentUser?.username || "";
-      if (!userName) return setComputedNotifications([]);
-      let talentData = getStorageData<any[]>("hr_talent_matrix", []);
-      if (!Array.isArray(talentData) || talentData.length === 0) {
-        try {
-          const params = new URLSearchParams();
-          params.append("user_role", currentUser?.role || "EMPLOYEE");
-          const dept = currentUser?.dept || currentUser?.department || "";
-          if (dept) params.append("user_dept", dept);
-          params.append("user_name", userName);
-          const response = await fetch(`/api/talent-matrix?${params.toString()}`);
-          if (response.ok) {
-            const result = await response.json();
-            talentData = Array.isArray(result) ? result : result.data || [];
-          }
-        } catch {
-          talentData = [];
-        }
-      }
-      const key = userName.trim().toLocaleLowerCase("tr-TR");
-      const entry = talentData.find((item: any) => {
-        const candidate = String(item?.name || item?.["Ad Soyad"] || "").trim().toLocaleLowerCase("tr-TR");
-        return candidate === key;
-      });
-      if (toScore(entry?.test_score) === null) {
-        setComputedNotifications([
-          {
-            id: 90001,
-            message: "Yetkinlik testiniz henüz tamamlanmadı. Profilinizin oluşması için testi çözün.",
-            type: "warning",
-            read: false,
-            timestamp: new Date(),
-            link: "/aday-testi",
-            source: "assessment",
-          },
-        ]);
-      } else setComputedNotifications([]);
-    };
-    void loadComputedNotifications();
-  }, [currentUser]);
+  }, [loadStored, loadUser, recompute]);
 
   const showToast = useCallback((message: string, type: NotificationType = "info") => {
     const id = `toast-${Date.now()}-${Math.random()}`;
@@ -134,73 +78,44 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts((prev) => prev.filter((item) => item.id !== id)), 3500);
   }, []);
 
-  const addNotification = useCallback<NotificationContextType["addNotification"]>(
-    (message, type = "info", options = {}) => {
-      const next: Notification = {
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        message,
-        type,
-        read: false,
-        timestamp: new Date(),
-        ...options,
-      };
-      setNotifications((prev) => {
-        const updated = [next, ...prev].slice(0, 200);
-        setStorageData(STORAGE_KEYS.NOTIFICATIONS, serialize(updated));
-        return updated;
-      });
-      window.dispatchEvent(new CustomEvent("notificationsUpdated"));
-      showToast(message, type);
-
-      // Kullanıcı daha önce tarayıcı bildirimi izni verdiyse sistem bildirimi de göster.
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        try {
-          new Notification("FutureHR", { body: message });
-        } catch {
-          // In-app notification remains authoritative.
-        }
-      }
-    },
-    [showToast]
-  );
+  const addNotification = useCallback<NotificationContextType["addNotification"]>((message, type = "info", options = {}) => {
+    const next: Notification = { id: Date.now() + Math.floor(Math.random() * 1000), message, type, read: false, timestamp: new Date(), ...options };
+    setNotifications((prev) => {
+      const updated = [next, ...prev].slice(0, 200);
+      setStorageData(STORAGE_KEYS.NOTIFICATIONS, serialize(updated));
+      return updated;
+    });
+    window.dispatchEvent(new CustomEvent("notificationsUpdated"));
+    showToast(message, type);
+  }, [showToast]);
 
   const visibleNotifications = useMemo(() => {
     const name = String(currentUser?.name || currentUser?.username || "").toLocaleLowerCase("tr-TR");
     const role = String(currentUser?.role || "").toUpperCase();
-    return notifications.filter((item) => {
-      const userMatch = !item.targetUser || item.targetUser.toLocaleLowerCase("tr-TR") === name;
-      const roleMatch = !item.targetRole || item.targetRole.toUpperCase() === role;
-      return userMatch && roleMatch;
-    });
+    return notifications.filter((item) => (!item.targetUser || item.targetUser.toLocaleLowerCase("tr-TR") === name) && (!item.targetRole || item.targetRole.toUpperCase() === role));
   }, [notifications, currentUser]);
 
   const persistNotifications = useCallback((items: Notification[]) => {
-    setNotifications(items);
-    setStorageData(STORAGE_KEYS.NOTIFICATIONS, serialize(items));
-    window.dispatchEvent(new CustomEvent("notificationsUpdated"));
+    setNotifications(items); setStorageData(STORAGE_KEYS.NOTIFICATIONS, serialize(items)); window.dispatchEvent(new CustomEvent("notificationsUpdated"));
   }, []);
 
-  const markAsRead = useCallback(
-    (id: number) => {
-      persistNotifications(notifications.map((item) => (item.id === id ? { ...item, read: true } : item)));
-      setComputedNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
-    },
-    [notifications, persistNotifications]
-  );
+  const markAsRead = useCallback((id: number) => {
+    persistNotifications(notifications.map((item) => item.id === id ? { ...item, read: true } : item));
+    setComputedNotifications((prev) => prev.map((item) => item.id === id ? { ...item, read: true } : item));
+    if (computedNotifications.some((item) => item.id === id)) writeBusinessIds([...readBusinessIds(), id]);
+  }, [notifications, computedNotifications, persistNotifications]);
 
   const clearAll = useCallback(() => {
     persistNotifications([]);
-    setComputedNotifications([]);
-  }, [persistNotifications]);
+    const computedIds = computedNotifications.map((item) => item.id);
+    writeBusinessIds([...readBusinessIds(), ...computedIds]);
+    setComputedNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+  }, [persistNotifications, computedNotifications]);
 
-  const allNotifications = [...computedNotifications, ...visibleNotifications];
+  const allNotifications = useMemo(() => [...computedNotifications, ...visibleNotifications].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()), [computedNotifications, visibleNotifications]);
   const unreadCount = allNotifications.filter((item) => !item.read).length;
 
-  return (
-    <NotificationContext.Provider value={{ toasts, showToast, notifications: allNotifications, unreadCount, addNotification, markAsRead, clearAll }}>
-      {children}
-    </NotificationContext.Provider>
-  );
+  return <NotificationContext.Provider value={{ toasts, showToast, notifications: allNotifications, unreadCount, addNotification, markAsRead, clearAll }}>{children}</NotificationContext.Provider>;
 }
 
 export function useNotifications(): NotificationContextType {
