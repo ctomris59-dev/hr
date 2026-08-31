@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { fetchWithSession, isSameOriginRequest, isSaasMode } from "@/lib/saasAuthServer";
 
-const ALLOWED_ROOTS = new Set(["development", "leave", "compensation"]);
+const ALLOWED_ROOTS = new Set([
+  "development",
+  "leave",
+  "compensation",
+  "decision",
+  "digital-twin",
+  "skills",
+  "lifecycle",
+  "compliance",
+]);
 const MUTATION_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
 function backendPath(request: Request, segments: string[]) {
@@ -34,7 +43,7 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
       headers: { "Cache-Control": "no-store" },
     });
   } catch {
-    return NextResponse.json({ error: "SaaS işgücü servisine ulaşılamadı." }, { status: 503 });
+    return NextResponse.json({ error: "SaaS karar zekâsı servisine ulaşılamadı." }, { status: 503 });
   }
 }
 
