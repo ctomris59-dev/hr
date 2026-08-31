@@ -65,13 +65,13 @@ html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="
   opacity:1!important;
 }
 
-/* Legacy purple gradient copy becomes a dark semantic violet on light module
-   surfaces. The leading-4 guard targets the descriptive training copy without
-   flattening intentional dark/purple feature surfaces elsewhere. */
-html:not(.dark) [data-testid="app-shell"] main [class*="text-violet-100"][class*="leading-4"],
-html:not(.dark) [data-testid="app-shell"] main [class*="text-violet-200"][class*="leading-4"] {
-  color:#5b3a88!important;
-  -webkit-text-fill-color:#5b3a88!important;
+/* The Human Enterprise layer renders the active training-tab surface light in
+   light mode. Its legacy violet-100 description therefore needs a dark violet.
+   This selector is deliberately more specific than the old gradient rules. */
+html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] span[class*="text-violet-100"][class*="leading-4"],
+html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] span[class*="text-violet-200"][class*="leading-4"] {
+  color:#4c2f78!important;
+  -webkit-text-fill-color:#4c2f78!important;
   opacity:1!important;
 }
 
