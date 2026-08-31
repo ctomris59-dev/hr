@@ -1,0 +1,58 @@
+/* FutureHR UX hardening
+   Shared interaction/readability rules that complement the Human Enterprise visual system. */
+
+/* Prototype-era micro text must not remain unreadable inside real product surfaces. */
+.module-native-content [class~="text-[7px]"],
+.module-native-content [class~="text-[8px]"] {
+  font-size:10.5px!important;
+  line-height:15px!important;
+}
+
+/* Native disclosure controls should receive the same keyboard focus treatment as buttons and links. */
+summary:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible {
+  outline:2px solid rgba(47,102,100,.34);
+  outline-offset:2px;
+}
+
+/* Communicate unavailable actions consistently instead of making them look broken. */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor:not-allowed;
+}
+
+/* Clickable decision rows and data rows need an unmistakable hover/focus affordance. */
+[data-ux-action-row="true"] {
+  cursor:pointer;
+}
+[data-ux-action-row="true"]:hover,
+[data-ux-action-row="true"]:focus-visible {
+  background-color:rgba(47,102,100,.045);
+}
+.dark [data-ux-action-row="true"]:hover,
+.dark [data-ux-action-row="true"]:focus-visible {
+  background-color:rgba(121,170,166,.08);
+}
+
+/* Keep meaningful text labels readable in auxiliary drawers/popovers, not only module-native-content. */
+[role="dialog"] :is(button,a)[class~="text-[9px]"],
+[role="dialog"] :is(button,a)[class~="text-[9.5px]"],
+[role="dialog"] :is(button,a)[class~="text-[10px]"] {
+  font-size:11px!important;
+  line-height:16px!important;
+}
+
+/* Reduce accidental text selection on pure navigation/action icons. */
+button[aria-label],
+summary[aria-label] {
+  -webkit-tap-highlight-color:transparent;
+}
+
+@media (max-width:640px) {
+  [role="dialog"] aside {
+    max-width:100vw;
+  }
+}
