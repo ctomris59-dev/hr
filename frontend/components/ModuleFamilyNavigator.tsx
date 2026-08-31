@@ -57,7 +57,7 @@ export default function ModuleFamilyNavigator({pathname}:{pathname:string}){
       </div>
     </div>
     <div className={`grid gap-2 p-3 ${gridClass(visibleItems.length)}`}>
-      {visibleItems.map((item,index)=>{const Icon=routeIcons[item.href]||ChevronRight;const active=item.href===activeHref;return <Link key={item.href} href={item.href} data-workspace-module={item.href} data-active={active?"true":"false"} className="futurehr-family-card group relative min-h-[96px] overflow-hidden border px-3.5 py-3">
+      {visibleItems.map((item,index)=>{const Icon=routeIcons[item.href]||ChevronRight;const active=item.href===activeHref;return <Link key={item.href} href={item.href} aria-current={active?"page":undefined} data-workspace-module={item.href} data-active={active?"true":"false"} className="futurehr-family-card group relative min-h-[96px] overflow-hidden border px-3.5 py-3">
         <div className="flex items-start gap-3">
           <div className="futurehr-family-card-icon flex h-8 w-8 shrink-0 items-center justify-center"><Icon className="h-4 w-4" strokeWidth={1.65}/></div>
           <div className="min-w-0 flex-1 pr-7">
@@ -65,7 +65,7 @@ export default function ModuleFamilyNavigator({pathname}:{pathname:string}){
             <p className="mt-1 text-[11.5px] leading-[1.05rem] text-slate-500 dark:text-slate-400">{item.description}</p>
           </div>
         </div>
-        <span className="futurehr-family-arrow absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center"><ChevronRight className="h-3.5 w-3.5"/></span>
+        <span className="futurehr-family-arrow absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center" aria-hidden="true"><ChevronRight className="h-3.5 w-3.5"/></span>
       </Link>;})}
     </div>
   </section>;
