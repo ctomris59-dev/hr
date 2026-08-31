@@ -117,13 +117,13 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
           </div>
         </div>
 
-        <nav className="futurehr-sidebar-nav min-h-0 flex-1 overflow-y-auto px-3.5 py-4" aria-label="Ana menü">
+        <nav className="futurehr-sidebar-nav min-h-0 flex-1 overflow-y-auto px-3.5 py-2.5" aria-label="Ana menü">
           {menuItems.map((item,index)=>{
             const Icon=item.icon;
             const isActive=item.key===activeMenuKey;
             const showSection=index===0||menuItems[index-1]?.section!==item.section;
             return <div key={item.key}>
-              {showSection&&<div className={`${index===0?"mt-0":"mt-4"} mb-1.5 flex items-center gap-2 px-2.5`}>
+              {showSection&&<div className={`${index===0?"mt-0":"mt-2"} mb-0.5 flex items-center gap-2 px-2.5`}>
                 <span className="text-[9.5px] font-semibold uppercase leading-4 tracking-[0.17em] text-slate-500">{item.section}</span>
                 <span className="h-px flex-1 bg-white/[0.045]"/>
               </div>}
@@ -132,7 +132,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
                 href={item.href}
                 onClick={()=>setSidebarOpen(false)}
                 aria-current={isActive?"page":undefined}
-                className={`group relative mb-1 flex h-[44px] items-center gap-3 overflow-hidden rounded-[10px] px-3 text-[13.5px] leading-5 outline-none transition-[background-color,color,border-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#79aaa6]/45 ${isActive?"bg-[linear-gradient(90deg,rgba(72,115,112,0.24),rgba(255,255,255,0.075))] font-semibold text-white ring-1 ring-inset ring-white/[0.055]":"font-medium text-slate-300/90 hover:bg-white/[0.055] hover:text-white"}`}
+                className={`group relative mb-0.5 flex h-10 items-center gap-3 overflow-hidden rounded-[10px] px-3 text-[13.5px] leading-5 outline-none transition-[background-color,color,border-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#79aaa6]/45 ${isActive?"bg-[linear-gradient(90deg,rgba(72,115,112,0.24),rgba(255,255,255,0.075))] font-semibold text-white ring-1 ring-inset ring-white/[0.055]":"font-medium text-slate-300/90 hover:bg-white/[0.055] hover:text-white"}`}
               >
                 {isActive&&<span className="absolute inset-y-[8px] left-0 w-[3px] rounded-r-full bg-[#79aaa6]"/>}
                 <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border transition-colors ${isActive?"border-[#79aaa6]/20 bg-[#79aaa6]/10 text-[#a7cbc8]":"border-transparent bg-transparent text-slate-500 group-hover:text-slate-300"}`}>
