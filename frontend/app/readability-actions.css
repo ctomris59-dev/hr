@@ -56,10 +56,20 @@ html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="
   -webkit-text-fill-color:#ffffff!important;
 }
 
+/* Secondary labels on restored dark panels need a light-muted tone, not the
+   light-page slate-400 token. */
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-950"][class*="text-white"] [class*="text-slate-400"],
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-900"][class*="text-white"] [class*="text-slate-400"] {
+  color:#cbd5e1!important;
+  -webkit-text-fill-color:#cbd5e1!important;
+  opacity:1!important;
+}
+
 /* Legacy purple gradient copy becomes a dark semantic violet on light module
-   surfaces. Dark mode keeps the original pale treatment. */
-html:not(.dark) [data-testid="app-shell"] main .workspace-egitim [class*="text-violet-100"],
-html:not(.dark) [data-testid="app-shell"] main .workspace-egitim [class*="text-violet-200"] {
+   surfaces. The leading-4 guard targets the descriptive training copy without
+   flattening intentional dark/purple feature surfaces elsewhere. */
+html:not(.dark) [data-testid="app-shell"] main [class*="text-violet-100"][class*="leading-4"],
+html:not(.dark) [data-testid="app-shell"] main [class*="text-violet-200"][class*="leading-4"] {
   color:#5b3a88!important;
   -webkit-text-fill-color:#5b3a88!important;
   opacity:1!important;
