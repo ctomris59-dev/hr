@@ -16,6 +16,20 @@ export type HumanReview = {
   reviewed_by?:string;
   reviewed_at?:string;
 };
+export type CompensationInsight = {
+  employee_id:string;
+  employee_name:string;
+  salary_available:boolean;
+  market_benchmark_available:boolean;
+  market_average:number|null;
+  compa_ratio:number|null;
+  market_gap_pct:number|null;
+  peer_median:number|null;
+  peer_position_pct:number|null;
+  compression_risk:boolean;
+  compression_ratio:number|null;
+  benchmark_source?:string|null;
+};
 export type DigitalTwin = {
   employee:{id:string;external_id?:string|null;full_name:string;department?:string|null;position?:string|null;job_family?:string|null;job_level?:string|null;manager_employee_id?:string|null;hire_date?:string|null;employment_type?:string|null;location?:string|null;source:string};
   performance:{score:number|null;kpi_score:number|null;manager_score:number|null;competency_score:number|null;evaluated_at?:string|null};
@@ -23,7 +37,7 @@ export type DigitalTwin = {
   talent:{career_aspiration:number|null;mobility_willingness:number|null};
   development:{active_count:number;items:Array<{id:string;competency?:string|null;goal:string;status:string;due_date?:string|null}>};
   leave:{pending:number;approved_days:number};
-  compensation:{salary_available:boolean;market_benchmark_available:boolean;market_average:number|null;compa_ratio:number|null;market_gap_pct:number|null;peer_median:number|null;peer_position_pct:number|null;compression_risk:boolean;compression_ratio:number|null;benchmark_source?:string|null};
+  compensation:Omit<CompensationInsight,"employee_id"|"employee_name">;
   evidence:DecisionEvidence;
   decision:DecisionRecommendation;
   human_reviews:HumanReview[];
@@ -69,6 +83,7 @@ export function fetchDigitalTwin(employeeId:string){return request<DigitalTwin>(
 export function fetchDecisionProfile(employeeId:string){return request<DecisionProfile>(`decision/employees/${encodeURIComponent(employeeId)}`);}
 export function fetchDecisionPriorities(){return request<{items:DecisionPriority[];generated_at:string}>("decision/priorities");}
 export function fetchSkillsGraph(){return request<SkillsGraph>("skills/graph");}
+export function fetchCompensationInsight(employeeId:string){return request<CompensationInsight>(`compensation/insights/${encodeURIComponent(employeeId)}`);}
 export function fetchTurkiyeComplianceStatus(){return request<TurkiyeComplianceStatus>("compliance/turkiye/status");}
 export function recordHumanReview(employeeId:string,payload:{decision_type:string;status:HumanReview["status"];note?:string}){
   return request<HumanReview>(`decision/employees/${encodeURIComponent(employeeId)}/review`,{method:"POST",body:JSON.stringify(payload)});
