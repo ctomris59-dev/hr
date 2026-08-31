@@ -99,3 +99,27 @@
   opacity:1!important;
   font-weight:650!important;
 }
+
+/* Talent navigation: this control had a legacy workspace selector with higher specificity.
+   Keep the active route unambiguously readable and the inactive route dark enough on white. */
+.workspace-yetenek-matrisi .module-native-content a[href="/yedekleme"] {
+  background-color:var(--primary)!important;
+  border-color:var(--primary)!important;
+  color:#fff!important;
+  opacity:1!important;
+  font-weight:700!important;
+  text-shadow:none!important;
+}
+.workspace-yetenek-matrisi .module-native-content a[href="/yedekleme"]:hover,
+.workspace-yetenek-matrisi .module-native-content a[href="/yedekleme"]:focus-visible {
+  background-color:var(--primary-hover)!important;
+  color:#fff!important;
+}
+.workspace-yetenek-matrisi .module-native-content a[href="/kariyer"] {
+  color:#334155!important;
+  opacity:1!important;
+  font-weight:650!important;
+}
+.dark .workspace-yetenek-matrisi .module-native-content a[href="/kariyer"] {
+  color:#e2e8f0!important;
+}
