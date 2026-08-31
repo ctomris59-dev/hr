@@ -26,10 +26,8 @@ export default function EkipYonetimiPage(){
         setUser({role:"SAAS"});
         setOrgData(workspace.employees);
         setHistory(workspace.evaluations);
-        // Leave and development are intentionally not read from browser storage in SaaS mode.
-        // Their cards stay unavailable until those modules receive tenant-scoped APIs.
-        setLeaveRequests([]);
-        setPlans([]);
+        setLeaveRequests(workspace.leaveRequests);
+        setPlans(workspace.plans);
         return;
       }
       setUser(getStorageData(STORAGE_KEYS.CURRENT_USER,null));
@@ -81,13 +79,13 @@ export default function EkipYonetimiPage(){
         <p className="futurehr-page-lede">Bağlı çalışanları ve günlük ekip aksiyonlarını yönetin. Çalışan ana verisi Çalışanlar & Organizasyon&apos;da; kullanıcı hesabı ve yetkiler Kullanıcı & Yetki&apos;de yönetilir.</p>
       </header>
 
-      {SAAS_DATA_MODE&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800">Ekip ve performans verisi tenant-scoped SaaS API&apos;den okunuyor. İzin ve gelişim modülleri henüz bu veri katmanına taşınmadığı için bu iki sayaç geçici olarak gösterilmiyor.</div>}
+      {SAAS_DATA_MODE&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800">Ekip, performans, izin ve gelişim verileri tenant-scoped SaaS API&apos;lerden okunuyor. Bu görünüm production modunda browser storage&apos;ı veri otoritesi olarak kullanmıyor.</div>}
       {loadError&&<div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{loadError}</div>}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label="Yönetilen çalışan" value={loading?"…":team.length} icon={Users}/>
-        <Metric label="Bekleyen izin" value={SAAS_DATA_MODE?"—":pendingLeave} icon={CalendarDays}/>
-        <Metric label="Aktif gelişim aksiyonu" value={SAAS_DATA_MODE?"—":activePlans} icon={Clock3}/>
+        <Metric label="Bekleyen izin" value={loading?"…":pendingLeave} icon={CalendarDays}/>
+        <Metric label="Aktif gelişim aksiyonu" value={loading?"…":activePlans} icon={Clock3}/>
       </div>
 
       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900">
@@ -114,8 +112,8 @@ export default function EkipYonetimiPage(){
 
             <div className="mt-4 grid grid-cols-3 gap-2">
               <Mini label="Son perf." value={performanceValue(lastEval)}/>
-              <Mini label="Gelişim" value={SAAS_DATA_MODE?"—":String(employeePlans)}/>
-              <Mini label="İzin talebi" value={SAAS_DATA_MODE?"—":String(leave)}/>
+              <Mini label="Gelişim" value={String(employeePlans)}/>
+              <Mini label="İzin talebi" value={String(leave)}/>
             </div>
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
@@ -171,8 +169,8 @@ function EmployeeDrawer({employee,history,plans,leaveRequests,onClose}:{employee
           <p className="enterprise-eyebrow">Çalışan özeti</p>
           <div className="mt-3 grid grid-cols-3 gap-2">
             <DetailMetric label="Son performans" value={performanceValue(lastEval)}/>
-            <DetailMetric label="Aktif gelişim" value={SAAS_DATA_MODE?"—":String(employeePlans.length)}/>
-            <DetailMetric label="Bekleyen izin" value={SAAS_DATA_MODE?"—":String(pendingLeaves.length)}/>
+            <DetailMetric label="Aktif gelişim" value={String(employeePlans.length)}/>
+            <DetailMetric label="Bekleyen izin" value={String(pendingLeaves.length)}/>
           </div>
         </section>
 
@@ -191,9 +189,9 @@ function EmployeeDrawer({employee,history,plans,leaveRequests,onClose}:{employee
         <section className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-800">
           <div className="flex items-center justify-between gap-3">
             <p className="enterprise-eyebrow">Gelişim durumu</p>
-            <span className="text-[11px] font-medium text-slate-400">{SAAS_DATA_MODE?"SaaS geçişi bekliyor":`${employeePlans.length} aktif aksiyon`}</span>
+            <span className="text-[11px] font-medium text-slate-400">{employeePlans.length} aktif aksiyon</span>
           </div>
-          {SAAS_DATA_MODE?<p className="mt-3 text-xs leading-5 text-slate-500">Gelişim aksiyonları tenant-scoped API&apos;ye taşındığında burada gösterilecek; production modunda localStorage fallback kullanılmıyor.</p>:employeePlans.length?<div className="mt-3 space-y-2">{employeePlans.slice(0,4).map((plan,index)=><div key={plan.id??`${plan.title}-${index}`} className="rounded-lg border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{plan.title||plan.action||plan.name||"Gelişim aksiyonu"}</p><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-slate-400"><span>{plan.status||"Aktif"}</span>{plan.targetDate&&<span>Hedef: {plan.targetDate}</span>}</div></div>)}</div>:<p className="mt-3 text-xs leading-5 text-slate-500">Bu çalışan için aktif gelişim aksiyonu bulunmuyor.</p>}
+          {employeePlans.length?<div className="mt-3 space-y-2">{employeePlans.slice(0,4).map((plan,index)=><div key={plan.id??`${plan.title}-${index}`} className="rounded-lg border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{plan.title||plan.action||plan.name||"Gelişim aksiyonu"}</p><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-slate-400"><span>{plan.status||"Aktif"}</span>{(plan.targetDate||plan.dueDate)&&<span>Hedef: {plan.targetDate||plan.dueDate}</span>}</div></div>)}</div>:<p className="mt-3 text-xs leading-5 text-slate-500">Bu çalışan için aktif gelişim aksiyonu bulunmuyor.</p>}
         </section>
       </div>
 
