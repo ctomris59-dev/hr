@@ -65,6 +65,8 @@ class EmployeeModel(Base):
     hire_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     employment_type: Mapped[str | None] = mapped_column(String(48), nullable=True)
     location: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    salary_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    annual_leave_entitlement: Mapped[float] = mapped_column(Float, default=14.0, nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
@@ -142,5 +144,135 @@ class TalentProfileModel(Base):
     career_aspiration: Mapped[float | None] = mapped_column(Float, nullable=True)
     mobility_willingness: Mapped[float | None] = mapped_column(Float, nullable=True)
     updated_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class DevelopmentPlanModel(Base):
+    __tablename__ = "development_plans"
+    __table_args__ = (
+        Index("ix_development_tenant_employee_status", "tenant_id", "employee_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    competency: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    goal: Mapped[str] = mapped_column(String(500), nullable=False)
+    action: Mapped[str] = mapped_column(Text, nullable=False)
+    action_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    success_metric: Mapped[str] = mapped_column(Text, nullable=False)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="Planlandı", nullable=False)
+    created_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    intervention_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    reassess_days: Mapped[int | None] = mapped_column(nullable=True)
+    transferred_to_training: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class DevelopmentTrainingAssignmentModel(Base):
+    __tablename__ = "development_training_assignments"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "source_development_plan_id", name="uq_dev_training_tenant_plan"),
+        Index("ix_dev_training_tenant_employee", "tenant_id", "employee_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    source_development_plan_id: Mapped[str] = mapped_column(ForeignKey("development_plans.id", ondelete="CASCADE"), nullable=False)
+    training_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    training_name: Mapped[str] = mapped_column(String(500), nullable=False)
+    assigned_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_by_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="Atandı", nullable=False)
+    competency_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    transfer_task: Mapped[str | None] = mapped_column(Text, nullable=True)
+    success_metric: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class LeaveRequestModel(Base):
+    __tablename__ = "leave_requests"
+    __table_args__ = (
+        Index("ix_leave_tenant_employee_status", "tenant_id", "employee_id", "status"),
+        Index("ix_leave_tenant_dates", "tenant_id", "start_date", "end_date"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    leave_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    days: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="Bekliyor", nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    approved_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_by_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class RewardLeaveGrantModel(Base):
+    __tablename__ = "reward_leave_grants"
+    __table_args__ = (
+        Index("ix_reward_leave_tenant_employee", "tenant_id", "employee_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    days: Mapped[float] = mapped_column(Float, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    granted_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    granted_by_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class CompensationBenchmarkModel(Base):
+    __tablename__ = "compensation_benchmarks"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "department", "position", name="uq_comp_benchmark_tenant_role"),
+        Index("ix_comp_benchmark_tenant_role", "tenant_id", "department", "position"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    department: Mapped[str] = mapped_column(String(160), nullable=False)
+    position: Mapped[str] = mapped_column(String(200), nullable=False)
+    market_average: Mapped[float] = mapped_column(Float, nullable=False)
+    source: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    updated_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class CompensationCycleModel(Base):
+    __tablename__ = "compensation_cycles"
+    __table_args__ = (
+        Index("ix_comp_cycle_tenant_stage", "tenant_id", "stage"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    stage: Mapped[str] = mapped_column(String(32), default="DRAFT_SIMULATION", nullable=False)
+    scenario: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    inflation_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    budget_limit: Mapped[float] = mapped_column(Float, default=30.0, nullable=False)
+    manager_deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
+    effective_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    results_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    manager_requests_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    stage_history_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    approved_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    finalized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
