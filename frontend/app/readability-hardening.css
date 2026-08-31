@@ -100,8 +100,7 @@
   font-weight:650!important;
 }
 
-/* Talent navigation: this control had a legacy workspace selector with higher specificity.
-   Keep the active route unambiguously readable and the inactive route dark enough on white. */
+/* Talent navigation: explicit readable treatment. */
 .workspace-yetenek-matrisi .module-native-content a[href="/yedekleme"] {
   background-color:var(--primary)!important;
   border-color:var(--primary)!important;
@@ -122,4 +121,36 @@
 }
 .dark .workspace-yetenek-matrisi .module-native-content a[href="/kariyer"] {
   color:#e2e8f0!important;
+}
+
+/* The legacy segmented-control rule in globals.css carries five class/pseudo selectors
+   and !important declarations. Match that structure and add href specificity so these
+   final contrast values cannot be overridden by the legacy neutral treatment. */
+.workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child a[href="/yedekleme"] {
+  background:var(--primary)!important;
+  border:0!important;
+  color:#ffffff!important;
+  opacity:1!important;
+  font-size:11.5px!important;
+  font-weight:750!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+.workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child a[href="/yedekleme"]:hover,
+.workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child a[href="/yedekleme"]:focus-visible {
+  background:var(--primary-hover)!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+.workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child a[href="/kariyer"] {
+  background:#ffffff!important;
+  color:#334155!important;
+  opacity:1!important;
+  font-size:11.5px!important;
+  font-weight:650!important;
+  -webkit-text-fill-color:#334155!important;
+}
+.dark .workspace-yetenek-matrisi .module-native-content>.space-y-5>div:first-child>div:last-child a[href="/kariyer"] {
+  background:var(--surface)!important;
+  color:#e2e8f0!important;
+  -webkit-text-fill-color:#e2e8f0!important;
 }
