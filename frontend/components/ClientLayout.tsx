@@ -145,7 +145,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
           })}
         </nav>
 
-        <div className="flex-shrink-0 border-t border-white/[0.07] bg-[#09131e] p-3.5">
+        <div className="futurehr-sidebar-footer flex-shrink-0 border-t border-white/[0.07] bg-[#09131e] p-3.5">
           {user&&<div className="mb-2 rounded-[11px] border border-white/[0.06] bg-white/[0.035] p-2.5">
             <div className="flex items-center gap-3">
               <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] border border-white/[0.09] bg-[#172534] text-[11px] font-semibold text-slate-100">
