@@ -29,6 +29,7 @@ import {
   type DigitalTwin,
   type SkillsGraph,
 } from "@/lib/hr/decisionIntelligenceClient";
+import { resolveTargetProfile } from "@/lib/hr/careerArchitecture";
 import { SAAS_DATA_MODE } from "@/lib/hr/saasWorkforceClient";
 import { getStorageData, STORAGE_KEYS } from "../../utils/storage";
 
@@ -327,8 +328,10 @@ export default function YetkinlikHaritasiPage() {
   }, [selectedEmployeeId]);
 
   const selectedRequirements = useMemo(() => {
-    const position = roleKey(String(selectedEmployee?.position || twin?.employee.position || ""));
+    const rawPosition = String(selectedEmployee?.position || twin?.employee.position || "").trim();
+    const position = roleKey(rawPosition);
     if (!position) return [];
+
     const rows = (graph?.role_requirements || []).filter((row) => roleKey(row.role) === position);
     const unique = new Map<string, SkillsGraph["role_requirements"][number]>();
     rows.forEach((row) => {
@@ -338,6 +341,21 @@ export default function YetkinlikHaritasiPage() {
         unique.set(key, row);
       }
     });
+
+    const fallback = resolveTargetProfile(rawPosition);
+    Object.entries(fallback.profile || {}).forEach(([skill, targetRaw]) => {
+      const target = Number(targetRaw);
+      const key = canonicalSkill(skill);
+      if (!key || !(target > 0 && target <= 5) || unique.has(key)) return;
+      unique.set(key, {
+        role: rawPosition,
+        skill,
+        target: Number(target.toFixed(2)),
+        sample_size: Math.max(0, Number(fallback.referenceCount || 0)),
+        source: `job_architecture_${fallback.source}`,
+      });
+    });
+
     return Array.from(unique.values());
   }, [graph, selectedEmployee, twin]);
 
