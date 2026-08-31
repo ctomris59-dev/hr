@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import "./readability-hardening.css";
 import "./ux-hardening.css";
+import "./readability-final.css";
+import "./readability-actions.css";
 import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { DataProvider } from "../context/DataContext";

@@ -1,0 +1,100 @@
+/* Final action-surface contrast guard.
+   Intentionally loaded last so legacy Human Enterprise selectors cannot wash
+   dark CTA backgrounds into medium grey while leaving white text. */
+
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-slate-900"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-slate-800"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-slate-900"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-slate-800"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-gray-900"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-gray-800"][class*="text-white"] {
+  background:#17212b!important;
+  background-color:#17212b!important;
+  background-image:none!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-slate-900"][class*="text-white"] *,
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-slate-800"][class*="text-white"] *,
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-slate-900"][class*="text-white"] *,
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-slate-800"][class*="text-white"] * {
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+}
+
+/* Same guarantee for FutureHR teal/primary CTAs. */
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-teal-700"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-teal-600"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-teal-700"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-teal-600"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-primary"][class*="text-white"] {
+  background:#285f5c!important;
+  background-color:#285f5c!important;
+  background-image:none!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+}
+
+/* Dark informational score panels are not neutralised into a light surface.
+   This also keeps inherited white labels/chips readable (e.g. Career readiness). */
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-950"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-900"][class*="text-white"] {
+  background:#17212b!important;
+  background-color:#17212b!important;
+  background-image:none!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-950"][class*="text-white"] :not([class*="text-slate-4"],[class*="text-slate-5"],[class*="text-amber-"],[class*="text-teal-"],[class*="text-red-"],[class*="text-emerald-"]),
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-900"][class*="text-white"] :not([class*="text-slate-4"],[class*="text-slate-5"],[class*="text-amber-"],[class*="text-teal-"],[class*="text-red-"],[class*="text-emerald-"]) {
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Secondary labels on restored dark panels need a light-muted tone, not the
+   light-page slate-400 token. */
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-950"][class*="text-white"] [class*="text-slate-400"],
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-900"][class*="text-white"] [class*="text-slate-400"] {
+  color:#cbd5e1!important;
+  -webkit-text-fill-color:#cbd5e1!important;
+  opacity:1!important;
+}
+
+/* Active training navigation is a deliberate dark selection surface. Keep the
+   surface and all inherited labels together so legacy light-surface rules can
+   never create violet-on-violet or white-on-washed-out combinations. */
+html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] {
+  background:#4c1d95!important;
+  background-color:#4c1d95!important;
+  background-image:none!important;
+  border-color:#4c1d95!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+}
+html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] :is(span,strong)[class*="text-violet-100"],
+html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] :is(span,strong)[class*="text-violet-200"] {
+  color:#f5f3ff!important;
+  -webkit-text-fill-color:#f5f3ff!important;
+  opacity:1!important;
+}
+
+/* Light action/source cards must never inherit white text from a former
+   gradient container. Explicit child text utilities can still override this. */
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-white"]:not([class*="text-white"]),
+html:not(.dark) [data-testid="app-shell"] main button[class*="bg-indigo-50"]:not([class*="text-white"]),
+html:not(.dark) [data-testid="app-shell"] main button[class*="bg-slate-50"]:not([class*="text-white"]) {
+  color:#17212b!important;
+  -webkit-text-fill-color:#17212b!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-white"]:not([class*="text-white"]) :is(p,span,strong):not([class*="text-"]),
+html:not(.dark) [data-testid="app-shell"] main button[class*="bg-indigo-50"]:not([class*="text-white"]) :is(p,span,strong):not([class*="text-"]),
+html:not(.dark) [data-testid="app-shell"] main button[class*="bg-slate-50"]:not([class*="text-white"]) :is(p,span,strong):not([class*="text-"]) {
+  color:#17212b!important;
+  -webkit-text-fill-color:#17212b!important;
+}
