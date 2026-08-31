@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowRight, BrainCircuit, CheckCircle2, CircleGauge, ShieldCheck } from "lucide-react";
 import EmployeeDigitalTwinDrawer from "@/components/EmployeeDigitalTwinDrawer";
+import DemoDecisionProfileDrawer from "@/components/DemoDecisionProfileDrawer";
 import { fetchDecisionPriorities, type DecisionPriority } from "@/lib/hr/decisionIntelligenceClient";
 import { SAAS_DATA_MODE } from "@/lib/hr/saasWorkforceClient";
 import { getStorageData, STORAGE_KEYS } from "../../utils/storage";
@@ -51,18 +52,18 @@ export default function KararMerkeziPage(){
           <div className="flex items-center gap-2 text-[10.5px] text-slate-500"><ShieldCheck className="h-3.5 w-3.5 text-[#2f6664]"/>İnsan onaylı karar desteği</div>
         </div>
         {error&&<div className="m-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{error}</div>}
-        {loading?<div className="p-8 text-center text-sm text-slate-500">Karar zincirleri hesaplanıyor…</div>:items.length?<div className="divide-y divide-slate-100 dark:divide-slate-800">{items.map((item,index)=><button key={item.employee_id} type="button" onClick={()=>SAAS_DATA_MODE&&setSelected(item)} className="grid w-full gap-3 px-5 py-4 text-left hover:bg-slate-50/70 sm:grid-cols-[34px_minmax(180px,.8fr)_minmax(220px,1.2fr)_100px_24px] sm:items-center dark:hover:bg-slate-900/40">
+        {loading?<div className="p-8 text-center text-sm text-slate-500">Karar zincirleri hesaplanıyor…</div>:items.length?<div className="divide-y divide-slate-100 dark:divide-slate-800">{items.map((item,index)=><button key={item.employee_id} type="button" onClick={()=>setSelected(item)} aria-label={`${item.employee_name} karar profilini aç`} aria-haspopup="dialog" data-testid="decision-priority-row" className="group grid w-full cursor-pointer gap-3 px-5 py-4 text-left outline-none transition-colors hover:bg-slate-50/70 focus-visible:bg-slate-50/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#79aaa6]/35 sm:grid-cols-[34px_minmax(180px,.8fr)_minmax(220px,1.2fr)_100px_24px] sm:items-center dark:hover:bg-slate-900/40 dark:focus-visible:bg-slate-900/40">
           <span className="text-[10px] font-semibold tabular-nums text-slate-300">{String(index+1).padStart(2,"0")}</span>
           <div><p className="text-xs font-semibold text-slate-900 dark:text-white">{item.employee_name}</p><p className="mt-1 text-[10.5px] text-slate-400">{item.department||"Departman belirtilmedi"}</p></div>
           <div><div className="flex flex-wrap gap-1.5">{item.reasons.map(reason=><span key={reason} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[9.5px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">{reason}</span>)}</div><p className="mt-2 text-[10.5px] leading-4 text-slate-500">{item.recommended_next_step}</p></div>
           <div><p className="text-[9.5px] uppercase tracking-wide text-slate-400">Kanıt</p><p className={`mt-1 text-sm font-semibold ${item.evidence_score<55?"text-amber-700":"text-[#2f6664]"}`}>{item.evidence_score}/100</p></div>
-          <ArrowRight className="h-4 w-4 text-slate-300"/>
+          <ArrowRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-[#2f6664] group-focus-visible:translate-x-0.5 group-focus-visible:text-[#2f6664]" aria-hidden="true"/>
         </button>)}</div>:<div className="flex items-center justify-center gap-2 p-8 text-sm text-slate-500"><CheckCircle2 className="h-4 w-4 text-emerald-600"/>Şu anda öncelikli karar sinyali bulunmuyor.</div>}
       </section>
 
       <div className="rounded-lg border border-[#cbdad8] bg-[#f1f6f5] px-4 py-3 text-[10.5px] leading-5 text-[#315f5c] dark:border-[#294643] dark:bg-[#172b2a] dark:text-[#a9cfcb]">Karar Motoru sonuçları otomatik insan kaynağı kararı değildir. Kanıt güveni, eksik veri ve riskler görünür tutulur; onay kaydı Digital Twin üzerinde insan kullanıcı tarafından verilir.</div>
     </div>
-    {selected&&<EmployeeDigitalTwinDrawer employeeId={selected.employee_id} fallbackName={selected.employee_name} onClose={()=>setSelected(null)}/>} 
+    {selected&&(SAAS_DATA_MODE?<EmployeeDigitalTwinDrawer employeeId={selected.employee_id} fallbackName={selected.employee_name} onClose={()=>setSelected(null)}/>:<DemoDecisionProfileDrawer employeeId={selected.employee_id} fallbackName={selected.employee_name} onClose={()=>setSelected(null)}/>)}
   </>;
 }
 

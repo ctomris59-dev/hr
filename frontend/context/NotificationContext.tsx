@@ -105,12 +105,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (computedNotifications.some((item) => item.id === id)) writeBusinessIds([...readBusinessIds(), id]);
   }, [notifications, computedNotifications, persistNotifications]);
 
+  // UI metni "Tümünü okundu say"dır. Geçmişi silmek yerine kayıtları koruyup yalnız read durumunu değiştirir.
   const clearAll = useCallback(() => {
-    persistNotifications([]);
+    persistNotifications(notifications.map((item) => ({ ...item, read: true })));
     const computedIds = computedNotifications.map((item) => item.id);
     writeBusinessIds([...readBusinessIds(), ...computedIds]);
     setComputedNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
-  }, [persistNotifications, computedNotifications]);
+  }, [notifications, persistNotifications, computedNotifications]);
 
   const allNotifications = useMemo(() => [...computedNotifications, ...visibleNotifications].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()), [computedNotifications, visibleNotifications]);
   const unreadCount = allNotifications.filter((item) => !item.read).length;

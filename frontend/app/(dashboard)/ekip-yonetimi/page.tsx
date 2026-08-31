@@ -19,6 +19,7 @@ export default function EkipYonetimiPage(){
   const[loadError,setLoadError]=useState("");
 
   const reload=async()=>{
+    setLoading(true);
     setLoadError("");
     try{
       if(SAAS_DATA_MODE){
@@ -64,7 +65,7 @@ export default function EkipYonetimiPage(){
   },[user,orgData,role]);
 
   const filtered=team.filter(e=>{
-    const q=search.toLocaleLowerCase("tr-TR");
+    const q=search.trim().toLocaleLowerCase("tr-TR");
     return !q||[e["Ad Soyad"],e.Pozisyon,e.Departman].some(v=>String(v||"").toLocaleLowerCase("tr-TR").includes(q));
   });
 
@@ -80,7 +81,7 @@ export default function EkipYonetimiPage(){
       </header>
 
       {SAAS_DATA_MODE&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800">Ekip, performans, izin ve gelişim verileri tenant-scoped SaaS API&apos;lerden okunuyor. Bu görünüm production modunda browser storage&apos;ı veri otoritesi olarak kullanmıyor.</div>}
-      {loadError&&<div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{loadError}</div>}
+      {loadError&&<div className="flex flex-col gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700 sm:flex-row sm:items-center sm:justify-between"><span>{loadError}</span><button type="button" onClick={()=>void reload()} className="h-8 shrink-0 rounded-lg border border-rose-200 bg-white px-3 text-[11px] font-semibold text-rose-700 hover:bg-rose-100">Tekrar dene</button></div>}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label="Yönetilen çalışan" value={loading?"…":team.length} icon={Users}/>
@@ -88,10 +89,12 @@ export default function EkipYonetimiPage(){
         <Metric label="Aktif gelişim aksiyonu" value={loading?"…":activePlans} icon={Clock3}/>
       </div>
 
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900">
-        <Search className="h-4 w-4 text-slate-400"/>
+      <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900">
+        <Search className="h-4 w-4 text-slate-400" aria-hidden="true"/>
+        <span className="sr-only">Ekipte ara</span>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Ekipte ara" className="h-11 flex-1 bg-transparent text-sm outline-none"/>
-      </div>
+        {search&&<button type="button" onClick={()=>setSearch("")} className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-100" aria-label="Ekip aramasını temizle">Temizle</button>}
+      </label>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map(employee=>{
@@ -117,7 +120,7 @@ export default function EkipYonetimiPage(){
             </div>
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
-              <button type="button" onClick={()=>setSelectedEmployee(employee)} className="text-[11px] font-semibold text-[#2f6664] hover:underline">Çalışanı görüntüle →</button>
+              <button type="button" onClick={()=>setSelectedEmployee(employee)} aria-haspopup="dialog" className="text-[11px] font-semibold text-[#2f6664] hover:underline">Çalışanı görüntüle →</button>
               <details className="relative">
                 <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800" aria-label={`${name} aksiyonları`}><MoreHorizontal className="h-4 w-4"/></summary>
                 <div className="absolute bottom-10 right-0 z-20 min-w-[160px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
@@ -131,7 +134,7 @@ export default function EkipYonetimiPage(){
         })}
       </div>
 
-      {!loading&&!filtered.length&&<div className="enterprise-card p-10 text-center text-sm text-slate-500">Yönetilebilir çalışan bulunmuyor.</div>}
+      {!loading&&!filtered.length&&<div className="enterprise-card p-10 text-center"><Users className="mx-auto h-7 w-7 text-slate-300"/><p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{search.trim()?"Aramanızla eşleşen çalışan bulunamadı.":"Yönetilebilir çalışan bulunmuyor."}</p><p className="mt-1 text-xs text-slate-500">{search.trim()?"İsim, pozisyon veya departman aramasını değiştirin.":"Organizasyon yönetici bağlarını kontrol edin."}</p>{search.trim()&&<button type="button" onClick={()=>setSearch("")} className="mt-4 h-9 rounded-lg border border-slate-200 px-3 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">Aramayı temizle</button>}</div>}
     </div>
 
     {selectedEmployee&&<EmployeeDrawer employee={selectedEmployee} history={history} plans={plans} leaveRequests={leaveRequests} onClose={()=>setSelectedEmployee(null)}/>} 

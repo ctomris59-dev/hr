@@ -65,6 +65,15 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
     };
   },[]);
 
+  useEffect(()=>{
+    if(!sidebarOpen)return;
+    const close=(event:KeyboardEvent)=>{if(event.key==="Escape")setSidebarOpen(false);};
+    window.addEventListener("keydown",close);
+    return()=>window.removeEventListener("keydown",close);
+  },[sidebarOpen]);
+
+  useEffect(()=>{setSidebarOpen(false);},[normalizedPathname]);
+
   const handleLogout=async()=>{
     if(typeof window==="undefined")return;
     const secure=user?.authMode==="secure";
@@ -105,11 +114,11 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
     <AIGovernanceCapture/>
     <DemoDataHardeningBridge/>
 
-    <button onClick={()=>setSidebarOpen(!sidebarOpen)} className="fixed left-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" aria-label="Menüyü aç/kapat">
-      {sidebarOpen?<X size={18}/>:<Menu size={18}/>} 
+    <button type="button" onClick={()=>setSidebarOpen(value=>!value)} className="fixed left-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" aria-label={sidebarOpen?"Menüyü kapat":"Menüyü aç"} aria-expanded={sidebarOpen} aria-controls="futurehr-sidebar">
+      {sidebarOpen?<X size={18} aria-hidden="true"/>:<Menu size={18} aria-hidden="true"/>}
     </button>
 
-    <aside data-testid="app-sidebar" data-tour="sidebar" className={`${sidebarOpen?"translate-x-0":"-translate-x-full"} fixed inset-y-0 left-0 z-40 w-[280px] flex-shrink-0 border-r border-white/[0.07] bg-[#0b1521] text-slate-300 shadow-[8px_0_30px_rgba(15,23,42,0.05)] transition-transform duration-200 ease-out lg:static lg:translate-x-0`}>
+    <aside id="futurehr-sidebar" data-testid="app-sidebar" data-tour="sidebar" className={`${sidebarOpen?"translate-x-0":"-translate-x-full"} fixed inset-y-0 left-0 z-40 w-[280px] flex-shrink-0 border-r border-white/[0.07] bg-[#0b1521] text-slate-300 shadow-[8px_0_30px_rgba(15,23,42,0.05)] transition-transform duration-200 ease-out lg:static lg:translate-x-0`}>
       <div className="flex h-[100dvh] flex-col overflow-hidden">
         <div className="flex h-[84px] flex-shrink-0 items-center border-b border-white/[0.07] px-5">
           <div className="min-w-0">
@@ -160,21 +169,21 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
             </div>
             {userDepartment&&<div className="mt-2 border-t border-white/[0.055] pt-2 text-[9.5px] font-medium uppercase tracking-[0.08em] text-slate-600">{userDepartment}</div>}
           </div>}
-          <button onClick={handleLogout} className="flex h-9 w-full items-center gap-3 rounded-[9px] px-3 text-[12px] font-medium text-slate-500 transition-colors hover:bg-red-500/[0.08] hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30">
+          <button type="button" onClick={handleLogout} className="flex h-9 w-full items-center gap-3 rounded-[9px] px-3 text-[12px] font-medium text-slate-500 transition-colors hover:bg-red-500/[0.08] hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30">
             <LogOut size={15} strokeWidth={1.7}/><span>Çıkış yap</span>
           </button>
         </div>
       </div>
     </aside>
 
-    {sidebarOpen&&<div className="fixed inset-0 z-30 bg-slate-950/45 backdrop-blur-[1px] lg:hidden" onClick={()=>setSidebarOpen(false)}/>} 
+    {sidebarOpen&&<button type="button" className="fixed inset-0 z-30 bg-slate-950/45 backdrop-blur-[1px] lg:hidden" onClick={()=>setSidebarOpen(false)} aria-label="Menüyü kapat"/>}
 
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <header data-tour="topbar" className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[#dfe3e1] bg-[#fbfbf8] px-4 sm:px-5 lg:px-6 dark:border-slate-800 dark:bg-[#141b22]">
         <WelcomeWidget/>
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           <FutureHRCopilotV2 pathname={normalizedPathname}/><DemoPresentationMode/><GuidedOnboarding/><DemoRoleSwitcher/>
-          <button type="button" onClick={()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"k",ctrlKey:true}))} className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-transparent px-3 text-xs font-medium text-slate-500 hover:bg-slate-100/70 xl:flex dark:border-slate-700 dark:text-slate-400"><SearchIcon className="h-3.5 w-3.5"/><span>Ctrl + K</span></button>
+          <button type="button" onClick={()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"k",ctrlKey:true}))} aria-label="Komut paletini aç, Ctrl K" title="Komut paletini aç (Ctrl+K)" className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-transparent px-3 text-xs font-medium text-slate-500 hover:bg-slate-100/70 xl:flex dark:border-slate-700 dark:text-slate-400"><SearchIcon className="h-3.5 w-3.5"/><span>Ctrl + K</span></button>
           <ThemeToggle/><NotificationBell/>
         </div>
       </header>
