@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, LogOut, Menu, X, Building2, Search as SearchIcon, Heart, Target, BriefcaseBusiness, GraduationCap, WalletCards, UserPlus, Settings2, UsersRound } from "lucide-react";
+import { BrainCircuit, LayoutDashboard, LogOut, Menu, X, Building2, Search as SearchIcon, Heart, Target, BriefcaseBusiness, GraduationCap, WalletCards, UserPlus, Settings2, UsersRound } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useAuth } from "../context/AuthContext";
 import { canAccessRoute } from "../lib/hr/accessControl";
@@ -18,7 +18,7 @@ import DemoPresentationMode from "./DemoPresentationMode";
 import DemoDataHardeningBridge from "./DemoDataHardeningBridge";
 import ModuleWorkspace from "./ModuleWorkspace";
 import GuidedOnboarding from "./GuidedOnboarding";
-import FutureHRCopilot from "./FutureHRCopilot";
+import FutureHRCopilotV2 from "./FutureHRCopilotV2";
 import AIGovernanceCapture from "./AIGovernanceCapture";
 
 const familyIcons:Record<NavigationFamilyId,typeof Building2>={
@@ -78,6 +78,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
   const menuItems=useMemo(()=>{
     const items:Array<{key:string;href:string;label:string;section:string;icon:typeof LayoutDashboard;routes:string[]}>=[];
     if(canAccessRoute(currentUserRole,"/dashboard"))items.push({key:"dashboard",href:"/dashboard",label:"Yönetici Özeti",section:"Karar Merkezi",icon:LayoutDashboard,routes:["/dashboard"]});
+    if(canAccessRoute(currentUserRole,"/karar-merkezi"))items.push({key:"decision",href:"/karar-merkezi",label:"Karar Motoru",section:"Karar Merkezi",icon:BrainCircuit,routes:["/karar-merkezi"]});
     NAVIGATION_FAMILIES.forEach((family)=>{
       const accessible=family.items.filter(item=>canAccessRoute(currentUserRole,item.href));
       if(accessible.length===0)return;
@@ -172,7 +173,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
       <header data-tour="topbar" className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[#dfe3e1] bg-[#fbfbf8] px-4 sm:px-5 lg:px-6 dark:border-slate-800 dark:bg-[#141b22]">
         <WelcomeWidget/>
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-          <FutureHRCopilot pathname={normalizedPathname}/><DemoPresentationMode/><GuidedOnboarding/><DemoRoleSwitcher/>
+          <FutureHRCopilotV2 pathname={normalizedPathname}/><DemoPresentationMode/><GuidedOnboarding/><DemoRoleSwitcher/>
           <button type="button" onClick={()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"k",ctrlKey:true}))} className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-transparent px-3 text-xs font-medium text-slate-500 hover:bg-slate-100/70 xl:flex dark:border-slate-700 dark:text-slate-400"><SearchIcon className="h-3.5 w-3.5"/><span>Ctrl + K</span></button>
           <ThemeToggle/><NotificationBell/>
         </div>
