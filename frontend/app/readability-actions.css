@@ -65,13 +65,22 @@ html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="
   opacity:1!important;
 }
 
-/* The Human Enterprise layer renders the active training-tab surface light in
-   light mode. Its legacy violet-100 description therefore needs a dark violet.
-   This selector is deliberately more specific than the old gradient rules. */
-html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] span[class*="text-violet-100"][class*="leading-4"],
-html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] span[class*="text-violet-200"][class*="leading-4"] {
-  color:#4c2f78!important;
-  -webkit-text-fill-color:#4c2f78!important;
+/* Active training navigation is a deliberate dark selection surface. Keep the
+   surface and all inherited labels together so legacy light-surface rules can
+   never create violet-on-violet or white-on-washed-out combinations. */
+html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] {
+  background:#4c1d95!important;
+  background-color:#4c1d95!important;
+  background-image:none!important;
+  border-color:#4c1d95!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+}
+html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] :is(span,strong)[class*="text-violet-100"],
+html:not(.dark) body [data-testid="app-shell"] main button[class*="border-violet-600"][class*="bg-violet-600"][class*="text-white"] :is(span,strong)[class*="text-violet-200"] {
+  color:#f5f3ff!important;
+  -webkit-text-fill-color:#f5f3ff!important;
   opacity:1!important;
 }
 
