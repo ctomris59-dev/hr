@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BriefcaseBusiness, Building2, CalendarDays, Clock3, MoreHorizontal, Search, UserRound, Users, X } from "lucide-react";
 import { getManageableEmployees } from "../../utils/hierarchy";
 import { getStorageData, STORAGE_KEYS } from "../../utils/storage";
+import { fetchSaasTeamWorkspace, SAAS_DATA_MODE } from "../../../lib/hr/saasWorkforceClient";
 
 export default function EkipYonetimiPage(){
   const[user,setUser]=useState<any>(null);
@@ -14,18 +15,37 @@ export default function EkipYonetimiPage(){
   const[plans,setPlans]=useState<any[]>([]);
   const[search,setSearch]=useState("");
   const[selectedEmployee,setSelectedEmployee]=useState<any|null>(null);
+  const[loading,setLoading]=useState(true);
+  const[loadError,setLoadError]=useState("");
 
-  const reload=()=>{
-    setUser(getStorageData(STORAGE_KEYS.CURRENT_USER,null));
-    setOrgData(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART,[]));
-    setLeaveRequests(getStorageData<any[]>(STORAGE_KEYS.LEAVE_REQUESTS,[]));
-    setHistory(getStorageData<any[]>(STORAGE_KEYS.HISTORY_360,[]));
-    setPlans(getStorageData<any[]>(STORAGE_KEYS.DEVELOPMENT_PLANS,[]));
+  const reload=async()=>{
+    setLoadError("");
+    try{
+      if(SAAS_DATA_MODE){
+        const workspace=await fetchSaasTeamWorkspace();
+        setUser({role:"SAAS"});
+        setOrgData(workspace.employees);
+        setHistory(workspace.evaluations);
+        // Leave and development are intentionally not read from browser storage in SaaS mode.
+        // Their cards stay unavailable until those modules receive tenant-scoped APIs.
+        setLeaveRequests([]);
+        setPlans([]);
+        return;
+      }
+      setUser(getStorageData(STORAGE_KEYS.CURRENT_USER,null));
+      setOrgData(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART,[]));
+      setLeaveRequests(getStorageData<any[]>(STORAGE_KEYS.LEAVE_REQUESTS,[]));
+      setHistory(getStorageData<any[]>(STORAGE_KEYS.HISTORY_360,[]));
+      setPlans(getStorageData<any[]>(STORAGE_KEYS.DEVELOPMENT_PLANS,[]));
+    }catch(error){
+      setLoadError(error instanceof Error?error.message:"Ekip verisi yüklenemedi.");
+      setOrgData([]);setHistory([]);setLeaveRequests([]);setPlans([]);
+    }finally{setLoading(false)}
   };
 
   useEffect(()=>{
-    reload();
-    const h=()=>reload();
+    void reload();
+    const h=()=>{void reload()};
     window.addEventListener("dataUpdated",h);
     return()=>window.removeEventListener("dataUpdated",h);
   },[]);
@@ -39,6 +59,7 @@ export default function EkipYonetimiPage(){
 
   const role=String(user?.role||"").toUpperCase();
   const team=useMemo(()=>{
+    if(SAAS_DATA_MODE)return orgData;
     if(!user)return[];
     if(role==="CEO"||role==="IK")return orgData;
     try{return getManageableEmployees(user,orgData)}catch{return[]}
@@ -57,13 +78,16 @@ export default function EkipYonetimiPage(){
       <header className="futurehr-page-header">
         <p className="futurehr-page-eyebrow">Ekip operasyonları</p>
         <h1 className="futurehr-page-title">Ekip</h1>
-        <p className="futurehr-page-lede">Bağlı çalışanları ve günlük ekip aksiyonlarını yönetin. Çalışan ana verisi Çalışanlar & Organizasyon'da; kullanıcı hesabı ve yetkiler Kullanıcı & Yetki'de yönetilir.</p>
+        <p className="futurehr-page-lede">Bağlı çalışanları ve günlük ekip aksiyonlarını yönetin. Çalışan ana verisi Çalışanlar & Organizasyon&apos;da; kullanıcı hesabı ve yetkiler Kullanıcı & Yetki&apos;de yönetilir.</p>
       </header>
 
+      {SAAS_DATA_MODE&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800">Ekip ve performans verisi tenant-scoped SaaS API&apos;den okunuyor. İzin ve gelişim modülleri henüz bu veri katmanına taşınmadığı için bu iki sayaç geçici olarak gösterilmiyor.</div>}
+      {loadError&&<div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{loadError}</div>}
+
       <div className="grid gap-3 sm:grid-cols-3">
-        <Metric label="Yönetilen çalışan" value={team.length} icon={Users}/>
-        <Metric label="Bekleyen izin" value={pendingLeave} icon={CalendarDays}/>
-        <Metric label="Aktif gelişim aksiyonu" value={activePlans} icon={Clock3}/>
+        <Metric label="Yönetilen çalışan" value={loading?"…":team.length} icon={Users}/>
+        <Metric label="Bekleyen izin" value={SAAS_DATA_MODE?"—":pendingLeave} icon={CalendarDays}/>
+        <Metric label="Aktif gelişim aksiyonu" value={SAAS_DATA_MODE?"—":activePlans} icon={Clock3}/>
       </div>
 
       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900">
@@ -90,8 +114,8 @@ export default function EkipYonetimiPage(){
 
             <div className="mt-4 grid grid-cols-3 gap-2">
               <Mini label="Son perf." value={performanceValue(lastEval)}/>
-              <Mini label="Gelişim" value={String(employeePlans)}/>
-              <Mini label="İzin talebi" value={String(leave)}/>
+              <Mini label="Gelişim" value={SAAS_DATA_MODE?"—":String(employeePlans)}/>
+              <Mini label="İzin talebi" value={SAAS_DATA_MODE?"—":String(leave)}/>
             </div>
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
@@ -109,7 +133,7 @@ export default function EkipYonetimiPage(){
         })}
       </div>
 
-      {!filtered.length&&<div className="enterprise-card p-10 text-center text-sm text-slate-500">Yönetilebilir çalışan bulunmuyor.</div>}
+      {!loading&&!filtered.length&&<div className="enterprise-card p-10 text-center text-sm text-slate-500">Yönetilebilir çalışan bulunmuyor.</div>}
     </div>
 
     {selectedEmployee&&<EmployeeDrawer employee={selectedEmployee} history={history} plans={plans} leaveRequests={leaveRequests} onClose={()=>setSelectedEmployee(null)}/>} 
@@ -122,8 +146,8 @@ function EmployeeDrawer({employee,history,plans,leaveRequests,onClose}:{employee
   const employeePlans=plans.filter(p=>p.employee===name&&p.status!=="Tamamlandı");
   const pendingLeaves=leaveRequests.filter(r=>r.employee===name&&r.status==="Bekliyor");
   const q=`?employeeName=${encodeURIComponent(name)}`;
-  const manager1=employee["1. Yönetici"]||employee["1.Yönetici"]||employee.Yonetici||employee.Yönetici||"—";
-  const manager2=employee["2. Yönetici"]||employee["2.Yönetici"]||"—";
+  const manager1=employee["Yönetici 1"]||employee["1. Yönetici"]||employee["1.Yönetici"]||employee.Yonetici||employee.Yönetici||"—";
+  const manager2=employee["Yönetici 2"]||employee["2. Yönetici"]||employee["2.Yönetici"]||"—";
   const personnelCode=employee["Personel Kodu"]||employee.PersonelKodu||employee.id||"—";
   const tenure=employee.Kidem??employee.Kıdem??employee["Kıdem"]??employee["Kıdem (Yıl)"]??employee["Kıdem Yılı"];
 
@@ -147,8 +171,8 @@ function EmployeeDrawer({employee,history,plans,leaveRequests,onClose}:{employee
           <p className="enterprise-eyebrow">Çalışan özeti</p>
           <div className="mt-3 grid grid-cols-3 gap-2">
             <DetailMetric label="Son performans" value={performanceValue(lastEval)}/>
-            <DetailMetric label="Aktif gelişim" value={String(employeePlans.length)}/>
-            <DetailMetric label="Bekleyen izin" value={String(pendingLeaves.length)}/>
+            <DetailMetric label="Aktif gelişim" value={SAAS_DATA_MODE?"—":String(employeePlans.length)}/>
+            <DetailMetric label="Bekleyen izin" value={SAAS_DATA_MODE?"—":String(pendingLeaves.length)}/>
           </div>
         </section>
 
@@ -167,9 +191,9 @@ function EmployeeDrawer({employee,history,plans,leaveRequests,onClose}:{employee
         <section className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-800">
           <div className="flex items-center justify-between gap-3">
             <p className="enterprise-eyebrow">Gelişim durumu</p>
-            <span className="text-[11px] font-medium text-slate-400">{employeePlans.length} aktif aksiyon</span>
+            <span className="text-[11px] font-medium text-slate-400">{SAAS_DATA_MODE?"SaaS geçişi bekliyor":`${employeePlans.length} aktif aksiyon`}</span>
           </div>
-          {employeePlans.length?<div className="mt-3 space-y-2">{employeePlans.slice(0,4).map((plan,index)=><div key={plan.id??`${plan.title}-${index}`} className="rounded-lg border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{plan.title||plan.action||plan.name||"Gelişim aksiyonu"}</p><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-slate-400"><span>{plan.status||"Aktif"}</span>{plan.targetDate&&<span>Hedef: {plan.targetDate}</span>}</div></div>)}</div>:<p className="mt-3 text-xs leading-5 text-slate-500">Bu çalışan için aktif gelişim aksiyonu bulunmuyor.</p>}
+          {SAAS_DATA_MODE?<p className="mt-3 text-xs leading-5 text-slate-500">Gelişim aksiyonları tenant-scoped API&apos;ye taşındığında burada gösterilecek; production modunda localStorage fallback kullanılmıyor.</p>:employeePlans.length?<div className="mt-3 space-y-2">{employeePlans.slice(0,4).map((plan,index)=><div key={plan.id??`${plan.title}-${index}`} className="rounded-lg border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{plan.title||plan.action||plan.name||"Gelişim aksiyonu"}</p><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-slate-400"><span>{plan.status||"Aktif"}</span>{plan.targetDate&&<span>Hedef: {plan.targetDate}</span>}</div></div>)}</div>:<p className="mt-3 text-xs leading-5 text-slate-500">Bu çalışan için aktif gelişim aksiyonu bulunmuyor.</p>}
         </section>
       </div>
 
@@ -192,7 +216,7 @@ function performanceValue(record:any){
   return Number.isFinite(value)&&value>0?value.toFixed(1):"—";
 }
 function initials(name:string){return String(name||"FH").split(" ").filter(Boolean).slice(0,2).map((p:string)=>p[0]?.toUpperCase()).join("")}
-function Metric({label,value,icon:Icon}:{label:string;value:number;icon:any}){return <div className="enterprise-card p-4"><div className="flex justify-between"><p className="text-xs text-slate-500">{label}</p><Icon className="h-4 w-4 text-slate-500"/></div><p className="mt-3 text-2xl font-semibold">{value}</p></div>}
+function Metric({label,value,icon:Icon}:{label:string;value:string|number;icon:any}){return <div className="enterprise-card p-4"><div className="flex justify-between"><p className="text-xs text-slate-500">{label}</p><Icon className="h-4 w-4 text-slate-500"/></div><p className="mt-3 text-2xl font-semibold">{value}</p></div>}
 function Mini({label,value}:{label:string;value:string}){return <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-slate-800/70"><p className="text-[9px] uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-xs font-semibold">{value}</p></div>}
 function DetailMetric({label,value}:{label:string;value:string}){return <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"><p className="text-[9.5px] font-semibold uppercase tracking-[.07em] text-slate-400">{label}</p><p className="mt-1.5 text-lg font-semibold text-slate-950 dark:text-white">{value}</p></div>}
 function ProfileRow({icon:Icon,label,value}:{icon:any;label:string;value:string}){return <div className="grid grid-cols-[28px_112px_minmax(0,1fr)] items-center gap-2 border-b border-slate-100 py-2.5 last:border-0 dark:border-slate-800"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-500 dark:bg-slate-800"><Icon className="h-3.5 w-3.5"/></span><span className="text-[11px] text-slate-400">{label}</span><span className="truncate text-right text-xs font-medium text-slate-700 dark:text-slate-200">{value}</span></div>}
