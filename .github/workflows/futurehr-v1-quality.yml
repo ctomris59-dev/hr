@@ -98,5 +98,6 @@ jobs:
           tests/test_production_readiness.py
           tests/test_employee_saas_api.py
           tests/test_saas_performance_talent.py
+          tests/test_saas_workforce_ops.py
           tests/unit/test_roles_permissions.py
           tests/integration/test_org_chart_endpoint.py
