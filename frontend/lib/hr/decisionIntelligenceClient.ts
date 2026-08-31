@@ -19,6 +19,8 @@ export type HumanReview = {
 export type CompensationInsight = {
   employee_id:string;
   employee_name:string;
+  department?:string|null;
+  position?:string|null;
   salary_available:boolean;
   market_benchmark_available:boolean;
   market_average:number|null;
@@ -30,6 +32,18 @@ export type CompensationInsight = {
   compression_ratio:number|null;
   benchmark_source?:string|null;
 };
+export type CompensationOverview = {
+  items:CompensationInsight[];
+  summary:{
+    employee_count:number;
+    salary_coverage_pct:number;
+    benchmark_coverage_pct:number;
+    below_market_count:number;
+    compression_risk_count:number;
+    median_compa_ratio:number|null;
+  };
+  method:string;
+};
 export type DigitalTwin = {
   employee:{id:string;external_id?:string|null;full_name:string;department?:string|null;position?:string|null;job_family?:string|null;job_level?:string|null;manager_employee_id?:string|null;hire_date?:string|null;employment_type?:string|null;location?:string|null;source:string};
   performance:{score:number|null;kpi_score:number|null;manager_score:number|null;competency_score:number|null;evaluated_at?:string|null};
@@ -37,7 +51,7 @@ export type DigitalTwin = {
   talent:{career_aspiration:number|null;mobility_willingness:number|null};
   development:{active_count:number;items:Array<{id:string;competency?:string|null;goal:string;status:string;due_date?:string|null}>};
   leave:{pending:number;approved_days:number};
-  compensation:Omit<CompensationInsight,"employee_id"|"employee_name">;
+  compensation:Omit<CompensationInsight,"employee_id"|"employee_name"|"department"|"position">;
   evidence:DecisionEvidence;
   decision:DecisionRecommendation;
   human_reviews:HumanReview[];
@@ -64,6 +78,27 @@ export type TurkiyeComplianceStatus = {
   connectors:Record<string,{enabled:boolean;mode:string;label?:string|null}>;
   notice:string;
 };
+export type RecruitmentStage = "Başvuru"|"Ön Eleme"|"Test"|"Mülakat"|"Teklif"|"İşe Alındı"|"Reddedildi";
+export type RecruitmentCandidate = {
+  id:string;
+  candidate_source_id:string;
+  full_name:string;
+  email?:string|null;
+  phone?:string|null;
+  department?:string|null;
+  position?:string|null;
+  status:RecruitmentStage;
+  competency_signals:Record<string,number>;
+  recruiter_note?:string|null;
+  structured_interview_notes?:string|null;
+  assessment_summary?:string|null;
+  interview_done:boolean;
+  test_sent:boolean;
+  reference_checked:boolean;
+  converted_employee_id?:string|null;
+  created_at:string;
+  updated_at:string;
+};
 
 async function request<T>(path:string, init?:RequestInit):Promise<T>{
   const response=await fetch(`/api/saas/workforce/${path}`,{
@@ -84,12 +119,23 @@ export function fetchDecisionProfile(employeeId:string){return request<DecisionP
 export function fetchDecisionPriorities(){return request<{items:DecisionPriority[];generated_at:string}>("decision/priorities");}
 export function fetchSkillsGraph(){return request<SkillsGraph>("skills/graph");}
 export function fetchCompensationInsight(employeeId:string){return request<CompensationInsight>(`compensation/insights/${encodeURIComponent(employeeId)}`);}
+export function fetchCompensationOverview(){return request<CompensationOverview>("compensation/overview");}
 export function fetchTurkiyeComplianceStatus(){return request<TurkiyeComplianceStatus>("compliance/turkiye/status");}
 export function recordHumanReview(employeeId:string,payload:{decision_type:string;status:HumanReview["status"];note?:string}){
   return request<HumanReview>(`decision/employees/${encodeURIComponent(employeeId)}/review`,{method:"POST",body:JSON.stringify(payload)});
 }
 export function convertCandidateToEmployee(payload:{candidate_source_id:string;full_name:string;email?:string|null;department?:string|null;position?:string|null;job_family?:string|null;job_level?:string|null;assessment_summary?:string|null;competency_signals?:Record<string,number>}){
   return request<{employee_id:string;full_name:string;lifecycle_source:string;candidate_source_id:string;next_step:string}>("lifecycle/candidates/convert",{method:"POST",body:JSON.stringify(payload)});
+}
+export function fetchRecruitmentCandidates(){return request<{items:RecruitmentCandidate[];total:number}>("recruitment/candidates");}
+export function createRecruitmentCandidate(payload:{candidate_source_id?:string;full_name:string;email?:string|null;phone?:string|null;department?:string|null;position?:string|null;status?:RecruitmentStage;competency_signals?:Record<string,number>;recruiter_note?:string|null;structured_interview_notes?:string|null;assessment_summary?:string|null;interview_done?:boolean;test_sent?:boolean;reference_checked?:boolean}){
+  return request<RecruitmentCandidate>("recruitment/candidates",{method:"POST",body:JSON.stringify(payload)});
+}
+export function updateRecruitmentCandidate(candidateId:string,payload:Partial<Pick<RecruitmentCandidate,"full_name"|"email"|"phone"|"department"|"position"|"status"|"competency_signals"|"recruiter_note"|"structured_interview_notes"|"assessment_summary"|"interview_done"|"test_sent"|"reference_checked">>){
+  return request<RecruitmentCandidate>(`recruitment/candidates/${encodeURIComponent(candidateId)}`,{method:"PATCH",body:JSON.stringify(payload)});
+}
+export function convertRecruitmentCandidate(candidateId:string,payload:{department?:string|null;position?:string|null;job_family?:string|null;job_level?:string|null;hire_date?:string|null;employment_type?:string|null;location?:string|null}={}){
+  return request<{candidate:RecruitmentCandidate;employee:{id:string;full_name:string;department?:string|null;position?:string|null;lifecycle_source:string};next_step:string}>(`recruitment/candidates/${encodeURIComponent(candidateId)}/convert`,{method:"POST",body:JSON.stringify(payload)});
 }
 export function updateTurkiyeConnector(provider:"sgk"|"logo"|"mikro"|"netsis",payload:{enabled:boolean;mode:"file"|"api"|"manual";label?:string}){
   return request<{provider:string;enabled:boolean;mode:string;label?:string|null;secrets_stored:boolean}>(`compliance/turkiye/connectors/${provider}`,{method:"PATCH",body:JSON.stringify(payload)});
