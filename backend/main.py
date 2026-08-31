@@ -40,6 +40,9 @@ from routers import (
     performance_v1,
     talent_v1,
     workforce_ops_v1,
+    decision_intelligence_v1,
+    recruitment_v1,
+    compensation_intelligence_v1,
 )
 
 settings = get_settings()
@@ -129,6 +132,9 @@ app.include_router(people_v1.router)
 app.include_router(performance_v1.router)
 app.include_router(talent_v1.router)
 app.include_router(workforce_ops_v1.router)
+app.include_router(decision_intelligence_v1.router)
+app.include_router(recruitment_v1.router)
+app.include_router(compensation_intelligence_v1.router)
 
 
 @app.on_event("startup")

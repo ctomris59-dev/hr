@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, BookOpen, Building2, CheckCircle2, ChevronRight, Crown, DollarSign, FileInput, FileText, GraduationCap, Heart, LockKeyhole, MapPin, Plane, RefreshCw, Scale, Settings2, ShieldCheck, SlidersHorizontal, Target, UserPlus, Users, WalletCards, type LucideIcon } from "lucide-react";
+import { BarChart3, BookOpen, Building2, CheckCircle2, ChevronRight, Crown, DollarSign, FileInput, FileText, GraduationCap, Heart, Landmark, LockKeyhole, MapPin, Network, Plane, RefreshCw, Scale, Settings2, ShieldCheck, SlidersHorizontal, Target, UserPlus, Users, WalletCards, type LucideIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { canAccessRoute } from "../lib/hr/accessControl";
 import { familyForPath, routeMatches } from "../lib/hr/navigationArchitecture";
@@ -12,12 +12,14 @@ const routeIcons:Record<string,LucideIcon>={
   "/degerlendirme":RefreshCw,
   "/kalibrasyon":Scale,
   "/yetenek-matrisi":BarChart3,
+  "/yetkinlik-haritasi":Network,
   "/kariyer":MapPin,
   "/yedekleme":Crown,
   "/gelisim":GraduationCap,
   "/egitim":BookOpen,
   "/gelisim-analitigi":BarChart3,
   "/maas":DollarSign,
+  "/ucret-adaleti":Scale,
   "/yonetici/maas-talep":WalletCards,
   "/calisan-deneyimi":Heart,
   "/ise-alim":UserPlus,
@@ -26,6 +28,7 @@ const routeIcons:Record<string,LucideIcon>={
   "/izinler":Plane,
   "/admin":ShieldCheck,
   "/kurulum":Settings2,
+  "/turkiye-uyum":Landmark,
   "/admin/veri-aktarimi":FileInput,
   "/admin/guven-kvkk":LockKeyhole,
   "/ayarlar/yetki-mimarisi":SlidersHorizontal,
@@ -35,6 +38,7 @@ function gridClass(count:number){
   if(count===2)return "md:grid-cols-2";
   if(count===3)return "md:grid-cols-3";
   if(count===5)return "md:grid-cols-2 xl:grid-cols-5";
+  if(count===6)return "md:grid-cols-2 xl:grid-cols-3";
   return "md:grid-cols-2 xl:grid-cols-4";
 }
 
