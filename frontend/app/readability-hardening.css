@@ -1,0 +1,101 @@
+/* FutureHR readability hardening
+   Keeps compact enterprise controls readable without reintroducing loud SaaS chrome. */
+
+/* Interactive text must never become low-contrast on dark/filled controls. */
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-primary"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-teal-600"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-teal-700"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-teal-800"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-emerald-600"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-emerald-700"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-slate-800"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-slate-900"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-slate-950"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-gray-800"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-gray-900"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-blue-600"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-blue-700"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-indigo-600"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-indigo-700"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-violet-600"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-violet-700"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-purple-600"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-purple-700"] {
+  color:#fff!important;
+  opacity:1!important;
+  font-weight:650!important;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Tailwind text utilities on descendants must not override the filled-control contrast. */
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-primary"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-teal-600"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-teal-700"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-teal-800"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-emerald-600"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-emerald-700"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-slate-800"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-slate-900"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-slate-950"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-gray-800"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-gray-900"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-blue-600"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-blue-700"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-indigo-600"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-indigo-700"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-violet-600"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-violet-700"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-purple-600"] *,
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class*="bg-purple-700"] * {
+  color:inherit!important;
+  opacity:1!important;
+}
+
+/* Selected segmented controls/tabs: explicit accessible FutureHR treatment. */
+.module-workspace :is(button,a,[role="tab"])[aria-selected="true"],
+.module-workspace :is(button,a,[role="tab"])[data-state="active"] {
+  background-color:var(--primary)!important;
+  border-color:var(--primary)!important;
+  color:#fff!important;
+  font-weight:650!important;
+  opacity:1!important;
+}
+.module-workspace :is(button,a,[role="tab"])[aria-selected="true"] *,
+.module-workspace :is(button,a,[role="tab"])[data-state="active"] * {
+  color:inherit!important;
+  opacity:1!important;
+}
+
+/* Compact clickable labels must still be comfortably legible. */
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class~="text-[9px]"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class~="text-[9.5px]"],
+.module-workspace :is(button,a,[role="button"],[role="tab"])[class~="text-[10px]"] {
+  font-size:11.5px!important;
+  line-height:1.15rem!important;
+}
+
+/* Non-active compact controls should use a darker neutral than decorative microcopy. */
+.module-workspace :is(button,a,[role="button"],[role="tab"]):not([aria-selected="true"]):not([data-state="active"])[class*="text-slate-400"],
+.module-workspace :is(button,a,[role="button"],[role="tab"]):not([aria-selected="true"]):not([data-state="active"])[class*="text-slate-500"] {
+  color:#475569!important;
+}
+.dark .module-workspace :is(button,a,[role="button"],[role="tab"]):not([aria-selected="true"]):not([data-state="active"])[class*="text-slate-400"],
+.dark .module-workspace :is(button,a,[role="button"],[role="tab"]):not([aria-selected="true"]):not([data-state="active"])[class*="text-slate-500"] {
+  color:#cbd5e1!important;
+}
+
+/* Ensure filled status chips themselves retain contrast even when they are not buttons. */
+.module-workspace :is(span,strong)[class*="bg-teal-600"],
+.module-workspace :is(span,strong)[class*="bg-teal-700"],
+.module-workspace :is(span,strong)[class*="bg-emerald-600"],
+.module-workspace :is(span,strong)[class*="bg-emerald-700"],
+.module-workspace :is(span,strong)[class*="bg-slate-800"],
+.module-workspace :is(span,strong)[class*="bg-slate-900"],
+.module-workspace :is(span,strong)[class*="bg-blue-600"],
+.module-workspace :is(span,strong)[class*="bg-indigo-600"],
+.module-workspace :is(span,strong)[class*="bg-violet-600"],
+.module-workspace :is(span,strong)[class*="bg-purple-600"] {
+  color:#fff!important;
+  opacity:1!important;
+  font-weight:650!important;
+}
