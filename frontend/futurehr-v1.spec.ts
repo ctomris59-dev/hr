@@ -99,13 +99,22 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page).not.toHaveURL(/\/maas$/);
   });
 
-  test("current career role is informational, not a clickable target", async ({ page }) => {
+  test("current career role is informational and cannot be selected as target", async ({ page }) => {
     await openDemo(page);
     await page.goto("/kariyer");
-    const current = page.locator('button[aria-current="true"]').first();
-    await expect(current).toBeVisible();
-    await expect(current).toBeDisabled();
-    await expect(current).toContainText("Mevcut");
+    const currentRoleLabel = page.getByText("Mevcut rol", { exact: true });
+    await expect(currentRoleLabel).toBeVisible();
+    const currentRoleCard = currentRoleLabel.locator("..");
+    const currentRoleTitle = (await currentRoleCard.locator("p").nth(1).textContent())?.trim() || "";
+    expect(currentRoleTitle).not.toBe("");
+
+    const targetSelect = page.getByLabel("Hedef rol");
+    await expect(targetSelect).toBeVisible();
+    const targetOptions = (await targetSelect.locator("option").allTextContents()).map((value) => value.trim());
+    expect(targetOptions).not.toContain(currentRoleTitle);
+
+    const currentRoleButton = page.getByRole("button", { name: new RegExp(currentRoleTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) });
+    if (await currentRoleButton.count()) await expect(currentRoleButton.first()).toBeDisabled();
   });
 
   test("manager performance workspace exposes active cycle governance", async ({ page }) => {
@@ -176,7 +185,7 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await page.getByRole("button", { name: "Tümünü okundu say" }).click();
     await expect(page.getByText("UX geçmiş testi", { exact: true })).toBeVisible();
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("hr_notifications") || "[]"));
-    expect(stored.find((item:any)=>item.id===987654)?.read).toBe(true);
+    expect(stored.find((item: { id?: number; read?: boolean }) => item.id === 987654)?.read).toBe(true);
   });
 
   test("representative product routes expose no dead links or unlabeled icon buttons", async ({ page }) => {
@@ -221,9 +230,10 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await openDemo(page);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(1);
-    const toggle=page.getByRole("button", { name: "Menüyü aç" });
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-expanded","true");
+    const openToggle=page.getByRole("button", { name: "Menüyü aç" });
+    await openToggle.click();
+    const closeToggle=page.getByRole("button", { name: "Menüyü kapat" }).first();
+    await expect(closeToggle).toHaveAttribute("aria-expanded","true");
     await expect(page.getByTestId("app-sidebar")).toHaveCSS("transform", "none");
     await page.keyboard.press("Escape");
     await expect(page.getByRole("button",{name:"Menüyü aç"})).toHaveAttribute("aria-expanded","false");
