@@ -1,0 +1,41 @@
+/* Final action-surface contrast guard.
+   Intentionally loaded last so legacy Human Enterprise selectors cannot wash
+   dark CTA backgrounds into medium grey while leaving white text. */
+
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-slate-900"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-slate-800"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-slate-900"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-slate-800"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-gray-900"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-gray-800"][class*="text-white"] {
+  background:#17212b!important;
+  background-color:#17212b!important;
+  background-image:none!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-slate-900"][class*="text-white"] *,
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-slate-800"][class*="text-white"] *,
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-slate-900"][class*="text-white"] *,
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-slate-800"][class*="text-white"] * {
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+}
+
+/* Same guarantee for FutureHR teal/primary CTAs. */
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-teal-700"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main .module-workspace .module-native-content :is(button,a)[class*="bg-teal-600"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-teal-700"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-teal-600"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-primary"][class*="text-white"] {
+  background:#285f5c!important;
+  background-color:#285f5c!important;
+  background-image:none!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+}
