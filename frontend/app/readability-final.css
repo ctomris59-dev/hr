@@ -1,0 +1,192 @@
+/* FutureHR Readability Final Pass
+   Loaded after the base hardening layer. This file resolves legacy Tailwind
+   foreground/background collisions without redesigning the product. */
+
+/* --------------------------------------------------------------------------
+   1. Filled actions and status chips always keep a real dark semantic surface
+   -------------------------------------------------------------------------- */
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-primary"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-teal-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-teal-700"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-teal-800"][class*="text-white"] {
+  background:#285f5c!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-emerald-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-emerald-700"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-green-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-green-700"][class*="text-white"] {
+  background:#176b55!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-blue-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-blue-700"][class*="text-white"] {
+  background:#245a91!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-indigo-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-indigo-700"][class*="text-white"] {
+  background:#4f46a5!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-violet-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-violet-700"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-purple-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-purple-700"][class*="text-white"] {
+  background:#6d3f92!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-slate-800"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-slate-900"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-gray-800"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-gray-900"][class*="text-white"] {
+  background:#334155!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-red-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-red-700"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-rose-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-rose-700"][class*="text-white"] {
+  background:#b4232f!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-amber-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-amber-700"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-orange-600"][class*="text-white"],
+[data-testid="app-shell"] :is(button,a,span,strong,div)[class*="bg-orange-700"][class*="text-white"] {
+  background:#8a4b12!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+/* Filled-action descendants inherit the guaranteed foreground rather than a
+   stale pale Tailwind utility. */
+[data-testid="app-shell"] :is(button,a)[class*="bg-primary"][class*="text-white"] *,
+[data-testid="app-shell"] :is(button,a)[class*="bg-teal-6"][class*="text-white"] *,
+[data-testid="app-shell"] :is(button,a)[class*="bg-teal-7"][class*="text-white"] *,
+[data-testid="app-shell"] :is(button,a)[class*="bg-blue-6"][class*="text-white"] *,
+[data-testid="app-shell"] :is(button,a)[class*="bg-indigo-6"][class*="text-white"] *,
+[data-testid="app-shell"] :is(button,a)[class*="bg-emerald-6"][class*="text-white"] *,
+[data-testid="app-shell"] :is(button,a)[class*="bg-red-6"][class*="text-white"] * {
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Restore semantic foreground utilities that were washed out by legacy
+      gradient neutralisation. The original hue is kept, but contrast is raised.
+   -------------------------------------------------------------------------- */
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-slate-600"],[class*="text-gray-600"],[class*="text-zinc-600"],[class*="text-neutral-600"]) {
+  color:#475569!important;
+  -webkit-text-fill-color:#475569!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-slate-700"],[class*="text-gray-700"],[class*="text-zinc-700"],[class*="text-neutral-700"]) {
+  color:#334155!important;
+  -webkit-text-fill-color:#334155!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-slate-800"],[class*="text-gray-800"],[class*="text-zinc-800"],[class*="text-neutral-800"]) {
+  color:#1f2937!important;
+  -webkit-text-fill-color:#1f2937!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-slate-900"],[class*="text-gray-900"],[class*="text-zinc-900"],[class*="text-neutral-900"]) {
+  color:#0f172a!important;
+  -webkit-text-fill-color:#0f172a!important;
+}
+
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-teal-600"],[class*="text-emerald-600"],[class*="text-green-600"]) {
+  color:#0f766e!important;
+  -webkit-text-fill-color:#0f766e!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-teal-700"],[class*="text-emerald-700"],[class*="text-green-700"]) {
+  color:#0f625c!important;
+  -webkit-text-fill-color:#0f625c!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-teal-800"],[class*="text-emerald-800"],[class*="text-green-800"],[class*="text-teal-900"],[class*="text-emerald-900"],[class*="text-green-900"]) {
+  color:#134e4a!important;
+  -webkit-text-fill-color:#134e4a!important;
+}
+
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-blue-600"],[class*="text-blue-700"],[class*="text-blue-800"],[class*="text-blue-900"]) {
+  color:#1e4f88!important;
+  -webkit-text-fill-color:#1e4f88!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-indigo-600"],[class*="text-indigo-700"],[class*="text-indigo-800"],[class*="text-indigo-900"]) {
+  color:#4f46a5!important;
+  -webkit-text-fill-color:#4f46a5!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-violet-600"],[class*="text-violet-700"],[class*="text-violet-800"],[class*="text-violet-900"],[class*="text-purple-600"],[class*="text-purple-700"],[class*="text-purple-800"],[class*="text-purple-900"]) {
+  color:#6d3f92!important;
+  -webkit-text-fill-color:#6d3f92!important;
+}
+
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-amber-600"],[class*="text-amber-700"],[class*="text-amber-800"],[class*="text-amber-900"],[class*="text-yellow-600"],[class*="text-yellow-700"],[class*="text-orange-600"],[class*="text-orange-700"]) {
+  color:#8a4b12!important;
+  -webkit-text-fill-color:#8a4b12!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-red-600"],[class*="text-red-700"],[class*="text-red-800"],[class*="text-red-900"],[class*="text-rose-600"],[class*="text-rose-700"],[class*="text-rose-800"],[class*="text-rose-900"]) {
+  color:#a92b36!important;
+  -webkit-text-fill-color:#a92b36!important;
+}
+
+/* A light chip nested inside a formerly-gradient card must remain a light chip,
+   not inherit the card's forced white text. */
+html:not(.dark) .module-native-content [class*="bg-white"]:is([class*="text-teal-"],[class*="text-emerald-"]) {
+  color:#0f625c!important;
+  -webkit-text-fill-color:#0f625c!important;
+}
+html:not(.dark) .module-native-content [class*="bg-white"]:is([class*="text-slate-"],[class*="text-gray-"]) {
+  color:#334155!important;
+  -webkit-text-fill-color:#334155!important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Compact state UI remains compact, but not microscopic.
+   -------------------------------------------------------------------------- */
+[data-testid="app-shell"] main :is(span,strong)[class*="rounded-full"][class*="text-[9px]"],
+[data-testid="app-shell"] header :is(span,strong)[class*="rounded-full"][class*="text-[9px]"] {
+  font-size:10.5px!important;
+  line-height:1rem!important;
+  min-height:17px;
+}
+
+/* The global notification count is a data point, not decorative microcopy. */
+[data-testid="app-shell"] span[class*="bg-red-600"][class*="text-white"][class*="rounded-full"] {
+  min-width:18px!important;
+  height:18px!important;
+  padding-inline:4px!important;
+  font-size:10.5px!important;
+}
+
+/* Explicitly keep key light surfaces readable after any parent-card colour rule. */
+html:not(.dark) .workspace-maas .module-native-content :is([class*="bg-white"],[class*="bg-slate-50"]) :is([class*="text-slate-800"],[class*="text-slate-900"]) {
+  color:#17212b!important;
+  -webkit-text-fill-color:#17212b!important;
+}
+html:not(.dark) .workspace-gelisim .module-native-content [class*="text-amber-700"] {
+  color:#8a4b12!important;
+  -webkit-text-fill-color:#8a4b12!important;
+  opacity:1!important;
+}
