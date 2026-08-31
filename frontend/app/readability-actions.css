@@ -39,3 +39,43 @@ html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-primary"
   -webkit-text-fill-color:#ffffff!important;
   opacity:1!important;
 }
+
+/* Dark informational score panels are not neutralised into a light surface.
+   This also keeps inherited white labels/chips readable (e.g. Career readiness). */
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-950"][class*="text-white"],
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-900"][class*="text-white"] {
+  background:#17212b!important;
+  background-color:#17212b!important;
+  background-image:none!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-950"][class*="text-white"] :not([class*="text-slate-4"],[class*="text-slate-5"],[class*="text-amber-"],[class*="text-teal-"],[class*="text-red-"],[class*="text-emerald-"]),
+html:not(.dark) [data-testid="app-shell"] main :is(div,section,article)[class*="bg-slate-900"][class*="text-white"] :not([class*="text-slate-4"],[class*="text-slate-5"],[class*="text-amber-"],[class*="text-teal-"],[class*="text-red-"],[class*="text-emerald-"]) {
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Legacy purple gradient copy becomes a dark semantic violet on light module
+   surfaces. Dark mode keeps the original pale treatment. */
+html:not(.dark) [data-testid="app-shell"] main .workspace-egitim [class*="text-violet-100"],
+html:not(.dark) [data-testid="app-shell"] main .workspace-egitim [class*="text-violet-200"] {
+  color:#5b3a88!important;
+  -webkit-text-fill-color:#5b3a88!important;
+  opacity:1!important;
+}
+
+/* Light action/source cards must never inherit white text from a former
+   gradient container. Explicit child text utilities can still override this. */
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-white"]:not([class*="text-white"]),
+html:not(.dark) [data-testid="app-shell"] main button[class*="bg-indigo-50"]:not([class*="text-white"]),
+html:not(.dark) [data-testid="app-shell"] main button[class*="bg-slate-50"]:not([class*="text-white"]) {
+  color:#17212b!important;
+  -webkit-text-fill-color:#17212b!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is(button,a)[class*="bg-white"]:not([class*="text-white"]) :is(p,span,strong):not([class*="text-"]),
+html:not(.dark) [data-testid="app-shell"] main button[class*="bg-indigo-50"]:not([class*="text-white"]) :is(p,span,strong):not([class*="text-"]),
+html:not(.dark) [data-testid="app-shell"] main button[class*="bg-slate-50"]:not([class*="text-white"]) :is(p,span,strong):not([class*="text-"]) {
+  color:#17212b!important;
+  -webkit-text-fill-color:#17212b!important;
+}
