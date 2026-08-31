@@ -1,8 +1,8 @@
 """Core relational models for FutureHR SaaS mode.
 
-These tables deliberately cover only the stable platform backbone: company,
-employee master data and user identity. Performance, talent, evidence and other
-modules will be migrated onto this backbone in later steps.
+The SaaS data layer keeps tenant identity on every business record. Stable HR
+modules are migrated here incrementally so production authorization never
+depends on browser storage.
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import Any
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, JSON, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
@@ -99,3 +99,48 @@ class UserModel(Base):
 
     tenant: Mapped[TenantModel] = relationship(back_populates="users")
     employee: Mapped[EmployeeModel | None] = relationship(back_populates="user")
+
+
+class PerformanceEvaluationModel(Base):
+    __tablename__ = "performance_evaluations"
+    __table_args__ = (
+        Index("ix_performance_tenant_employee_date", "tenant_id", "employee_id", "evaluated_at"),
+        Index("ix_performance_tenant_evaluator", "tenant_id", "evaluator_user_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    evaluator_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    evaluator_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    evaluation_type: Mapped[str] = mapped_column(String(80), nullable=False, default="Manager")
+    authority_context_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    performance_model_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    kpi_items_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    kpi_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    manager_performance_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    performance_weights_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    final_score: Mapped[float] = mapped_column(Float, nullable=False)
+    competency_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    manager_scores_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_star_performer: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class TalentProfileModel(Base):
+    __tablename__ = "talent_profiles"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "employee_id", name="uq_talent_profiles_tenant_employee"),
+        Index("ix_talent_profiles_tenant_employee", "tenant_id", "employee_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    career_aspiration: Mapped[float | None] = mapped_column(Float, nullable=True)
+    mobility_willingness: Mapped[float | None] = mapped_column(Float, nullable=True)
+    updated_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
