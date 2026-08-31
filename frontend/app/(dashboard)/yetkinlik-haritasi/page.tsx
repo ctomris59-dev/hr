@@ -26,7 +26,7 @@ export default function YetkinlikHaritasiPage(){
   useEffect(()=>{let active=true;(async()=>{try{const data=SAAS_DATA_MODE?await fetchSkillsGraph():localGraph();if(active)setGraph(data);}catch(err){if(active)setError(err instanceof Error?err.message:"Yetkinlik haritası yüklenemedi.");}finally{if(active)setLoading(false);}})();return()=>{active=false};},[]);
   const roles=useMemo(()=>Array.from(new Set((graph?.role_requirements||[]).map(row=>row.role))).sort((a,b)=>a.localeCompare(b,"tr")),[graph]);
   const requirements=useMemo(()=>{const q=query.toLocaleLowerCase("tr-TR");return(graph?.role_requirements||[]).filter(row=>(!selectedRole||row.role===selectedRole)&&(!q||`${row.role} ${row.skill} ${LABELS[row.skill]||""}`.toLocaleLowerCase("tr-TR").includes(q))).sort((a,b)=>a.role.localeCompare(b.role,"tr")||b.target-a.target);},[graph,query,selectedRole]);
-  const employees=(graph?.nodes||[]).filter(node=>!node.type&&!String(node.id).startsWith(("role:","skill:")));
+  const employees=(graph?.nodes||[]).filter(node=>!node.type&&!String(node.id).startsWith("role:")&&!String(node.id).startsWith("skill:"));
   const skills=(graph?.nodes||[]).filter(node=>node.type==="skill");
 
   return <div className="space-y-5">
