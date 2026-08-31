@@ -2,7 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Brain, Database, ShieldCheck, Target, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Brain,
+  Database,
+  Search,
+  ShieldCheck,
+  Target,
+  Users,
+  X,
+} from "lucide-react";
 import AIDecisionSupport from "@/components/AIDecisionSupport";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
 import { extractCompetencyMap } from "../../../lib/hr/talentPotential";
@@ -36,10 +45,26 @@ const BOX_LABELS = [
   ["Kritik Gelişim", "İstikrarlı Katkı", "Uzman Katkı"],
 ] as const;
 
+const ALL_BOXES = BOX_LABELS.flat();
+
+const BOX_TONES: Record<string, { surface: string; accent: string; badge: string }> = {
+  "Potansiyel Yatırımı": { surface: "bg-sky-50/70", accent: "bg-sky-500", badge: "bg-sky-100 text-sky-800" },
+  "Yüksek Potansiyel": { surface: "bg-cyan-50/70", accent: "bg-cyan-500", badge: "bg-cyan-100 text-cyan-800" },
+  "Yıldız Oyuncu": { surface: "bg-emerald-50/75", accent: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-800" },
+  "Gelişim Odağı": { surface: "bg-amber-50/65", accent: "bg-amber-500", badge: "bg-amber-100 text-amber-800" },
+  "Çekirdek Yetenek": { surface: "bg-slate-50/80", accent: "bg-slate-500", badge: "bg-slate-200 text-slate-800" },
+  "Güçlü Performans": { surface: "bg-teal-50/70", accent: "bg-teal-500", badge: "bg-teal-100 text-teal-800" },
+  "Kritik Gelişim": { surface: "bg-rose-50/65", accent: "bg-rose-500", badge: "bg-rose-100 text-rose-800" },
+  "İstikrarlı Katkı": { surface: "bg-stone-50/80", accent: "bg-stone-500", badge: "bg-stone-200 text-stone-800" },
+  "Uzman Katkı": { surface: "bg-violet-50/65", accent: "bg-violet-500", badge: "bg-violet-100 text-violet-800" },
+};
+
 type TalentPerson = EmployeeRow & {
   snapshot: TalentDecisionSnapshot;
   box: string;
 };
+
+type DrawerSort = "potential" | "performance" | "name";
 
 function scoreBand(value: number) {
   if (value >= 4) return 2;
@@ -59,6 +84,29 @@ function latestEvaluation(person: EmployeeRow, history: EvaluationRow[]) {
     .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))[0] || null;
 }
 
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toLocaleUpperCase("tr-TR") || "")
+    .join("");
+}
+
+function average(values: number[]) {
+  if (!values.length) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function dominantDepartment(people: TalentPerson[]) {
+  const counts = new Map<string, number>();
+  people.forEach((person) => {
+    const department = String(person.Departman || "Belirtilmedi");
+    counts.set(department, (counts.get(department) || 0) + 1);
+  });
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+}
+
 export default function YetenekMatrisiPage() {
   const [orgData, setOrgData] = useState<EmployeeRow[]>([]);
   const [history, setHistory] = useState<EvaluationRow[]>([]);
@@ -66,6 +114,11 @@ export default function YetenekMatrisiPage() {
   const [loading, setLoading] = useState(true);
   const [savingSignal, setSavingSignal] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [activeBox, setActiveBox] = useState<string | null>(null);
+  const [drawerQuery, setDrawerQuery] = useState("");
+  const [drawerDepartment, setDrawerDepartment] = useState("");
+  const [drawerSort, setDrawerSort] = useState<DrawerSort>("potential");
+  const [drawerLimit, setDrawerLimit] = useState(60);
 
   const reload = async () => {
     setLoadError("");
@@ -98,6 +151,20 @@ export default function YetenekMatrisiPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!activeBox) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveBox(null);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [activeBox]);
+
   const people = useMemo<TalentPerson[]>(() => orgData.map((person) => {
     const snapshot = buildTalentDecisionSnapshot(person, history);
     return { ...person, snapshot, box: snapshot.talent.nineBox };
@@ -115,15 +182,52 @@ export default function YetenekMatrisiPage() {
     [people, selectedName],
   );
 
-  const boxCounts = useMemo(() => people.reduce<Record<string, number>>((acc, person) => {
-    acc[person.box] = (acc[person.box] || 0) + 1;
-    return acc;
-  }, {}), [people]);
-
   const plotted = useMemo(() => people.filter(
     (person) => person.snapshot.performance.score > 0 && person.snapshot.talent.potential.score > 0,
   ), [people]);
   const missingDataCount = people.length - plotted.length;
+
+  const matrixBuckets = useMemo(() => {
+    const buckets = Object.fromEntries(ALL_BOXES.map((label) => [label, [] as TalentPerson[]])) as Record<string, TalentPerson[]>;
+    plotted.forEach((person) => {
+      const cell = gridCell(person.snapshot.performance.score, person.snapshot.talent.potential.score);
+      buckets[cell.label].push(person);
+    });
+    Object.values(buckets).forEach((bucket) => bucket.sort((a, b) =>
+      b.snapshot.talent.potential.score - a.snapshot.talent.potential.score
+      || b.snapshot.performance.score - a.snapshot.performance.score
+      || a["Ad Soyad"].localeCompare(b["Ad Soyad"], "tr"),
+    ));
+    return buckets;
+  }, [plotted]);
+
+  const boxCounts = useMemo(() => Object.fromEntries(
+    ALL_BOXES.map((label) => [label, matrixBuckets[label]?.length || 0]),
+  ) as Record<string, number>, [matrixBuckets]);
+
+  const drawerPeople = useMemo(() => activeBox ? matrixBuckets[activeBox] || [] : [], [activeBox, matrixBuckets]);
+  const drawerDepartments = useMemo(() => Array.from(new Set(drawerPeople.map((person) => String(person.Departman || "Belirtilmedi"))))
+    .sort((a, b) => a.localeCompare(b, "tr")), [drawerPeople]);
+  const filteredDrawerPeople = useMemo(() => {
+    const query = drawerQuery.trim().toLocaleLowerCase("tr-TR");
+    return drawerPeople
+      .filter((person) => !drawerDepartment || String(person.Departman || "Belirtilmedi") === drawerDepartment)
+      .filter((person) => !query || `${person["Ad Soyad"]} ${person.Pozisyon || ""} ${person.Departman || ""}`.toLocaleLowerCase("tr-TR").includes(query))
+      .sort((a, b) => {
+        if (drawerSort === "name") return a["Ad Soyad"].localeCompare(b["Ad Soyad"], "tr");
+        if (drawerSort === "performance") return b.snapshot.performance.score - a.snapshot.performance.score;
+        return b.snapshot.talent.potential.score - a.snapshot.talent.potential.score;
+      });
+  }, [drawerPeople, drawerDepartment, drawerQuery, drawerSort]);
+
+  const openBox = (label: string) => {
+    if (!(matrixBuckets[label]?.length > 0)) return;
+    setActiveBox(label);
+    setDrawerQuery("");
+    setDrawerDepartment("");
+    setDrawerSort("potential");
+    setDrawerLimit(60);
+  };
 
   const selectedLatest = selected ? latestEvaluation(selected, history) : null;
   const selectedComposite = selected ? { ...selected, ...(selectedLatest || {}) } : null;
@@ -219,7 +323,7 @@ export default function YetenekMatrisiPage() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-600">Yetenek karar desteği</p>
           <h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">Yetenek & 9-Box</h1>
-          <p className="mt-1 max-w-4xl text-sm text-slate-500">Potansiyel; gerçek yetkinlik kanıtı, kariyer isteği ve mobilite sinyallerinden oluşur. Eksik veri nötr puanla doldurulmaz; güven seviyesi düşer.</p>
+          <p className="mt-1 max-w-4xl text-sm text-slate-500">Potansiyel; gerçek yetkinlik kanıtı, kariyer isteği ve mobilite sinyallerinden oluşur. Matris sabit portföy görünümüdür; çalışan detayları hücreyi büyütmeden ayrı panelde incelenir.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {SAAS_DATA_MODE&&<span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><ShieldCheck className="h-3.5 w-3.5"/>Tenant veri katmanı</span>}
@@ -237,32 +341,41 @@ export default function YetenekMatrisiPage() {
         <Metric label="Veri Eksik" value={missingDataCount}/>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.45fr_.75fr]">
-        <section className="enterprise-card p-5">
-          <div className="flex items-start justify-between gap-3"><div><h2 className="text-sm font-semibold">9-Box Yetenek Haritası</h2><p className="mt-1 text-xs text-slate-500">Yatay: performans · dikey: potansiyel. Yalnızca iki skor da mevcut olan çalışanlar yerleştirilir.</p></div><Brain className="h-4 w-4 text-indigo-600"/></div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {BOX_LABELS.flatMap((row, rowIndex) => row.map((label, columnIndex) => {
-              const occupants = plotted.filter((person) => {
-                const cell = gridCell(person.snapshot.performance.score, person.snapshot.talent.potential.score);
-                return cell.y === 2 - rowIndex && cell.x === columnIndex;
-              });
-              return <div key={label} className="min-h-[150px] rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-                <div className="flex items-center justify-between gap-2"><p className="text-[10px] font-bold uppercase tracking-[.06em] text-slate-500">{label}</p><span className="text-[10px] font-semibold text-slate-400">{occupants.length}</span></div>
-                <div className="mt-3 space-y-2">{occupants.map((person) => <button key={String(person.id)} type="button" onClick={()=>setSelectedName(person["Ad Soyad"])} className={`w-full rounded-xl border px-3 py-2 text-left transition ${selectedName===person["Ad Soyad"]?"border-indigo-300 bg-white shadow-sm":"border-transparent bg-white/70 hover:border-slate-200"}`}><p className="truncate text-xs font-semibold text-slate-800">{person["Ad Soyad"]}</p><p className="mt-0.5 text-[10px] text-slate-400">P {person.snapshot.performance.score.toFixed(1)} · Pot {person.snapshot.talent.potential.score.toFixed(1)}</p></button>)}</div>
-              </div>;
-            }))}
+      <section className="enterprise-card p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2"><h2 className="text-sm font-semibold">9-Box Yetenek Haritası</h2><Brain className="h-4 w-4 text-indigo-600"/></div>
+            <p className="mt-1 text-xs text-slate-500">Yatay: performans → · dikey: potansiyel ↑. Hücreler sabit kalır; detay için dolu bir hücreyi açın.</p>
           </div>
-          {missingDataCount>0&&<p className="mt-3 text-[11px] text-slate-500">{missingDataCount} çalışan yeterli performans/potansiyel kanıtı olmadığı için matrise yerleştirilmedi.</p>}
+          <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-slate-500">
+            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">{plotted.length} yerleşen</span>
+            {missingDataCount>0&&<span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-800">{missingDataCount} veri eksik</span>}
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto pb-1">
+          <div className="min-w-[780px]">
+            <div className="grid grid-cols-3 gap-2.5">
+              {BOX_LABELS.flatMap((row) => row.map((label) => {
+                const occupants = matrixBuckets[label] || [];
+                return <NineBoxCell key={label} label={label} people={occupants} total={plotted.length} onOpen={()=>openBox(label)}/>;
+              }))}
+            </div>
+            <div className="mt-3 flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-[.08em] text-slate-400">
+              <span>Düşük performans</span><span>Performans →</span><span>Yüksek performans</span>
+            </div>
+          </div>
+        </div>
+        {missingDataCount>0&&<p className="mt-3 text-[11px] text-slate-500">{missingDataCount} çalışan yeterli performans/potansiyel kanıtı olmadığı için matrise yerleştirilmedi.</p>}
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
+        <section className="enterprise-card p-5">
+          <label className="text-xs font-medium text-slate-500">İncelenen çalışan<select value={selectedName} onChange={(event)=>setSelectedName(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">{people.map((person)=><option key={String(person.id)}>{person["Ad Soyad"]}</option>)}</select></label>
+          {selected&&<div className="mt-4"><p className="text-lg font-semibold">{selected["Ad Soyad"]}</p><p className="text-xs text-slate-500">{selected.Pozisyon} · {selected.Departman}</p><span className="mt-3 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{selected.box}</span><div className="mt-4 grid grid-cols-2 gap-2"><Mini label="Performans" value={selected.snapshot.performance.score>0?selected.snapshot.performance.score.toFixed(1):"—"}/><Mini label="Potansiyel" value={selected.snapshot.talent.potential.score>0?selected.snapshot.talent.potential.score.toFixed(2):"—"}/><Mini label="Potansiyel güveni" value={`%${selected.snapshot.talent.potential.confidence}`}/><Mini label="Evidence Score" value={`%${selected.snapshot.evidence.score}`}/></div></div>}
         </section>
 
-        <aside className="space-y-4">
-          <section className="enterprise-card p-5">
-            <label className="text-xs font-medium text-slate-500">Çalışan<select value={selectedName} onChange={(event)=>setSelectedName(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">{people.map((person)=><option key={String(person.id)}>{person["Ad Soyad"]}</option>)}</select></label>
-            {selected&&<div className="mt-4"><p className="text-lg font-semibold">{selected["Ad Soyad"]}</p><p className="text-xs text-slate-500">{selected.Pozisyon} · {selected.Departman}</p><span className="mt-3 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{selected.box}</span><div className="mt-4 grid grid-cols-2 gap-2"><Mini label="Performans" value={selected.snapshot.performance.score>0?selected.snapshot.performance.score.toFixed(1):"—"}/><Mini label="Potansiyel" value={selected.snapshot.talent.potential.score>0?selected.snapshot.talent.potential.score.toFixed(2):"—"}/><Mini label="Potansiyel güveni" value={`%${selected.snapshot.talent.potential.confidence}`}/><Mini label="Evidence Score" value={`%${selected.snapshot.evidence.score}`}/></div></div>}
-          </section>
-
-          {selected&&<section className="enterprise-card p-5"><div className="flex items-center gap-2"><Database className="h-4 w-4 text-indigo-600"/><h3 className="text-sm font-semibold">Potansiyel profil girdileri</h3></div><p className="mt-1 text-xs text-slate-500">Kariyer isteği ve mobilite eksikse sistem 3,0 varsaymaz.</p><SignalSlider label="Kariyer isteği" value={aspiration} disabled={savingSignal} onChange={(value)=>void updateProfileSignal("career_aspiration",value)}/><SignalSlider label="Mobilite / yeni sorumluluk isteği" value={mobility} disabled={savingSignal} onChange={(value)=>void updateProfileSignal("mobility_willingness",value)}/></section>}
-        </aside>
+        {selected&&<section className="enterprise-card p-5"><div className="flex items-center gap-2"><Database className="h-4 w-4 text-indigo-600"/><h3 className="text-sm font-semibold">Potansiyel profil girdileri</h3></div><p className="mt-1 text-xs text-slate-500">Kariyer isteği ve mobilite eksikse sistem 3,0 varsaymaz.</p><div className="grid gap-x-6 md:grid-cols-2"><SignalSlider label="Kariyer isteği" value={aspiration} disabled={savingSignal} onChange={(value)=>void updateProfileSignal("career_aspiration",value)}/><SignalSlider label="Mobilite / yeni sorumluluk isteği" value={mobility} disabled={savingSignal} onChange={(value)=>void updateProfileSignal("mobility_willingness",value)}/></div></section>}
       </div>
 
       {selected&&<div className="grid gap-5 lg:grid-cols-2">
@@ -271,8 +384,59 @@ export default function YetenekMatrisiPage() {
       </div>}
 
       {selected&&<AIDecisionSupport kind="talent" context={aiContext} resetKey={selectedName} title="AI Yetenek Kalibrasyonu" description="Performans, potansiyel, Evidence Score ve rol farklarını birlikte inceler; terfi veya ücret kararı vermez." buttonLabel="Yetenek analizini oluştur" questionTitle="Kalibrasyon soruları"/>}
+
+      {activeBox&&<div className="fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-labelledby="ninebox-drawer-title">
+        <button type="button" aria-label="9-Box detay panelini kapat" onClick={()=>setActiveBox(null)} className="absolute inset-0 bg-slate-950/30 backdrop-blur-[1px]"/>
+        <aside className="absolute inset-y-0 right-0 flex w-full max-w-[560px] flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+          <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-slate-500">9-Box detay</p><h2 id="ninebox-drawer-title" className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{activeBox}</h2><p className="mt-1 text-xs text-slate-500">{drawerPeople.length} çalışan · matrise yerleşenlerin %{plotted.length?((drawerPeople.length/plotted.length)*100).toFixed(1):"0"}&apos;i</p></div>
+              <button type="button" onClick={()=>setActiveBox(null)} aria-label="Paneli kapat" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"><X className="h-4 w-4"/></button>
+            </div>
+          </div>
+
+          <div className="grid gap-2 border-b border-slate-200 p-4 sm:grid-cols-2 dark:border-slate-800">
+            <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 dark:border-slate-700 dark:bg-slate-900"><Search className="h-4 w-4 text-slate-400"/><input value={drawerQuery} onChange={(event)=>{setDrawerQuery(event.target.value);setDrawerLimit(60);}} placeholder="Çalışan veya pozisyon ara" className="min-w-0 flex-1 bg-transparent text-xs outline-none"/></label>
+            <select value={drawerDepartment} onChange={(event)=>{setDrawerDepartment(event.target.value);setDrawerLimit(60);}} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs dark:border-slate-700 dark:bg-slate-900"><option value="">Tüm departmanlar</option>{drawerDepartments.map((department)=><option key={department}>{department}</option>)}</select>
+            <select value={drawerSort} onChange={(event)=>setDrawerSort(event.target.value as DrawerSort)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs dark:border-slate-700 dark:bg-slate-900"><option value="potential">Potansiyel: yüksekten düşüğe</option><option value="performance">Performans: yüksekten düşüğe</option><option value="name">Ada göre</option></select>
+            <div className="flex h-10 items-center justify-between rounded-lg bg-slate-50 px-3 text-[11px] text-slate-500 dark:bg-slate-900"><span>Filtre sonucu</span><strong className="text-slate-800 dark:text-slate-200">{filteredDrawerPeople.length}</strong></div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="space-y-2">
+              {filteredDrawerPeople.slice(0,drawerLimit).map((person)=><button key={String(person.id)} type="button" onClick={()=>setSelectedName(person["Ad Soyad"])} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${selectedName===person["Ad Soyad"]?"border-[#8fb5b2] bg-[#f1f6f5]":"border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"}`}>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">{initials(person["Ad Soyad"])}</span>
+                <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-slate-900">{person["Ad Soyad"]}</span><span className="mt-0.5 block truncate text-[10px] text-slate-500">{person.Pozisyon || "Pozisyon yok"} · {person.Departman || "Departman yok"}</span></span>
+                <span className="shrink-0 text-right"><span className="block text-[10px] font-semibold text-slate-700">P {person.snapshot.performance.score.toFixed(1)}</span><span className="block text-[10px] text-slate-500">Pot {person.snapshot.talent.potential.score.toFixed(1)}</span></span>
+              </button>)}
+              {!filteredDrawerPeople.length&&<div className="py-12 text-center"><Users className="mx-auto h-6 w-6 text-slate-300"/><p className="mt-2 text-xs font-medium text-slate-600">Filtreyle eşleşen çalışan yok</p><button type="button" onClick={()=>{setDrawerQuery("");setDrawerDepartment("");}} className="mt-2 text-xs font-semibold text-[#2f6664]">Filtreleri temizle</button></div>}
+            </div>
+            {filteredDrawerPeople.length>drawerLimit&&<button type="button" onClick={()=>setDrawerLimit((value)=>value+60)} className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">60 kişi daha göster · {filteredDrawerPeople.length-drawerLimit} kaldı</button>}
+          </div>
+          <div className="border-t border-slate-200 px-5 py-3 text-[10px] text-slate-500 dark:border-slate-800">Büyük organizasyonlarda liste kademeli render edilir; 9-Box hücre yüksekliği çalışan sayısından etkilenmez.</div>
+        </aside>
+      </div>}
     </div>
   );
+}
+
+function NineBoxCell({label,people,total,onOpen}:{label:string;people:TalentPerson[];total:number;onOpen:()=>void}){
+  const tone=BOX_TONES[label]||BOX_TONES["Çekirdek Yetenek"];
+  const ratio=total?(people.length/total)*100:0;
+  const avgPerformance=average(people.map((person)=>person.snapshot.performance.score));
+  const avgPotential=average(people.map((person)=>person.snapshot.talent.potential.score));
+  const department=dominantDepartment(people);
+  const preview=people.slice(0,3);
+  return <button type="button" disabled={!people.length} onClick={onOpen} aria-label={`${label}: ${people.length} çalışan${people.length?", detayı aç":""}`} className={`group relative h-[188px] overflow-hidden rounded-2xl border border-slate-200 p-4 text-left transition dark:border-slate-800 ${tone.surface} ${people.length?"cursor-pointer hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md":"cursor-default opacity-80"}`}>
+    <span className={`absolute inset-x-0 top-0 h-1 ${tone.accent}`}/>
+    <span className="flex items-start justify-between gap-3"><span className="text-[10px] font-bold uppercase tracking-[.07em] text-slate-600">{label}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tone.badge}`}>{people.length}</span></span>
+    {people.length?<>
+      <span className="mt-3 flex items-baseline gap-2"><strong className="text-2xl font-semibold text-slate-900">{people.length}</strong><span className="text-[10px] font-medium text-slate-500">%{ratio.toFixed(1)}</span></span>
+      <span className="mt-2 block h-1 overflow-hidden rounded-full bg-white/80"><span className={`block h-full rounded-full ${tone.accent}`} style={{width:`${Math.max(6,Math.min(100,ratio))}%`}}/></span>
+      <span className="mt-3 grid grid-cols-2 gap-2 text-[9.5px] text-slate-500"><span><span className="block">Ort. P / Pot</span><strong className="text-[10.5px] text-slate-700">{avgPerformance.toFixed(1)} / {avgPotential.toFixed(1)}</strong></span><span className="min-w-0"><span className="block">Yoğun departman</span><strong className="block truncate text-[10.5px] text-slate-700">{department}</strong></span></span>
+      <span className="absolute inset-x-4 bottom-3 flex items-center justify-between"><span className="flex -space-x-1.5">{preview.map((person)=><span key={String(person.id)} title={person["Ad Soyad"]} className="grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-slate-100 text-[8px] font-bold text-slate-600">{initials(person["Ad Soyad"])}</span>)}{people.length>preview.length&&<span className="grid h-6 min-w-6 place-items-center rounded-full border-2 border-white bg-slate-200 px-1 text-[8px] font-bold text-slate-600">+{people.length-preview.length}</span>}</span><span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 transition group-hover:text-[#2f6664]">Detayı aç <ArrowRight className="h-3 w-3"/></span></span>
+    </>:<span className="mt-11 block text-center text-[11px] text-slate-400">Bu segmentte çalışan yok</span>}
+  </button>;
 }
 
 function Metric({label,value}:{label:string;value:number}){
