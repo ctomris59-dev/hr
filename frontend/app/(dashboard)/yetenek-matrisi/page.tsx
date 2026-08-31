@@ -2,165 +2,287 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Brain, Database, Target, Users } from "lucide-react";
+import { Brain, Database, ShieldCheck, Target, Users } from "lucide-react";
 import AIDecisionSupport from "@/components/AIDecisionSupport";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
 import { extractCompetencyMap } from "../../../lib/hr/talentPotential";
 import { resolveTargetProfile } from "../../../lib/hr/careerArchitecture";
-import { buildTalentDecisionSnapshot } from "../../../lib/hr/talentDecisionChain";
-import { evaluationsForEmployee } from "../../../lib/hr/employeeIdentity";
-import { CartesianGrid, ReferenceArea, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "@/components/charts/recharts";
+import { buildTalentDecisionSnapshot, type TalentDecisionSnapshot } from "../../../lib/hr/talentDecisionChain";
+import {
+  fetchSaasTalentWorkspace,
+  SAAS_DATA_MODE,
+  updateSaasTalentProfile,
+  type EmployeeRow,
+  type EvaluationRow,
+} from "../../../lib/hr/saasWorkforceClient";
 
 const LABEL_TO_CODE: Record<string, string> = {
-  "Dijital Okuryazarlık": "DIG", "Analitik Düşünme": "ANA", "Sonuç Odaklılık": "RES", "Detaylara Özen": "DET", "Sürekli Öğrenme": "LRN", "Etik ve Uyum": "ETH", "Öz-Disiplin": "DIS", "Dayanıklılık & Stres Yönetimi": "STR", "Stratejik Bakış": "STR", "Takım Çalışması": "TEA", "İletişim Becerileri": "COM",
+  "Dijital Okuryazarlık": "DIG",
+  "Analitik Düşünme": "ANA",
+  "Sonuç Odaklılık": "RES",
+  "Detaylara Özen": "DET",
+  "Sürekli Öğrenme": "LRN",
+  "Etik ve Uyum": "ETH",
+  "Öz-Disiplin": "DIS",
+  "Dayanıklılık & Stres Yönetimi": "STR",
+  "Stratejik Bakış": "STR",
+  "Takım Çalışması": "TEA",
+  "İletişim Becerileri": "COM",
 };
-const displayCompetencyLabel = (label: string) => label === "Stratejik Bakış" ? "Dayanıklılık & Stres Yönetimi" : label;
-const validFive = (value: unknown) => { const n = Number(value); return Number.isFinite(n) && n >= 1 && n <= 5 ? n : null; };
+
+const BOX_LABELS = [
+  ["Potansiyel Yatırımı", "Yüksek Potansiyel", "Yıldız Oyuncu"],
+  ["Gelişim Odağı", "Çekirdek Yetenek", "Güçlü Performans"],
+  ["Kritik Gelişim", "İstikrarlı Katkı", "Uzman Katkı"],
+] as const;
+
+type TalentPerson = EmployeeRow & {
+  snapshot: TalentDecisionSnapshot;
+  box: string;
+};
+
+function scoreBand(value: number) {
+  if (value >= 4) return 2;
+  if (value >= 3) return 1;
+  return 0;
+}
+
+function gridCell(performance: number, potential: number) {
+  const x = scoreBand(performance);
+  const y = scoreBand(potential);
+  return { x, y, label: BOX_LABELS[2 - y][x] };
+}
+
+function latestEvaluation(person: EmployeeRow, history: EvaluationRow[]) {
+  return history
+    .filter((record) => String(record.employee_id || "") === String(person.id) || record.Personel === person["Ad Soyad"])
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))[0] || null;
+}
 
 export default function YetenekMatrisiPage() {
-  const [orgData, setOrgData] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
+  const [orgData, setOrgData] = useState<EmployeeRow[]>([]);
+  const [history, setHistory] = useState<EvaluationRow[]>([]);
   const [selectedName, setSelectedName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [savingSignal, setSavingSignal] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
-  const reload = () => {
-    setOrgData(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []));
-    setHistory(getStorageData<any[]>(STORAGE_KEYS.HISTORY_360, []));
+  const reload = async () => {
+    setLoadError("");
+    try {
+      if (SAAS_DATA_MODE) {
+        const workspace = await fetchSaasTalentWorkspace();
+        setOrgData(workspace.employees);
+        setHistory(workspace.evaluations);
+      } else {
+        setOrgData(getStorageData<EmployeeRow[]>(STORAGE_KEYS.ORG_CHART, []));
+        setHistory(getStorageData<EvaluationRow[]>(STORAGE_KEYS.HISTORY_360, []));
+      }
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Yetenek verisi yüklenemedi.");
+      setOrgData([]);
+      setHistory([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
   useEffect(() => {
-    reload();
-    const refresh = () => reload();
+    void reload();
+    const refresh = () => { void reload(); };
     window.addEventListener("dataUpdated", refresh);
     window.addEventListener("talentMatrixUpdated", refresh);
-    return () => { window.removeEventListener("dataUpdated", refresh); window.removeEventListener("talentMatrixUpdated", refresh); };
+    return () => {
+      window.removeEventListener("dataUpdated", refresh);
+      window.removeEventListener("talentMatrixUpdated", refresh);
+    };
   }, []);
 
-  const people = useMemo(() => orgData.map((person) => {
-    const evaluations = evaluationsForEmployee(person, history);
-    const latest = evaluations[0] || {};
-    const composite = { ...person, ...latest, "Ad Soyad": person["Ad Soyad"], Pozisyon: person.Pozisyon, Departman: person.Departman };
+  const people = useMemo<TalentPerson[]>(() => orgData.map((person) => {
     const snapshot = buildTalentDecisionSnapshot(person, history);
-    return { ...composite, snapshot, calculatedPotential: snapshot.talent.potential, box: snapshot.talent.nineBox, Performans: snapshot.performance.score };
+    return { ...person, snapshot, box: snapshot.talent.nineBox };
   }), [orgData, history]);
 
   useEffect(() => {
-    if (!people.length) { setSelectedName(""); return; }
-    if (!people.some((person) => person["Ad Soyad"] === selectedName)) setSelectedName(people[0]["Ad Soyad"]);
+    if (!people.length) return;
+    if (!people.some((person) => person["Ad Soyad"] === selectedName)) {
+      setSelectedName(people[0]["Ad Soyad"]);
+    }
   }, [people, selectedName]);
 
-  const selected = useMemo(() => people.find((person) => person["Ad Soyad"] === selectedName), [people, selectedName]);
-  const plotData = people
-    .filter((person) => person.snapshot.performance.score > 0 && person.snapshot.talent.potential.score > 0)
-    .map((person) => ({
-      name: person["Ad Soyad"], department: person.Departman, position: person.Pozisyon,
-      performance: person.snapshot.performance.score, potential: person.snapshot.talent.potential.score,
-      confidence: person.snapshot.talent.potential.confidence, evidence: person.snapshot.evidence.score, box: person.box,
-    }));
-  const boxCounts = useMemo(() => people.reduce((acc: Record<string, number>, person) => {
-    acc[person.box] = (acc[person.box] || 0) + 1; return acc;
+  const selected = useMemo(
+    () => people.find((person) => person["Ad Soyad"] === selectedName) || null,
+    [people, selectedName],
+  );
+
+  const boxCounts = useMemo(() => people.reduce<Record<string, number>>((acc, person) => {
+    acc[person.box] = (acc[person.box] || 0) + 1;
+    return acc;
   }, {}), [people]);
 
-  const selectedEvaluations = selected ? evaluationsForEmployee(selected, history) : [];
-  const selectedLatest = selectedEvaluations[0] || {};
-  const selectedComposite = selected ? { ...selected, ...selectedLatest } : null;
+  const plotted = useMemo(() => people.filter(
+    (person) => person.snapshot.performance.score > 0 && person.snapshot.talent.potential.score > 0,
+  ), [people]);
+  const missingDataCount = people.length - plotted.length;
+
+  const selectedLatest = selected ? latestEvaluation(selected, history) : null;
+  const selectedComposite = selected ? { ...selected, ...(selectedLatest || {}) } : null;
   const competencies = selectedComposite ? extractCompetencyMap(selectedComposite) : {};
-  const targetResolution = selected ? resolveTargetProfile(selected.Pozisyon) : { profile: {}, source: "generic" as const, referenceCount: 0 };
-  const gapData = Object.entries(targetResolution.profile).map(([label, expected]) => {
-    const code = LABEL_TO_CODE[label] || label;
-    const actualRaw = competencies[code];
-    const hasActual = Number.isFinite(actualRaw) && Number(actualRaw) > 0;
-    const actual = hasActual ? Number(actualRaw) : 0;
-    const gap = hasActual ? Number(expected) - actual : null;
-    return { label: displayCompetencyLabel(label), actual, expected: Number(expected), gap, hasActual };
-  }).sort((a, b) => {
-    if (a.hasActual !== b.hasActual) return a.hasActual ? -1 : 1;
-    return Number(b.gap ?? -99) - Number(a.gap ?? -99);
-  });
+  const targetResolution = selected
+    ? resolveTargetProfile(selected.Pozisyon)
+    : { profile: {}, source: "generic" as const, referenceCount: 0 };
+  const gapData = Object.entries(targetResolution.profile)
+    .map(([label, expected]) => {
+      const code = LABEL_TO_CODE[label] || label;
+      const actual = Number(competencies[code] || 0);
+      const hasActual = actual > 0;
+      const gap = hasActual ? Number(expected) - actual : null;
+      return {
+        label: label === "Stratejik Bakış" ? "Dayanıklılık & Stres Yönetimi" : label,
+        actual,
+        expected: Number(expected),
+        gap,
+        hasActual,
+      };
+    })
+    .sort((a, b) => Number(b.gap ?? -99) - Number(a.gap ?? -99));
 
-  const targetSourceText = targetResolution.source === "exact"
-    ? "Pozisyona özel FutureHR rol profili"
-    : targetResolution.source === "family-level"
-      ? `${targetResolution.referenceCount} benzer job family + seviye rolünden türetildi`
-      : targetResolution.source === "level"
-        ? `${targetResolution.referenceCount} aynı seviye rolünden türetildi`
-        : "Genel rol havuzundan türetilmiş geçici hedef";
+  const aspiration = selected?.snapshot.profile.aspiration || 0;
+  const mobility = selected?.snapshot.profile.mobility || 0;
 
-  const updateProfileSignal = (field: "career_aspiration" | "mobility_willingness", value: number) => {
+  const updateProfileSignal = async (
+    field: "career_aspiration" | "mobility_willingness",
+    value: number,
+  ) => {
     if (!selected) return;
-    const nextOrg = orgData.map((item) => item["Ad Soyad"] === selectedName ? { ...item, [field]: value || undefined } : item);
-    let changed = false;
-    const nextHistory = history.map((record) => {
-      if (changed) return record;
-      const recordName = String(record?.Personel || record?.target || record?.["Ad Soyad"] || "");
-      if (recordName !== selectedName || record !== selectedEvaluations[0]) return record;
-      changed = true;
-      return { ...record, [field]: value || undefined };
-    });
-    setOrgData(nextOrg); setHistory(nextHistory);
-    setStorageData(STORAGE_KEYS.ORG_CHART, nextOrg);
-    setStorageData(STORAGE_KEYS.HISTORY_360, nextHistory);
-    window.dispatchEvent(new CustomEvent("dataUpdated"));
-    window.dispatchEvent(new CustomEvent("talentMatrixUpdated"));
+    setSavingSignal(true);
+    try {
+      if (SAAS_DATA_MODE) {
+        await updateSaasTalentProfile(String(selected.id), { [field]: value || null });
+        await reload();
+        return;
+      }
+      const nextOrg = orgData.map((item) => item["Ad Soyad"] === selectedName
+        ? { ...item, [field]: value || undefined }
+        : item);
+      setOrgData(nextOrg);
+      setStorageData(STORAGE_KEYS.ORG_CHART, nextOrg);
+      window.dispatchEvent(new CustomEvent("dataUpdated"));
+      window.dispatchEvent(new CustomEvent("talentMatrixUpdated"));
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Yetenek profili güncellenemedi.");
+    } finally {
+      setSavingSignal(false);
+    }
   };
 
-  const aspiration = validFive(selected?.snapshot.profile.aspiration) ?? null;
-  const mobility = validFive(selected?.snapshot.profile.mobility) ?? null;
   const aiContext = selected ? {
     module: "talent_matrix",
-    employee: { position: selected.Pozisyon, department: selected.Departman, performance: selected.snapshot.performance.score || null, nineBox: selected.box },
+    employee: {
+      position: selected.Pozisyon,
+      department: selected.Departman,
+      performance: selected.snapshot.performance.score || null,
+      nineBox: selected.box,
+    },
     potential: {
-      score: selected.calculatedPotential.score || null, label: selected.calculatedPotential.label,
-      confidence: selected.calculatedPotential.confidence,
-      factors: selected.calculatedPotential.factors.map((factor: any) => ({ ...factor, score: factor.available ? factor.score : null })),
-      missingInputs: selected.calculatedPotential.missingInputs,
+      score: selected.snapshot.talent.potential.score || null,
+      label: selected.snapshot.talent.potential.label,
+      confidence: selected.snapshot.talent.potential.confidence,
+      factors: selected.snapshot.talent.potential.factors.map((factor) => ({
+        label: factor.label,
+        available: factor.available,
+        score: factor.available ? factor.score : null,
+      })),
+      missingInputs: selected.snapshot.talent.potential.missingInputs,
     },
-    evidence: { score: selected.snapshot.evidence.score, band: selected.snapshot.evidence.band, missingSignals: selected.snapshot.evidence.missingSignals },
-    careerSignals: { aspiration, mobility },
+    evidence: {
+      score: selected.snapshot.evidence.score,
+      band: selected.snapshot.evidence.band,
+      missingSignals: selected.snapshot.evidence.missingSignals,
+    },
+    careerSignals: { aspiration: aspiration || null, mobility: mobility || null },
     roleTarget: {
-      source: targetSourceText,
+      source: targetResolution.source,
       topGaps: gapData.filter((item) => item.hasActual && Number(item.gap) > 0).slice(0, 4),
-      strengths: gapData.filter((item) => item.hasActual).sort((a, b) => Number(a.gap) - Number(b.gap)).slice(0, 3),
     },
-    instruction: "Performans, potansiyel, Evidence Score ve rol yetkinlik farklarını birlikte analiz et. Eksik kariyer/mobilite verisini 3,0 kabul etme. Terfi veya ücret kararı verme; doğrulanacak kanıtları ve gelişim aksiyonlarını çıkar.",
+    instruction: "Performans, potansiyel, Evidence Score ve rol yetkinlik farklarını birlikte analiz et. Eksik kariyer/mobilite verisini orta değer kabul etme. Terfi veya ücret kararı verme; doğrulanacak kanıtları ve gelişim aksiyonlarını çıkar.",
   } : {};
 
-  if (!people.length) return <div className="enterprise-card p-8 text-center"><Users className="mx-auto h-8 w-8 text-slate-300"/><h2 className="mt-3 text-sm font-semibold">Yetenek verisi için çalışan bulunamadı</h2><p className="mt-1 text-xs text-slate-500">Önce organizasyon verisini yükleyin veya FutureHR V1 demo setini oluşturun.</p></div>;
+  if (loading) return <div className="enterprise-card p-8 text-sm text-slate-500">Yetenek çalışma alanı yükleniyor…</div>;
+  if (!people.length) {
+    return <div className="enterprise-card p-8 text-center"><Users className="mx-auto h-8 w-8 text-slate-300"/><h2 className="mt-3 text-sm font-semibold">Yetenek verisi için çalışan bulunamadı</h2><p className="mt-1 text-xs text-slate-500">SaaS modunda bu ekran yalnız tenant&apos;ınıza ait çalışan ve performans kayıtlarını kabul eder.</p></div>;
+  }
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-600">Yetenek karar desteği</p><h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">Yetenek & 9-Box</h1><p className="mt-1 max-w-4xl text-sm text-slate-500">Potansiyel; öğrenme, analitik kapasite, dayanıklılık, işbirliği, kariyer isteği ve mobilite sinyallerinden oluşur. Eksik sinyal nötr puanla doldurulmaz; güven seviyesi düşer.</p></div>
-        <div className="flex gap-2"><Link href="/kariyer" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Kariyer yolu</Link><Link href="/yedekleme" className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white">Halefiyet</Link></div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-600">Yetenek karar desteği</p>
+          <h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">Yetenek & 9-Box</h1>
+          <p className="mt-1 max-w-4xl text-sm text-slate-500">Potansiyel; gerçek yetkinlik kanıtı, kariyer isteği ve mobilite sinyallerinden oluşur. Eksik veri nötr puanla doldurulmaz; güven seviyesi düşer.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {SAAS_DATA_MODE&&<span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><ShieldCheck className="h-3.5 w-3.5"/>Tenant veri katmanı</span>}
+          <Link href="/kariyer" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">Kariyer yolu</Link>
+          <Link href="/yedekleme" className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white">Halefiyet</Link>
+        </div>
       </div>
 
+      {loadError&&<div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{loadError}</div>}
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Toplam çalışan" value={people.length}/><Metric label="Yıldız Oyuncu" value={boxCounts["Yıldız Oyuncu"] || 0}/><Metric label="Yüksek Potansiyel" value={(boxCounts["Yüksek Potansiyel"] || 0) + (boxCounts["Potansiyel Yatırımı"] || 0)}/><Metric label="Veri Eksik" value={boxCounts["Veri Eksik"] || 0}/>
+        <Metric label="Toplam çalışan" value={people.length}/>
+        <Metric label="Yıldız Oyuncu" value={boxCounts["Yıldız Oyuncu"] || 0}/>
+        <Metric label="Yüksek Potansiyel" value={(boxCounts["Yüksek Potansiyel"] || 0) + (boxCounts["Potansiyel Yatırımı"] || 0)}/>
+        <Metric label="Veri Eksik" value={missingDataCount}/>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.45fr_.75fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-semibold">9-Box Yetenek Haritası</h2><p className="text-xs text-slate-500">X: Performans · Y: Çok faktörlü potansiyel · yalnızca yeterli ölçümü olan çalışanlar</p></div><Users className="h-4 w-4 text-indigo-600"/></div>
-          <div className="h-[430px]">{plotData.length ? <ResponsiveContainer width="100%" height="100%"><ScatterChart margin={{top:18,right:22,bottom:28,left:10}}><CartesianGrid strokeDasharray="4 6"/><ReferenceArea x1={1} x2={3} y1={1} y2={3} fill="#fee2e2" fillOpacity={0.35}/><ReferenceArea x1={3} x2={4} y1={3} y2={4} fill="#fef3c7" fillOpacity={0.3}/><ReferenceArea x1={4} x2={5} y1={4} y2={5} fill="#dcfce7" fillOpacity={0.38}/><XAxis type="number" dataKey="performance" domain={[1,5]} ticks={[1,2,3,4,5]} name="Performans" label={{value:"Performans",position:"insideBottom",offset:-16}}/><YAxis type="number" dataKey="potential" domain={[1,5]} ticks={[1,2,3,4,5]} name="Potansiyel" label={{value:"Potansiyel",angle:-90,position:"insideLeft"}}/><ReferenceLine x={3} stroke="#94a3b8"/><ReferenceLine x={4} stroke="#94a3b8"/><ReferenceLine y={3} stroke="#94a3b8"/><ReferenceLine y={4} stroke="#94a3b8"/><Tooltip cursor={{strokeDasharray:"3 3"}} content={({active,payload}:any)=>active&&payload?.[0]?<div className="rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xl"><p className="font-semibold">{payload[0].payload.name}</p><p>{payload[0].payload.position}</p><p className="mt-1">Performans: {payload[0].payload.performance.toFixed(1)}</p><p>Potansiyel: {payload[0].payload.potential.toFixed(2)} · potansiyel güven %{payload[0].payload.confidence}</p><p>Evidence: %{payload[0].payload.evidence}</p><p className="mt-1 font-semibold text-indigo-700">{payload[0].payload.box}</p></div>:null}/><Scatter data={plotData} fill="#4f46e5" onClick={(point:any)=>point?.name&&setSelectedName(point.name)}/></ScatterChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-sm text-slate-500">9-Box için performans ve potansiyel kanıtı henüz yeterli değil.</div>}</div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <label className="text-xs font-medium text-slate-500">Çalışan<select value={selectedName} onChange={(e)=>setSelectedName(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">{people.map((person)=><option key={person.id ?? person["Ad Soyad"]}>{person["Ad Soyad"]}</option>)}</select></label>
-            {selected&&<div className="mt-4"><p className="text-lg font-semibold">{selected["Ad Soyad"]}</p><p className="text-xs text-slate-500">{selected.Pozisyon} · {selected.Departman}</p><span className="mt-3 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{selected.box}</span><div className="mt-4 grid grid-cols-2 gap-2"><Mini label="Performans" value={selected.snapshot.performance.score > 0 ? selected.snapshot.performance.score.toFixed(1) : "—"}/><Mini label="Potansiyel" value={selected.calculatedPotential.score > 0 ? selected.calculatedPotential.score.toFixed(2) : "—"}/><Mini label="Potansiyel güveni" value={`%${selected.calculatedPotential.confidence}`}/><Mini label="Evidence Score" value={`%${selected.snapshot.evidence.score}`}/></div></div>}
+        <section className="enterprise-card p-5">
+          <div className="flex items-start justify-between gap-3"><div><h2 className="text-sm font-semibold">9-Box Yetenek Haritası</h2><p className="mt-1 text-xs text-slate-500">Yatay: performans · dikey: potansiyel. Yalnızca iki skor da mevcut olan çalışanlar yerleştirilir.</p></div><Brain className="h-4 w-4 text-indigo-600"/></div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {BOX_LABELS.flatMap((row, rowIndex) => row.map((label, columnIndex) => {
+              const occupants = plotted.filter((person) => {
+                const cell = gridCell(person.snapshot.performance.score, person.snapshot.talent.potential.score);
+                return cell.y === 2 - rowIndex && cell.x === columnIndex;
+              });
+              return <div key={label} className="min-h-[150px] rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between gap-2"><p className="text-[10px] font-bold uppercase tracking-[.06em] text-slate-500">{label}</p><span className="text-[10px] font-semibold text-slate-400">{occupants.length}</span></div>
+                <div className="mt-3 space-y-2">{occupants.map((person) => <button key={String(person.id)} type="button" onClick={()=>setSelectedName(person["Ad Soyad"])} className={`w-full rounded-xl border px-3 py-2 text-left transition ${selectedName===person["Ad Soyad"]?"border-indigo-300 bg-white shadow-sm":"border-transparent bg-white/70 hover:border-slate-200"}`}><p className="truncate text-xs font-semibold text-slate-800">{person["Ad Soyad"]}</p><p className="mt-0.5 text-[10px] text-slate-400">P {person.snapshot.performance.score.toFixed(1)} · Pot {person.snapshot.talent.potential.score.toFixed(1)}</p></button>)}</div>
+              </div>;
+            }))}
           </div>
-          {selected&&<div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-2"><Database className="h-4 w-4 text-indigo-600"/><h3 className="text-sm font-semibold">Potansiyel profil girdileri</h3></div><p className="mt-1 text-xs text-slate-500">Eksik bırakılan kariyer veya mobilite sinyali puana 3,0 eklemez; potansiyel güvenini düşürür.</p><Signal label="Kariyer isteği" value={aspiration ?? 0} onChange={(value)=>updateProfileSignal("career_aspiration",value)}/><Signal label="Mobilite / yeni sorumluluk isteği" value={mobility ?? 0} onChange={(value)=>updateProfileSignal("mobility_willingness",value)}/></div>}
-        </div>
+          {missingDataCount>0&&<p className="mt-3 text-[11px] text-slate-500">{missingDataCount} çalışan yeterli performans/potansiyel kanıtı olmadığı için matrise yerleştirilmedi.</p>}
+        </section>
+
+        <aside className="space-y-4">
+          <section className="enterprise-card p-5">
+            <label className="text-xs font-medium text-slate-500">Çalışan<select value={selectedName} onChange={(event)=>setSelectedName(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">{people.map((person)=><option key={String(person.id)}>{person["Ad Soyad"]}</option>)}</select></label>
+            {selected&&<div className="mt-4"><p className="text-lg font-semibold">{selected["Ad Soyad"]}</p><p className="text-xs text-slate-500">{selected.Pozisyon} · {selected.Departman}</p><span className="mt-3 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">{selected.box}</span><div className="mt-4 grid grid-cols-2 gap-2"><Mini label="Performans" value={selected.snapshot.performance.score>0?selected.snapshot.performance.score.toFixed(1):"—"}/><Mini label="Potansiyel" value={selected.snapshot.talent.potential.score>0?selected.snapshot.talent.potential.score.toFixed(2):"—"}/><Mini label="Potansiyel güveni" value={`%${selected.snapshot.talent.potential.confidence}`}/><Mini label="Evidence Score" value={`%${selected.snapshot.evidence.score}`}/></div></div>}
+          </section>
+
+          {selected&&<section className="enterprise-card p-5"><div className="flex items-center gap-2"><Database className="h-4 w-4 text-indigo-600"/><h3 className="text-sm font-semibold">Potansiyel profil girdileri</h3></div><p className="mt-1 text-xs text-slate-500">Kariyer isteği ve mobilite eksikse sistem 3,0 varsaymaz.</p><SignalSlider label="Kariyer isteği" value={aspiration} disabled={savingSignal} onChange={(value)=>void updateProfileSignal("career_aspiration",value)}/><SignalSlider label="Mobilite / yeni sorumluluk isteği" value={mobility} disabled={savingSignal} onChange={(value)=>void updateProfileSignal("mobility_willingness",value)}/></section>}
+        </aside>
       </div>
 
       {selected&&<div className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-2"><Brain className="h-4 w-4 text-indigo-600"/><h2 className="text-sm font-semibold">Potansiyel faktörleri</h2></div><div className="mt-4 space-y-3">{selected.calculatedPotential.factors.map((factor:any)=><div key={factor.key}><div className="flex justify-between text-xs"><span>{factor.label} <span className="text-slate-400">%{Math.round(factor.weight*100)}</span></span><strong>{factor.available ? factor.score.toFixed(1) : "—"}</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className={`h-full rounded-full ${factor.available ? "bg-indigo-500" : "bg-slate-200"}`} style={{width:`${factor.available ? factor.score/5*100 : 0}%`}}/></div></div>)}</div>{selected.calculatedPotential.missingInputs.length>0&&<p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">Eksik veri: {selected.calculatedPotential.missingInputs.join(", ")}</p>}</div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-2"><Target className="h-4 w-4 text-indigo-600"/><h2 className="text-sm font-semibold">Rol yetkinlik farkı</h2></div><span className={`rounded-full px-2 py-1 text-[9px] font-bold ${targetResolution.source==="exact"?"bg-emerald-50 text-emerald-700":"bg-amber-50 text-amber-700"}`}>{targetResolution.source==="exact"?"ROL PROFİLİ":"TÜRETİLMİŞ HEDEF"}</span></div><p className="mt-1 text-[10px] leading-4 text-slate-400">{targetSourceText}</p><div className="mt-4 space-y-2">{gapData.slice(0,10).map((item)=><div key={item.label} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-800/60"><span>{item.label}</span>{item.hasActual?<span className={Number(item.gap)>0.5?"font-semibold text-red-600":Number(item.gap)>0?"font-semibold text-amber-600":"font-semibold text-emerald-600"}>{item.actual.toFixed(1)} / {item.expected.toFixed(1)} · {Number(item.gap)>0?`-${Number(item.gap).toFixed(1)}`:"uyumlu"}</span>:<span className="font-semibold text-slate-400">Ölçüm yok · hedef {item.expected.toFixed(1)}</span>}</div>)}</div></div>
+        <section className="enterprise-card p-5"><div className="flex items-center gap-2"><Target className="h-4 w-4 text-violet-600"/><h2 className="text-sm font-semibold">Rol yetkinlik farkları</h2></div><p className="mt-1 text-xs text-slate-500">Hedef kaynağı: {targetResolution.source} · {targetResolution.referenceCount} referans rol</p><div className="mt-4 space-y-2">{gapData.filter((item)=>item.hasActual&&Number(item.gap)>0).slice(0,6).map((item)=><div key={item.label} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 text-xs"><span>{item.label}</span><span className="font-semibold text-amber-700">{item.actual.toFixed(1)} → {item.expected.toFixed(1)}</span></div>)}{!gapData.some((item)=>item.hasActual&&Number(item.gap)>0)&&<p className="text-xs text-slate-500">Ölçülmüş pozitif rol açığı yok veya yetkinlik verisi henüz yeterli değil.</p>}</div></section>
+        <section className="enterprise-card p-5"><h2 className="text-sm font-semibold">Kanıt durumu</h2><div className="mt-4 grid grid-cols-2 gap-2"><Mini label="Performans ölçümü" value={String(selected.snapshot.performance.historyCount)}/><Mini label="Trend" value={selected.snapshot.performance.trendDirection}/><Mini label="Yetkinlik kapsamı" value={`%${selected.snapshot.competency.coverage}`}/><Mini label="Evidence bandı" value={selected.snapshot.evidence.band}/></div><div className="mt-4 space-y-2">{selected.snapshot.signals.slice(0,5).map((signal)=><p key={signal} className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-800">{signal}</p>)}</div></section>
       </div>}
 
-      {selected&&<AIDecisionSupport kind="talent" context={aiContext} resetKey={selectedName} title="AI Yetenek Karar Desteği" description="Performans, potansiyel, 9-box, Evidence Score ve rol yetkinlik farklarını aynı karar zincirinden sentezler. Eksik veriyi ortalama saymaz ve terfi kararı vermez." buttonLabel="Yetenek analizini oluştur" questionTitle="Yönetici doğrulama soruları"/>}
+      {selected&&<AIDecisionSupport kind="talent" context={aiContext} resetKey={selectedName} title="AI Yetenek Kalibrasyonu" description="Performans, potansiyel, Evidence Score ve rol farklarını birlikte inceler; terfi veya ücret kararı vermez." buttonLabel="Yetenek analizini oluştur" questionTitle="Kalibrasyon soruları"/>}
     </div>
   );
 }
 
-function Metric({label,value}:{label:string;value:string|number}){return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-medium text-slate-500">{label}</p><p className="mt-3 text-2xl font-semibold">{value}</p></div>}
-function Mini({label,value}:{label:string;value:string|number}){return <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60"><p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>}
-function Signal({label,value,onChange}:{label:string;value:number;onChange:(value:number)=>void}){return <div className="mt-4"><div className="flex justify-between text-xs"><span>{label}</span><strong>{value > 0 ? `${value.toFixed(1)} / 5` : "Veri yok"}</strong></div><input type="range" min="0" max="5" step="0.5" value={value} onChange={(e)=>onChange(Number(e.target.value))} className="mt-2 w-full"/><p className="mt-1 text-[9px] text-slate-400">0 = veri yok · 1–5 = teyit edilmiş profil sinyali</p></div>}
+function Metric({label,value}:{label:string;value:number}){
+  return <div className="enterprise-card p-4"><p className="text-xs text-slate-500">{label}</p><p className="mt-3 text-2xl font-semibold">{value}</p></div>;
+}
+
+function Mini({label,value}:{label:string;value:string}){
+  return <div className="rounded-xl bg-slate-50 p-3"><p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-sm font-semibold text-slate-800">{value}</p></div>;
+}
+
+function SignalSlider({label,value,disabled,onChange}:{label:string;value:number;disabled:boolean;onChange:(value:number)=>void}){
+  return <div className="mt-4"><div className="flex items-center justify-between text-xs"><span className="font-medium text-slate-600">{label}</span><span className="font-semibold text-indigo-700">{value>0?`${value.toFixed(1)} / 5`:"Eksik"}</span></div><input disabled={disabled} type="range" min="0" max="5" step="1" value={value} onChange={(event)=>onChange(Number(event.target.value))} className="mt-2 w-full disabled:opacity-50"/><div className="mt-1 flex justify-between text-[9px] text-slate-400"><span>Eksik</span><span>Yüksek</span></div></div>;
+}
