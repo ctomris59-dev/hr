@@ -26,7 +26,20 @@ from core.middleware import RequestLoggingMiddleware
 from core.metrics.middleware import MetricsMiddleware
 from core.audit.middleware import AuditMiddleware
 
-from routers import recruitment, org_chart, admin, dashboard, audit, workflow, observability, auth_v1, people_v1, employee_experience
+from routers import (
+    recruitment,
+    org_chart,
+    admin,
+    dashboard,
+    audit,
+    workflow,
+    observability,
+    auth_v1,
+    people_v1,
+    employee_experience,
+    performance_v1,
+    talent_v1,
+)
 
 settings = get_settings()
 
@@ -112,6 +125,8 @@ app.include_router(observability.router)
 # Tenant-scoped/versioned SaaS surface.
 app.include_router(auth_v1.router)
 app.include_router(people_v1.router)
+app.include_router(performance_v1.router)
+app.include_router(talent_v1.router)
 
 
 @app.on_event("startup")
