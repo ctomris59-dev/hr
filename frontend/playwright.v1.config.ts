@@ -4,7 +4,7 @@ const baseURL = process.env.FUTUREHR_BASE_URL || "http://127.0.0.1:3000";
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["futurehr-v1.spec.ts", "readability.spec.ts"],
+  testMatch: ["futurehr-v1.spec.ts", "readability.spec.ts", "role-fit-v2.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
