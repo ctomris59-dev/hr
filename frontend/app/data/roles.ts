@@ -7,10 +7,10 @@ export const ROLE_MAPPING: Record<string, UserRole> = { CEO:"ceo", IK:"hr_admin"
 export const REVERSE_ROLE_MAPPING: Record<UserRole,string[]> = { ceo:["CEO"], hr_admin:["IK"], director:["DIRECTOR"], manager:["MANAGER"], employee:["PERSONEL","EMPLOYEE"] };
 
 export const ROLE_ACCESS_CONFIG: Record<UserRole,string[]> = {
-  ceo:["/dashboard","/calisan-deneyimi","/organizasyon","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetenek-matrisi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/yedekleme","/maas","/ise-alim","/aday-testi","/ekip-yonetimi","/kurulum","/admin","/izinler","/ayarlar/roller","/ayarlar/yetki-mimarisi","/yonetici/maas-talep"],
-  hr_admin:["/dashboard","/calisan-deneyimi","/organizasyon","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetenek-matrisi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/yedekleme","/maas","/ise-alim","/aday-testi","/ekip-yonetimi","/kurulum","/admin","/izinler","/ayarlar/yetki-mimarisi","/yonetici/maas-talep"],
-  director:["/dashboard","/calisan-deneyimi","/rol-mimarisi","/degerlendirme","/kalibrasyon","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/izinler","/ekip-yonetimi","/yonetici/maas-talep"],
-  manager:["/dashboard","/calisan-deneyimi","/rol-mimarisi","/degerlendirme","/kalibrasyon","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/izinler","/ekip-yonetimi","/yonetici/maas-talep"],
+  ceo:["/dashboard","/karar-merkezi","/calisan-deneyimi","/organizasyon","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetenek-matrisi","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/yedekleme","/maas","/ise-alim","/aday-testi","/ekip-yonetimi","/kurulum","/admin","/turkiye-uyum","/izinler","/ayarlar/roller","/ayarlar/yetki-mimarisi","/yonetici/maas-talep"],
+  hr_admin:["/dashboard","/karar-merkezi","/calisan-deneyimi","/organizasyon","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetenek-matrisi","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/yedekleme","/maas","/ise-alim","/aday-testi","/ekip-yonetimi","/kurulum","/admin","/turkiye-uyum","/izinler","/ayarlar/yetki-mimarisi","/yonetici/maas-talep"],
+  director:["/dashboard","/karar-merkezi","/calisan-deneyimi","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/izinler","/ekip-yonetimi","/yonetici/maas-talep"],
+  manager:["/dashboard","/karar-merkezi","/calisan-deneyimi","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/izinler","/ekip-yonetimi","/yonetici/maas-talep"],
   employee:["/kariyer","/gelisim","/egitim","/izinler","/calisan-deneyimi"],
 };
 
