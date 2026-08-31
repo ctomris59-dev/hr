@@ -133,7 +133,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
                 href={item.href}
                 onClick={()=>setSidebarOpen(false)}
                 aria-current={isActive?"page":undefined}
-                className={`group relative mb-0.5 flex h-10 items-center gap-3 overflow-hidden rounded-[10px] px-3 text-[13.5px] leading-5 outline-none transition-[background-color,color,border-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#79aaa6]/45 ${isActive?"bg-[linear-gradient(90deg,rgba(72,115,112,0.24),rgba(255,255,255,0.075))] font-semibold text-white ring-1 ring-inset ring-white/[0.055]":"font-medium text-slate-300/90 hover:bg-white/[0.055] hover:text-white"}`}
+                className={`group relative mb-0.5 flex h-9 items-center gap-3 overflow-hidden rounded-[10px] px-3 text-[13.5px] leading-5 outline-none transition-[background-color,color,border-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#79aaa6]/45 ${isActive?"bg-[linear-gradient(90deg,rgba(72,115,112,0.24),rgba(255,255,255,0.075))] font-semibold text-white ring-1 ring-inset ring-white/[0.055]":"font-medium text-slate-300/90 hover:bg-white/[0.055] hover:text-white"}`}
               >
                 {isActive&&<span className="absolute inset-y-[8px] left-0 w-[3px] rounded-r-full bg-[#79aaa6]"/>}
                 <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border transition-colors ${isActive?"border-[#79aaa6]/20 bg-[#79aaa6]/10 text-[#a7cbc8]":"border-transparent bg-transparent text-slate-500 group-hover:text-slate-300"}`}>
