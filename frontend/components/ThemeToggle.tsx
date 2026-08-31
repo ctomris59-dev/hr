@@ -17,31 +17,35 @@ export default function ThemeToggle() {
       <button
         type="button"
         className="h-9 w-9 rounded-lg border border-slate-200 bg-white/70 dark:border-slate-700 dark:bg-slate-800/70"
-        aria-label="Tema değiştir"
+        aria-label="Tema yükleniyor"
+        disabled
       />
     );
   }
 
   const isDark = resolvedTheme === "dark";
+  const label = isDark ? "Açık moda geç" : "Koyu moda geç";
 
   return (
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className="relative h-9 w-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-      aria-label="Tema değiştir"
+      aria-label={label}
+      title={label}
     >
       <Sun
         className={`absolute inset-0 m-auto h-4 w-4 text-amber-500 transition-all ${
           isDark ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"
         }`}
+        aria-hidden="true"
       />
       <Moon
-        className={`absolute inset-0 m-auto h-4 w-4 text-slate-700 dark:text-slate-200 transition-all ${
+        className={`absolute inset-0 m-auto h-4 w-4 text-slate-700 transition-all dark:text-slate-200 ${
           isDark ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0"
         }`}
+        aria-hidden="true"
       />
     </button>
   );
 }
-
