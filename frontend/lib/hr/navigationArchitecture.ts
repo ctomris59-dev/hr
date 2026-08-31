@@ -71,9 +71,10 @@ export const NAVIGATION_FAMILIES: NavigationFamily[] = [
     id: "compensation",
     label: "Ücret & Bütçe",
     section: "İnsan & Organizasyon",
-    description: "Ücret kararını benchmark, bütçe, yönetici önerisi ve onay döngüsüyle yönetin.",
+    description: "Ücret kararını benchmark, iç adalet, sıkışma riski, bütçe, yönetici önerisi ve onay döngüsüyle yönetin.",
     items: [
       { href: "/maas", label: "Ücret Karar Merkezi", description: "Ücret analizi, benchmark, bütçe ve karar görünümü." },
+      { href: "/ucret-adaleti", label: "Ücret Adaleti & Sıkışma", description: "Compa-ratio, piyasa farkı, iç emsal ve yönetici-ekip sıkışma sinyalleri." },
       { href: "/yonetici/maas-talep", label: "Yönetici Önerileri", description: "Yönetici ücret önerilerini kontrollü onay akışına gönderin." },
     ],
   },
