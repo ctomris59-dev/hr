@@ -154,3 +154,146 @@
   color:#e2e8f0!important;
   -webkit-text-fill-color:#e2e8f0!important;
 }
+
+/* --------------------------------------------------------------------------
+   Readability v2 — site-wide contrast floor
+   Human Enterprise deliberately neutralises old decorative backgrounds. When
+   a legacy card loses a dark/gradient background its old *-100/*-200 text must
+   not remain almost white on white. These mappings keep semantic hue while
+   meeting a practical enterprise contrast floor in light mode.
+   -------------------------------------------------------------------------- */
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-slate-300"],[class*="text-slate-400"],[class*="text-gray-300"],[class*="text-gray-400"],[class*="text-zinc-300"],[class*="text-zinc-400"],[class*="text-neutral-300"],[class*="text-neutral-400"]) {
+  color:#5b6875!important;
+  -webkit-text-fill-color:#5b6875!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-slate-500"],[class*="text-gray-500"],[class*="text-zinc-500"],[class*="text-neutral-500"]) {
+  color:#475569!important;
+  -webkit-text-fill-color:#475569!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-blue-100"],[class*="text-blue-200"],[class*="text-blue-300"],[class*="text-blue-400"]) {
+  color:#1e4f88!important;
+  -webkit-text-fill-color:#1e4f88!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-indigo-100"],[class*="text-indigo-200"],[class*="text-indigo-300"],[class*="text-indigo-400"]) {
+  color:#4f46a5!important;
+  -webkit-text-fill-color:#4f46a5!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-violet-100"],[class*="text-violet-200"],[class*="text-violet-300"],[class*="text-violet-400"],[class*="text-purple-100"],[class*="text-purple-200"],[class*="text-purple-300"],[class*="text-purple-400"]) {
+  color:#6d3f92!important;
+  -webkit-text-fill-color:#6d3f92!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-emerald-100"],[class*="text-emerald-200"],[class*="text-emerald-300"],[class*="text-emerald-400"],[class*="text-green-100"],[class*="text-green-200"],[class*="text-green-300"],[class*="text-green-400"],[class*="text-teal-100"],[class*="text-teal-200"],[class*="text-teal-300"],[class*="text-teal-400"]) {
+  color:#16665f!important;
+  -webkit-text-fill-color:#16665f!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-amber-100"],[class*="text-amber-200"],[class*="text-amber-300"],[class*="text-amber-400"],[class*="text-yellow-100"],[class*="text-yellow-200"],[class*="text-yellow-300"],[class*="text-yellow-400"],[class*="text-orange-100"],[class*="text-orange-200"],[class*="text-orange-300"],[class*="text-orange-400"]) {
+  color:#8a4b12!important;
+  -webkit-text-fill-color:#8a4b12!important;
+}
+html:not(.dark) [data-testid="app-shell"] main :is([class*="text-red-100"],[class*="text-red-200"],[class*="text-red-300"],[class*="text-red-400"],[class*="text-rose-100"],[class*="text-rose-200"],[class*="text-rose-300"],[class*="text-rose-400"]) {
+  color:#a92b36!important;
+  -webkit-text-fill-color:#a92b36!important;
+}
+
+/* Inputs, placeholders and ordinary non-disabled actions must not look disabled. */
+html:not(.dark) [data-testid="app-shell"] main :is(input,textarea,select)::placeholder {
+  color:#6b7785!important;
+  opacity:1!important;
+}
+[data-testid="app-shell"] main :is(button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]),[role="tab"]:not([aria-disabled="true"])) {
+  opacity:1!important;
+}
+[data-testid="app-shell"] main :is(button,input,textarea,select):disabled,
+[data-testid="app-shell"] main fieldset:disabled {
+  opacity:.76!important;
+}
+
+/* A removed Tailwind gradient must become a real solid decision surface, not a
+   white card that still contains white/pastel text. */
+.module-native-content :is(div,section,article)[class*="bg-gradient-to-"][class*="text-white"] {
+  background-image:none!important;
+  background-color:var(--module-accent,var(--fh-accent))!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+}
+.module-native-content :is(div,section,article)[class*="bg-gradient-to-"][class*="text-white"] :is(p,span,strong,small,svg,[class*="text-"]) {
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+/* Light-surface labels use the same readable neutral across modules. */
+html:not(.dark) .module-native-content :is(p,span,label,small,th,td)[class*="text-slate-400"],
+html:not(.dark) .module-native-content :is(p,span,label,small,th,td)[class*="text-gray-400"] {
+  color:#5b6875!important;
+  -webkit-text-fill-color:#5b6875!important;
+}
+
+/* Dark mode gets an equivalent floor rather than inheriting mid-grey text. */
+.dark [data-testid="app-shell"] main :is([class*="text-slate-400"],[class*="text-slate-500"],[class*="text-gray-400"],[class*="text-gray-500"],[class*="text-zinc-400"],[class*="text-zinc-500"]) {
+  color:#bdc8d1!important;
+  -webkit-text-fill-color:#bdc8d1!important;
+}
+
+/* Route-specific guarantees for the screens that exposed the regression. */
+html:not(.dark) .workspace-rol-mimarisi aside button:not(:disabled) p:first-child {
+  color:#0f172a!important;
+  -webkit-text-fill-color:#0f172a!important;
+  opacity:1!important;
+}
+html:not(.dark) .workspace-rol-mimarisi aside button:not(:disabled) p:nth-child(2) {
+  color:#526273!important;
+  -webkit-text-fill-color:#526273!important;
+  opacity:1!important;
+}
+html:not(.dark) .workspace-rol-mimarisi aside button:not(:disabled) span[class*="bg-emerald-50"] {
+  background:#ecfdf5!important;
+  color:#047857!important;
+  -webkit-text-fill-color:#047857!important;
+}
+html:not(.dark) .workspace-rol-mimarisi .module-native-content span[class*="bg-slate-100"][class*="text-slate-600"] {
+  background:#eef2f6!important;
+  color:#334155!important;
+  -webkit-text-fill-color:#334155!important;
+  opacity:1!important;
+}
+html:not(.dark) .workspace-rol-mimarisi .module-native-content div[class*="text-slate-400"] {
+  color:#5b6875!important;
+  -webkit-text-fill-color:#5b6875!important;
+}
+
+html:not(.dark) .workspace-degerlendirme .module-native-content section[class*="border-blue-200"] > div:first-child {
+  background:var(--module-accent,var(--fh-accent))!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+}
+html:not(.dark) .workspace-degerlendirme .module-native-content section[class*="border-blue-200"] > div:first-child * {
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
+
+html:not(.dark) .workspace-gelisim .module-native-content ol button:not(:disabled) span {
+  opacity:1!important;
+}
+html:not(.dark) .workspace-gelisim .module-native-content ol button:not(:disabled) > span:first-child {
+  color:#64748b!important;
+  -webkit-text-fill-color:#64748b!important;
+}
+html:not(.dark) .workspace-gelisim .module-native-content ol button:not(:disabled) > span:nth-child(2) > span:nth-child(1),
+html:not(.dark) .workspace-gelisim .module-native-content ol button:not(:disabled) > span:nth-child(2) > span:nth-child(3) {
+  color:#475569!important;
+  -webkit-text-fill-color:#475569!important;
+}
+html:not(.dark) .workspace-gelisim .module-native-content ol button:not(:disabled) > span:nth-child(2) > span:nth-child(2) {
+  color:#0f172a!important;
+  -webkit-text-fill-color:#0f172a!important;
+}
+
+/* Browser autofill and forced text fill must not silently wash out content. */
+html:not(.dark) [data-testid="app-shell"] main input:-webkit-autofill,
+html:not(.dark) [data-testid="app-shell"] main textarea:-webkit-autofill,
+html:not(.dark) [data-testid="app-shell"] main select:-webkit-autofill {
+  -webkit-text-fill-color:#17212b!important;
+  caret-color:#17212b!important;
+}
