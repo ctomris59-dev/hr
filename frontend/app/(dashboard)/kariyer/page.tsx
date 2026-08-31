@@ -70,8 +70,8 @@ export default function KariyerPage() {
     }
   }, [currentRole.title, currentRole.levelRank, familyRoles, targetPosition]);
 
-  const readiness = targetPosition ? calculateCareerReadiness(person, targetPosition) : null;
-  const targetRole = targetPosition ? getCareerRole(targetPosition) : null;
+  const readiness = targetPosition && targetPosition !== currentRole.title ? calculateCareerReadiness(person, targetPosition) : null;
+  const targetRole = targetPosition && targetPosition !== currentRole.title ? getCareerRole(targetPosition) : null;
   const aspirationRaw = Number(orgPerson.career_aspiration);
   const aspiration = Number.isFinite(aspirationRaw) && aspirationRaw >= 1 && aspirationRaw <= 5 ? aspirationRaw : null;
   const canEditAspiration = isEmployee && selectedName === user?.name;
@@ -126,7 +126,7 @@ export default function KariyerPage() {
   if (!people.length) return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm"><UserRound className="mx-auto h-8 w-8 text-slate-300"/><h1 className="mt-3 text-lg font-semibold">Kariyer profili bulunamadı</h1><p className="mt-1 text-sm text-slate-500">Demo personanız organizasyon kaydıyla eşleşmiyor.</p></div>;
 
   return <div className="min-w-0 space-y-4 overflow-hidden">
-    <div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">{isEmployee ? "Benim kariyerim" : "Kariyer mimarisi"}</p><h1 className="mt-1 text-xl font-semibold tracking-[-0.03em]">Kariyer Yolu</h1><p className="mt-1 max-w-5xl text-xs leading-5 text-slate-500">Hazır bulunuşluk rol uyumu, performans, potansiyel, deneyim ve kariyer isteğini birleştirir. Öğrenme tamamlamak puanı otomatik artırmaz; yalnız doğrulanmış işe transfer kanıtı Evidence Graph'a girer.</p></div>
+    <div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">{isEmployee ? "Benim kariyerim" : "Kariyer mimarisi"}</p><h1 className="mt-1 text-xl font-semibold tracking-[-0.03em]">Kariyer Yolu</h1><p className="mt-1 max-w-5xl text-xs leading-5 text-slate-500">Hazır bulunuşluk rol uyumu, performans, potansiyel, deneyim ve kariyer isteğini birleştirir. Öğrenme tamamlamak puanı otomatik artırmaz; yalnız doğrulanmış işe transfer kanıtı Evidence Graph&apos;a girer.</p></div>
 
     <div className="grid min-w-0 gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
       <aside className="space-y-3">
@@ -136,14 +136,14 @@ export default function KariyerPage() {
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3"><p className="text-xs font-medium text-slate-500">Kariyer isteği</p><strong className="text-sm">{aspiration !== null ? `${aspiration.toFixed(1)} / 5` : "Belirtilmedi"}</strong></div>
-          {canEditAspiration ? <><div className="mt-2 flex justify-between text-[10px] text-slate-400"><span>1 düşük</span><span>5 yüksek</span></div><input type="range" min="1" max="5" step="0.5" value={aspiration ?? 3} onChange={(e) => updateAspiration(Number(e.target.value))} className="mt-1.5 w-full"/><p className="mt-2 text-[10px] text-slate-400">Bu alan sizin öz-bildiriminizdir.</p></> : <p className="mt-2 text-[10px] text-slate-400">Çalışan öz-bildirimi; yönetici için salt okunur.</p>}
+          {canEditAspiration ? <><div className="mt-3 grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Kariyer isteği seviyesi">{[1,2,3,4,5].map(value=><button key={value} type="button" role="radio" aria-checked={aspiration===value} onClick={()=>updateAspiration(value)} className={`h-9 rounded-lg border text-xs font-semibold ${aspiration===value?"border-[#2f6664] bg-[#2f6664] text-white":"border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{value}</button>)}</div><div className="mt-1.5 flex justify-between text-[10px] text-slate-400"><span>1 düşük</span><span>5 yüksek</span></div><p className="mt-2 text-[10px] leading-4 text-slate-400">Değer seçilene kadar sistem orta seviye varsaymaz. Bu alan sizin öz-bildiriminizdir.</p></> : <p className="mt-2 text-[10px] text-slate-400">Çalışan öz-bildirimi; yönetici için salt okunur.</p>}
         </div>
       </aside>
 
       <section className="min-w-0 space-y-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2"><Map className="h-4 w-4 text-amber-600"/><div><h2 className="text-sm font-semibold">{currentRole.family} kariyer mimarisi</h2><p className="text-[10px] text-slate-400">Aynı kariyer ailesindeki roller seviye sırasıyla.</p></div></div>
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{familyRoles.map((careerRole, index) => { const isCurrent = careerRole.title === currentRole.title; const isTarget = careerRole.title === targetPosition; return <button key={careerRole.title} onClick={() => setTargetPosition(careerRole.title)} className={`rounded-xl border p-3 text-left ${isCurrent ? "border-slate-900 bg-slate-950 text-white" : isTarget ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><div className="flex justify-between gap-2"><p className="text-[9px] font-bold uppercase opacity-60">{careerRole.level} · {JOB_LEVELS[careerRole.level]}</p><span className="text-[9px]">{index + 1}</span></div><p className="mt-2 line-clamp-2 text-xs font-semibold">{careerRole.title}</p></button>; })}</div>
+          <div className="flex items-center gap-2"><Map className="h-4 w-4 text-amber-600"/><div><h2 className="text-sm font-semibold">{currentRole.family} kariyer mimarisi</h2><p className="text-[10px] text-slate-400">Aynı kariyer ailesindeki roller seviye sırasıyla. Mevcut rol hedef olarak yeniden seçilemez.</p></div></div>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{familyRoles.map((careerRole, index) => { const isCurrent = careerRole.title === currentRole.title; const isTarget = careerRole.title === targetPosition; return <button key={careerRole.title} type="button" disabled={isCurrent} aria-current={isCurrent?"true":undefined} aria-pressed={!isCurrent?isTarget:undefined} onClick={() => {if(!isCurrent)setTargetPosition(careerRole.title);}} className={`rounded-xl border p-3 text-left ${isCurrent ? "cursor-default border-slate-900 bg-slate-950 text-white" : isTarget ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><div className="flex justify-between gap-2"><p className="text-[9px] font-bold uppercase opacity-60">{careerRole.level} · {JOB_LEVELS[careerRole.level]}</p><span className="text-[9px] font-semibold">{isCurrent?"Mevcut":isTarget?"Hedef":String(index+1).padStart(2,"0")}</span></div><p className="mt-2 line-clamp-2 text-xs font-semibold">{careerRole.title}</p></button>; })}</div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -160,7 +160,7 @@ export default function KariyerPage() {
 
     {readiness && targetRole && <AIDecisionSupport kind="career" context={aiContext} resetKey={`${selectedName}-${targetPosition}-${verifiedLearningEvidence.length}-${pendingLearningEvidence.length}`} title="AI Kariyer Karar Desteği" description="Hazır bulunuşluk, hedef rol yetkinlik açıkları, doğrulanmış işe transfer kanıtları ve yeniden ölçüm ihtiyacını birlikte yorumlar." buttonLabel="Kariyer analizini oluştur" questionTitle="Kariyer görüşmesi soruları"/>}
 
-    <div className="grid gap-3 md:grid-cols-3"><Info icon={Target} title="Job family" text="Benzer uzmanlık alanındaki roller aynı kariyer ailesinde gruplanır."/><Info icon={TrendingUp} title="Kanıtla gelişim" text="Yalnız doğrulanmış işe transfer kanıtı Evidence Graph'a girer; otomatik yetkinlik artışı yoktur."/><Info icon={Map} title="Çapraz kariyer" text="Başka aileye geçiş mümkün; rol ailesi ve seviye mesafesi görünür."/></div>
+    <div className="grid gap-3 md:grid-cols-3"><Info icon={Target} title="Job family" text="Benzer uzmanlık alanındaki roller aynı kariyer ailesinde gruplanır."/><Info icon={TrendingUp} title="Kanıtla gelişim" text="Yalnız doğrulanmış işe transfer kanıtı Evidence Graph&apos;a girer; otomatik yetkinlik artışı yoktur."/><Info icon={Map} title="Çapraz kariyer" text="Başka aileye geçiş mümkün; rol ailesi ve seviye mesafesi görünür."/></div>
   </div>;
 }
 
