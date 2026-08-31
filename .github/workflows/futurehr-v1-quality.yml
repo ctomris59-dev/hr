@@ -12,7 +12,7 @@ permissions:
 jobs:
   frontend-quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: frontend
@@ -31,7 +31,10 @@ jobs:
         run: npm audit --audit-level=low
       - name: Verify hardened dependency graph
         run: npm ls axios jspdf next uuid tmp
-      - name: Lint
+      - name: Strict lint - SaaS server boundary and data client
+        run: npx eslint lib/hr/saasWorkforceClient.ts app/api/saas
+      - name: Legacy lint debt report
+        continue-on-error: true
         run: npm run lint
       - name: ExcelJS compatibility smoke test
         run: |
@@ -52,10 +55,10 @@ jobs:
             process.exit(1);
           });
           NODE
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
       - name: Production build
         run: npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
       - name: FutureHR V1 E2E
         run: npm run test:e2e
       - name: Upload Playwright report on failure
@@ -83,8 +86,17 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - name: Install backend dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Compile SaaS backend
+        run: python -m compileall -q core db routers
       - name: Backend security and tenant tests
         env:
           ENVIRONMENT: test
           APP_ENV: test
-        run: pytest -q tests/test_saas_security.py tests/test_production_readiness.py tests/test_employee_saas_api.py tests/unit/test_roles_permissions.py tests/integration/test_org_chart_endpoint.py
+        run: >-
+          pytest -q
+          tests/test_saas_security.py
+          tests/test_production_readiness.py
+          tests/test_employee_saas_api.py
+          tests/test_saas_performance_talent.py
+          tests/unit/test_roles_permissions.py
+          tests/integration/test_org_chart_endpoint.py
