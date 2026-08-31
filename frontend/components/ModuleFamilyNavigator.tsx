@@ -19,6 +19,7 @@ const routeIcons:Record<string,LucideIcon>={
   "/egitim":BookOpen,
   "/gelisim-analitigi":BarChart3,
   "/maas":DollarSign,
+  "/ucret-adaleti":Scale,
   "/yonetici/maas-talep":WalletCards,
   "/calisan-deneyimi":Heart,
   "/ise-alim":UserPlus,
