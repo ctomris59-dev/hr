@@ -39,6 +39,7 @@ from routers import (
     employee_experience,
     performance_v1,
     talent_v1,
+    workforce_ops_v1,
 )
 
 settings = get_settings()
@@ -127,6 +128,7 @@ app.include_router(auth_v1.router)
 app.include_router(people_v1.router)
 app.include_router(performance_v1.router)
 app.include_router(talent_v1.router)
+app.include_router(workforce_ops_v1.router)
 
 
 @app.on_event("startup")
