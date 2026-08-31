@@ -29,6 +29,27 @@ async function switchPersona(page: Page, role: "ceo" | "hr_admin" | "manager" | 
   await expect(select).toHaveValue(role);
 }
 
+async function visibleInteractionViolations(page: Page) {
+  return page.evaluate(() => {
+    const visible = (element: Element) => {
+      const node = element as HTMLElement;
+      const style = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    };
+    const buttons = Array.from(document.querySelectorAll("button,summary")).filter(visible).filter((element) => {
+      const text = (element.textContent || "").trim();
+      const label = element.getAttribute("aria-label") || element.getAttribute("aria-labelledby") || element.getAttribute("title");
+      return !text && !label;
+    }).map((element) => ({ tag: element.tagName, html: (element as HTMLElement).outerHTML.slice(0, 180) }));
+    const deadLinks = Array.from(document.querySelectorAll("a[href]")).filter(visible).filter((element) => {
+      const href = element.getAttribute("href")?.trim();
+      return !href || href === "#" || href.toLowerCase().startsWith("javascript:");
+    }).map((element) => ({ href: element.getAttribute("href"), text: (element.textContent || "").trim().slice(0, 80) }));
+    return { buttons, deadLinks };
+  });
+}
+
 test.describe("FutureHR V1 demo quality gate", () => {
   test("CEO demo opens with simplified decision workspaces", async ({ page }) => {
     await openDemo(page);
@@ -46,12 +67,25 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page.getByRole("heading", { name: "Bu alanın modülleri" })).toBeVisible();
     await expect(page.getByRole("link", { name: /Kariyer & Readiness/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /Halefiyet & Yedekleme/ })).toBeVisible();
+    await expect(page.locator('[data-workspace-module="/yetenek-matrisi"]')).toHaveAttribute("aria-current", "page");
     await page.goto("/gelisim");
     await expect(page.getByRole("link", { name: /Eğitim & Müdahaleler/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /Gelişim Etkinliği/ })).toBeVisible();
     await page.goto("/admin");
     await expect(page.getByRole("link", { name: /Şirket Kurulumu/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /Güven & KVKK/ })).toBeVisible();
+  });
+
+  test("decision priority row opens explainable demo profile and Escape closes it", async ({ page }) => {
+    await openDemo(page);
+    await page.goto("/karar-merkezi");
+    const row = page.getByTestId("decision-priority-row").first();
+    await expect(row).toBeVisible();
+    await row.click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByText("Explainable AI · Kanıt Zinciri", { exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
   test("employee persona only sees self-service scope", async ({ page }) => {
@@ -63,6 +97,15 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page.getByRole("link", { name: /Halefiyet & Yedekleme/ })).toHaveCount(0);
     await page.goto("/maas");
     await expect(page).not.toHaveURL(/\/maas$/);
+  });
+
+  test("current career role is informational, not a clickable target", async ({ page }) => {
+    await openDemo(page);
+    await page.goto("/kariyer");
+    const current = page.locator('button[aria-current="true"]').first();
+    await expect(current).toBeVisible();
+    await expect(current).toBeDisabled();
+    await expect(current).toContainText("Mevcut");
   });
 
   test("manager performance workspace exposes active cycle governance", async ({ page }) => {
@@ -122,6 +165,32 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page.getByText(/kalibrasyon aşamasında/i)).toBeVisible();
   });
 
+  test("mark-all-read keeps notification history instead of deleting it", async ({ page }) => {
+    await openDemo(page);
+    await page.evaluate(() => {
+      localStorage.setItem("hr_notifications", JSON.stringify([{id:987654,message:"UX geçmiş testi",type:"info",read:false,timestamp:new Date().toISOString()}]));
+      window.dispatchEvent(new CustomEvent("notificationsUpdated"));
+    });
+    await page.getByRole("button", { name: "Bildirimler" }).click();
+    await expect(page.getByText("UX geçmiş testi", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Tümünü okundu say" }).click();
+    await expect(page.getByText("UX geçmiş testi", { exact: true })).toBeVisible();
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("hr_notifications") || "[]"));
+    expect(stored.find((item:any)=>item.id===987654)?.read).toBe(true);
+  });
+
+  test("representative product routes expose no dead links or unlabeled icon buttons", async ({ page }) => {
+    await openDemo(page);
+    const routes=["/dashboard","/karar-merkezi","/organizasyon","/degerlendirme","/yetenek-matrisi","/gelisim","/maas","/ise-alim","/ekip-yonetimi"];
+    for(const route of routes){
+      await page.goto(route);
+      await page.waitForLoadState("domcontentloaded");
+      const violations=await visibleInteractionViolations(page);
+      expect(violations.deadLinks,`${route} dead links`).toEqual([]);
+      expect(violations.buttons,`${route} unlabeled controls`).toEqual([]);
+    }
+  });
+
   test("1366x768 sidebar fits and keeps professional readable typography", async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await openDemo(page);
@@ -147,13 +216,17 @@ test.describe("FutureHR V1 demo quality gate", () => {
     expect(result!.rowHeight).toBeGreaterThanOrEqual(32);
   });
 
-  test("mobile shell has no horizontal overflow and menu opens", async ({ page }) => {
+  test("mobile shell has no horizontal overflow and menu opens and closes with Escape", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openDemo(page);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(1);
-    await page.getByRole("button", { name: "Menüyü aç/kapat" }).click();
+    const toggle=page.getByRole("button", { name: "Menüyü aç" });
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded","true");
     await expect(page.getByTestId("app-sidebar")).toHaveCSS("transform", "none");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button",{name:"Menüyü aç"})).toHaveAttribute("aria-expanded","false");
   });
 
   test("Copilot opens as explainable decision support", async ({ page }) => {
