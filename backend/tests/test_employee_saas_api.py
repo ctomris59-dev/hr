@@ -137,7 +137,10 @@ def test_cross_tenant_manager_reference_is_rejected(saas_client):
         },
     )
     assert response.status_code == 400
-    assert "same company" in response.json()["detail"]
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error_code"] == "HTTP_400"
+    assert "same company" in payload["error"]
 
 
 def test_employee_cannot_be_own_manager(saas_client):
@@ -148,4 +151,7 @@ def test_employee_cannot_be_own_manager(saas_client):
         json={"manager_employee_id": "e-dir-1"},
     )
     assert response.status_code == 400
-    assert "itself" in response.json()["detail"]
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error_code"] == "HTTP_400"
+    assert "itself" in payload["error"]
