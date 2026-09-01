@@ -11,6 +11,7 @@ import CompensationCycleBar from "./salary/CompensationCycleBar";
 import ModuleFamilyNavigator from "./ModuleFamilyNavigator";
 import ModuleDecisionSummary from "./VisualDecisionSystem";
 import VisualModuleBoard from "./VisualModuleBoard";
+import CoreAnalyticsBoard from "./CoreAnalyticsBoard";
 
 type ModuleConfig = { path:string; id:string; title:string; focus:string; steps:string[]; icon:LucideIcon; accent:string; accent2:string; soft:string; };
 const MODULES: ModuleConfig[] = [
@@ -42,7 +43,8 @@ function findConfig(pathname:string){return [...MODULES].sort((a,b)=>b.path.leng
 export default function ModuleWorkspace({pathname,children}:{pathname:string;children:ReactNode}){
   if(pathname==="/dashboard")return <><ProductHealthStrip/>{children}</>;
   const config=findConfig(pathname);if(!config)return <>{children}</>;const Icon=config.icon;const style={"--module-accent":config.accent,"--module-accent-2":config.accent2,"--module-soft":config.soft} as CSSProperties;
-  const visualBoard=["/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
+  const visualBoard=["/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
+  const coreAnalytics=["/organizasyon","/ise-alim","/egitim","/maas"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
   const visualFirst=["/organizasyon","/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
   const salaryCore=pathname==="/maas";
   const organizationTools=pathname==="/organizasyon"?<><ImportRecoveryPanel/><div className="mb-4"><OrganizationExcelExchange/></div></>:null;
@@ -65,12 +67,13 @@ export default function ModuleWorkspace({pathname,children}:{pathname:string;chi
     {pathname==="/admin/veri-aktarimi"&&<ImportRecoveryPanel/>}
 
     <div className="module-decision-stage"><ModuleDecisionSummary pathname={pathname}/></div>
+    {coreAnalytics&&<CoreAnalyticsBoard pathname={pathname}/>}
     {visualBoard&&<VisualModuleBoard pathname={pathname}/>}
 
     <section className="module-detail-stage" aria-label={`${config.title} detaylı çalışma alanı`}>
       <header className="module-detail-stage-header">
         <div><span>{salaryCore?"SİMÜLASYON MERKEZİ":visualFirst?"DETAY KATMANI":"OPERASYON ALANI"}</span><h2>{salaryCore?"Ücret simülasyonları":visualFirst?"Kayıtlar ve işlemler":"Detaylı çalışma alanı"}</h2></div>
-        <p>{salaryCore?"A/B/C/D senaryoları, enflasyon varsayımı, benchmark, bütçe etkisi ve ücret döngüsü bu ekranın ana çalışma alanıdır. Simülasyonlar gizlenmez; Excel araçları ikincil kalır.":visualFirst?"Ana görünüm grafik ve karar kartıdır. Liste, Excel ve form ağırlıklı detayları yalnız ihtiyaç olduğunda açın.":"Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin."}</p>
+        <p>{salaryCore?"Üstte ücret analitiğini okuyun; hemen altında A/B/C/D senaryoları, enflasyon varsayımı, benchmark, bütçe etkisi ve ücret döngüsü ana çalışma alanı olarak açık kalır. Simülasyonlar gizlenmez.":visualFirst?"Ana görünüm grafik ve karar kartıdır. Liste, Excel ve form ağırlıklı detayları yalnız ihtiyaç olduğunda açın.":"Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin."}</p>
       </header>
       {salaryCore ? (
         <>
