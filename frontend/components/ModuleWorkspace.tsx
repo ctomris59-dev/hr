@@ -36,6 +36,7 @@ import ModuleDecisionSummary from "./VisualDecisionSystem";
 import VisualModuleBoard from "./VisualModuleBoard";
 import CoreAnalyticsBoard from "./CoreAnalyticsBoard";
 import UniversalAnalyticsBoard from "./UniversalAnalyticsBoard";
+import AgentActionHandoff from "./AgentActionHandoff";
 
 type ModuleConfig = {
   path: string;
@@ -134,6 +135,7 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
       </section>
 
       <div className="module-family-stage"><ModuleFamilyNavigator pathname={pathname} /></div>
+      <AgentActionHandoff pathname={pathname} />
       {(pathname === "/degerlendirme" || pathname === "/kalibrasyon") && <PerformanceCycleBar />}
       {(pathname === "/maas" || pathname === "/yonetici/maas-talep") && <CompensationCycleBar />}
       {pathname === "/admin/veri-aktarimi" && <ImportRecoveryPanel />}
