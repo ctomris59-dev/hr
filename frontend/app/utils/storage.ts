@@ -19,6 +19,9 @@ export const STORAGE_KEYS = {
   MARKET_BENCHMARKS: "hr_market_benchmarks",
   PULSE_ANSWERS: "hr_pulse_answers",
   ACCESS_POLICY: "hr_access_policy_v2",
+  AI_ACTION_DRAFTS: "hr_ai_action_drafts_v1",
+  AI_FOCUS: "hr_ai_focus_v1",
+  AI_HISTORY: "hr_ai_history_v1",
 };
 
 export const HR_DATA_CLEARED_KEY = "hr_data_cleared";
@@ -108,9 +111,12 @@ export function clearAllHRData(): void {
     STORAGE_KEYS.COMPENSATION_CYCLES,
     STORAGE_KEYS.MARKET_BENCHMARKS,
     STORAGE_KEYS.PULSE_ANSWERS,
+    STORAGE_KEYS.AI_ACTION_DRAFTS,
+    STORAGE_KEYS.AI_HISTORY,
   ];
   emptyKeys.forEach((key) => localStorage.setItem(key, "[]"));
   localStorage.setItem(STORAGE_KEYS.USERS, "{}");
+  localStorage.removeItem(STORAGE_KEYS.AI_FOCUS);
 
   localStorage.removeItem("hr_talent_matrix");
   localStorage.removeItem("hr_org_chart_data");
