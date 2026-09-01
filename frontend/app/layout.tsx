@@ -6,6 +6,7 @@ import "./ux-hardening.css";
 import "./readability-final.css";
 import "./readability-actions.css";
 import "./visual-decision-system.css";
+import "./visual-decision-readability.css";
 import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { DataProvider } from "../context/DataContext";
