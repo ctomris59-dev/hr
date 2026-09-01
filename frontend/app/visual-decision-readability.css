@@ -1,0 +1,50 @@
+/* Final contrast guard for FutureHR Visual Decision System v1.
+   Microcopy must remain readable at compact enterprise-dashboard sizes. */
+
+.visual-decision-system .visual-kpi-top,
+.visual-decision-system .visual-kpi-bottom,
+.visual-decision-system .visual-panel-heading > div > span,
+.visual-decision-system .visual-panel-heading p,
+.visual-decision-system .visual-chart-empty,
+.visual-decision-system .visual-insight-row p,
+.visual-decision-system .visual-ring span,
+.visual-decision-system .visual-ring-block > div:last-child > p {
+  color: #526174 !important;
+}
+
+.visual-decision-system .visual-panel-heading > div > span {
+  font-size: 9px;
+}
+
+.visual-decision-system .visual-kpi-top {
+  color: #556477 !important;
+}
+
+.visual-decision-system .visual-bar-label,
+.visual-decision-system .visual-bar-label span {
+  color: #526174 !important;
+}
+
+.module-native-content thead th {
+  color: #526174 !important;
+}
+
+.module-native-content .recharts-text {
+  fill: #526174 !important;
+}
+
+.module-native-content .recharts-legend-item-text {
+  color: #526174 !important;
+}
+
+.dark .visual-decision-system .visual-kpi-top,
+.dark .visual-decision-system .visual-kpi-bottom,
+.dark .visual-decision-system .visual-panel-heading > div > span,
+.dark .visual-decision-system .visual-panel-heading p,
+.dark .visual-decision-system .visual-chart-empty,
+.dark .visual-decision-system .visual-insight-row p,
+.dark .visual-decision-system .visual-bar-label,
+.dark .visual-decision-system .visual-ring span,
+.dark .visual-decision-system .visual-ring-block > div:last-child > p {
+  color: #b7c2ce !important;
+}
