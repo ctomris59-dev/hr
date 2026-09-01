@@ -42,7 +42,10 @@ function findConfig(pathname:string){return [...MODULES].sort((a,b)=>b.path.leng
 export default function ModuleWorkspace({pathname,children}:{pathname:string;children:ReactNode}){
   if(pathname==="/dashboard")return <><ProductHealthStrip/>{children}</>;
   const config=findConfig(pathname);if(!config)return <>{children}</>;const Icon=config.icon;const style={"--module-accent":config.accent,"--module-accent-2":config.accent2,"--module-soft":config.soft} as CSSProperties;
-  const visualFirst=["/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
+  const visualBoard=["/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
+  const visualFirst=["/organizasyon","/maas","/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
+  const organizationTools=pathname==="/organizasyon"?<><ImportRecoveryPanel/><div className="mb-4"><OrganizationExcelExchange/></div></>:null;
+  const salaryTools=pathname==="/maas"?<div className="mb-4"><SalaryExcelExchange/></div>:null;
   return <div className={`module-workspace workspace-${config.id} module-workspace-v2`} data-module={config.id} style={style}>
     <section className="module-hero module-command-hero" aria-label={`${config.title} çalışma akışı`}>
       <div className="module-command-copy">
@@ -58,24 +61,22 @@ export default function ModuleWorkspace({pathname,children}:{pathname:string;chi
     <div className="module-family-stage"><ModuleFamilyNavigator pathname={pathname}/></div>
     {(pathname==="/degerlendirme"||pathname==="/kalibrasyon")&&<PerformanceCycleBar/>}
     {(pathname==="/maas"||pathname==="/yonetici/maas-talep")&&<CompensationCycleBar/>}
-    {(pathname==="/organizasyon"||pathname==="/admin/veri-aktarimi")&&<ImportRecoveryPanel/>}
-    {pathname==="/organizasyon"&&<div className="mb-4"><OrganizationExcelExchange/></div>}
-    {pathname==="/maas"&&<div className="mb-4"><SalaryExcelExchange/></div>}
+    {pathname==="/admin/veri-aktarimi"&&<ImportRecoveryPanel/>}
 
     <div className="module-decision-stage"><ModuleDecisionSummary pathname={pathname}/></div>
-    {visualFirst&&<VisualModuleBoard pathname={pathname}/>}
+    {visualBoard&&<VisualModuleBoard pathname={pathname}/>}
 
     <section className="module-detail-stage" aria-label={`${config.title} detaylı çalışma alanı`}>
       <header className="module-detail-stage-header">
         <div><span>{visualFirst?"DETAY KATMANI":"OPERASYON ALANI"}</span><h2>{visualFirst?"Kayıtlar ve işlemler":"Detaylı çalışma alanı"}</h2></div>
-        <p>{visualFirst?"Ana görünüm grafik ve karar kartıdır. Liste ve form ağırlıklı detayları yalnız ihtiyaç olduğunda açın.":"Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin."}</p>
+        <p>{visualFirst?"Ana görünüm grafik ve karar kartıdır. Liste, Excel ve form ağırlıklı detayları yalnız ihtiyaç olduğunda açın.":"Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin."}</p>
       </header>
       {visualFirst ? (
         <details className="visual-first-native-shell">
           <summary>
-            <div className="vf-summary-copy"><span>İSTEĞE BAĞLI DETAY</span><strong>Liste, kayıt ve işlem ekranlarını aç</strong><small>Filtreleme, düzenleme ve tekil kayıt işlemleri burada korunur.</small></div>
+            <div className="vf-summary-copy"><span>İSTEĞE BAĞLI DETAY</span><strong>Liste, kayıt ve işlem ekranlarını aç</strong><small>Filtreleme, Excel, düzenleme ve tekil kayıt işlemleri burada korunur.</small></div>
           </summary>
-          <div className="module-native-content visualized-native-content">{children}</div>
+          <div className="module-native-content visualized-native-content">{organizationTools}{salaryTools}{children}</div>
         </details>
       ) : <div className="module-native-content visualized-native-content">{children}</div>}
     </section>
