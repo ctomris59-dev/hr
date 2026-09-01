@@ -29,15 +29,20 @@ test("role fit v2 is employee scoped and renders a measured radar in the full de
   const options = await selector.locator("option").count();
   expect(options).toBeGreaterThan(0);
 
-  if (options > 1) {
-    const secondValue = await selector.locator("option").nth(1).getAttribute("value");
-    if (secondValue) {
-      await selector.selectOption(secondValue);
-      await expect(selector).toHaveValue(secondValue);
-      await expect(page.getByTestId("role-fit-gap-chart")).toBeVisible();
-      await expect(page.getByText("Radar için yeterli ölçüm yok", { exact: true })).toHaveCount(0);
-    }
+  const roleFitMetric = page.getByText("Rol uyumu", { exact: true }).locator("..");
+  const sampledFits = new Set<string>();
+  for (let index = 0; index < Math.min(options, 8); index += 1) {
+    const value = await selector.locator("option").nth(index).getAttribute("value");
+    if (!value) continue;
+    await selector.selectOption(value);
+    await expect(selector).toHaveValue(value);
+    const score = roleFitMetric.locator("p").nth(1);
+    await expect(score).toHaveText(/^%\d+$/);
+    sampledFits.add((await score.textContent())?.trim() || "");
+    await expect(page.getByTestId("role-fit-gap-chart")).toBeVisible();
+    await expect(page.getByText("Radar için yeterli ölçüm yok", { exact: true })).toHaveCount(0);
   }
+  expect(sampledFits.size).toBeGreaterThanOrEqual(3);
 });
 
 test("demo lifecycle clears to an empty company and recreates a fully populated workspace", async ({ page }) => {
