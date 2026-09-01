@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { canAccessRoute } from "@/lib/hr/accessControl";
 import { buildFutureHRAgentPackage, localAgentFallback } from "@/lib/hr/futureHRAgent";
+import { buildLocalSensitiveAnswer } from "@/lib/hr/sensitiveDirectAnswers";
 import type { AgentAIResponse, AgentActionDraft, AgentPackage, AgentPreparedAction } from "@/lib/hr/futureHRAgentTypes";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "@/app/utils/storage";
 
@@ -98,6 +99,29 @@ export default function FutureHRIntelligenceAgent({ pathname }: { pathname: stri
     try {
       const agentPackage = await buildFutureHRAgentPackage(clean, pathname);
       const fallback = localAgentFallback(agentPackage) as AgentAIResponse;
+
+      // Exact personal compensation reads are handled locally after RBAC checks.
+      // The salary amount never leaves the browser / tenant data layer for an external AI provider.
+      const localSensitiveAnswer = await buildLocalSensitiveAnswer(clean, agentPackage, currentUserRole);
+      if (localSensitiveAnswer) {
+        const restored = restoreFocus(localSensitiveAnswer, agentPackage.focusEmployee?.displayName || null);
+        const item: ConversationItem = {
+          id: `agent-${Date.now()}`,
+          question: clean,
+          package: agentPackage,
+          result: {
+            mode: "local-secure",
+            provider: "futurehr-local",
+            model: "futurehr-sensitive-rbac",
+            analysis: restored,
+            note: "Kişisel ücret tutarı RBAC kontrolünden sonra yerel FutureHR veri katmanından okundu; dış AI sağlayıcısına gönderilmedi.",
+          },
+        };
+        setConversation((rows) => [...rows, item].slice(-8));
+        persistHistory(clean, restored, agentPackage);
+        return;
+      }
+
       const response = await fetch("/api/ai/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
