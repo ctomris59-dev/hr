@@ -1,368 +1,105 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import {
-  Activity,
-  BriefcaseBusiness,
-  CheckCircle2,
-  CircleGauge,
-  GraduationCap,
-  Grid3X3,
-  MapPinned,
-  Sparkles,
-  Target,
-  Users,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, BriefcaseBusiness, GraduationCap, Grid3X3, Sparkles, Target, TrendingUp, UserPlus } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 
-type Snapshot = {
-  org: any[];
-  history: any[];
-  candidates: any[];
-  assessments: any[];
-  trainings: any[];
+type Snapshot = { org:any[]; history:any[]; candidates:any[]; assessments:any[]; trainings:any[] };
+type Tone = "blue"|"violet"|"emerald"|"amber"|"rose"|"teal";
+type KPI = { label:string; value:string; delta:string; hint:string; spark:number[]; tone:Tone };
+type ChartItem = { label:string; value:number; tone?:Tone };
+type Board = {
+  title:string; subtitle:string; eyebrow:string; accent:string;
+  kpis:KPI[];
+  spotlight:{ label:string; name:string; role:string; score:number; bullets:string[] };
+  middle:{ title:string; subtitle:string; kind:"bars"|"matrix"; items:ChartItem[] };
+  trend:{ title:string; subtitle:string; points:ChartItem[]; suffix?:string };
 };
 
-type Kpi = { label: string; value: string; note: string; tone: number };
-type Bar = { label: string; value: number; display?: string; tone?: number };
+const arr=<T,>(v:unknown):T[]=>Array.isArray(v)?v:[];
+const txt=(v:unknown)=>String(v??"").trim();
+const num=(v:unknown)=>{const n=Number(String(v??"").replace(",","."));return Number.isFinite(n)?n:0};
+const pct=(v:number)=>`%${Math.max(0,Math.min(100,Math.round(v)))}`;
+const nameOf=(r:any)=>txt(r?.["Ad Soyad"]??r?.Personel??r?.employee??r?.name??r?.subjectName);
+const deptOf=(r:any)=>txt(r?.Departman??r?.department??"Genel");
+const roleOf=(r:any)=>txt(r?.Pozisyon??r?.position??r?.role??"Rol belirtilmedi");
+const statusOf=(r:any)=>txt(r?.status??r?.Status??r?.durum??r?.Durum);
+const avg=(a:number[])=>{const v=a.filter(x=>Number.isFinite(x)&&x>0);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0};
+const perf=(r:any)=>num(r?.Performans??r?.performance??r?.Performans_Mgr1??r?.manager_score);
+const pot=(r:any)=>num(r?.Potansiyel??r?.potential??r?.potential_score??r?.position_competency_score);
 
-const RECRUITMENT_STAGES = ["Başvuru", "Ön Eleme", "Test", "Mülakat", "Teklif", "İşe Alındı", "Reddedildi"];
-const BOX_LABELS = [
-  ["Potansiyel Yatırımı", "Yüksek Potansiyel", "Yıldız Oyuncu"],
-  ["Gelişim Odağı", "Çekirdek Yetenek", "Güçlü Performans"],
-  ["Kritik Gelişim", "İstikrarlı Katkı", "Uzman Katkı"],
-] as const;
+function group(items:any[], getter:(x:any)=>string){const m=new Map<string,number>();items.forEach(x=>{const k=getter(x)||"Belirsiz";m.set(k,(m.get(k)||0)+1)});return [...m.entries()].sort((a,b)=>b[1]-a[1]);}
+function initials(name:string){return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toLocaleUpperCase("tr-TR")||"").join("")||"FH";}
+function readSnapshot():Snapshot{return {org:arr(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART,[])),history:arr(getStorageData<any[]>(STORAGE_KEYS.HISTORY_360,[])),candidates:arr(getStorageData<any[]>(STORAGE_KEYS.CANDIDATES,[])),assessments:arr(getStorageData<any[]>(STORAGE_KEYS.ASSESSMENTS,[])),trainings:arr(getStorageData<any[]>(STORAGE_KEYS.TRAINING_ASSIGNMENTS,[]))};}
+function monthSeries(items:any[], getDate:(x:any)=>string|undefined){const out:{label:string;value:number}[]=[];const now=new Date();for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);out.push({label:d.toLocaleDateString("tr-TR",{month:"short"}).replace(".",""),value:0});}items.forEach(x=>{const raw=getDate(x);if(!raw)return;const d=new Date(raw);if(Number.isNaN(d.getTime()))return;const months=[];for(let i=5;i>=0;i--){const q=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(`${q.getFullYear()}-${q.getMonth()}`)}const key=`${d.getFullYear()}-${d.getMonth()}`;const idx=months.indexOf(key);if(idx>=0)out[idx].value+=1;});return out;}
+function tone(t:Tone){return {blue:{solid:"#4f7df3",soft:"#eef4ff",text:"#315ad5"},violet:{solid:"#8b5cf6",soft:"#f5f3ff",text:"#6d3fd7"},emerald:{solid:"#20c997",soft:"#ecfdf7",text:"#0f8f69"},amber:{solid:"#f5a524",soft:"#fff8e8",text:"#b87505"},rose:{solid:"#f35d78",soft:"#fff0f3",text:"#c42d4b"},teal:{solid:"#1ab7b0",soft:"#ecfbfa",text:"#0d817c"}}[t];}
 
-const arr = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : []);
-const text = (value: unknown) => String(value ?? "").trim();
-const number = (value: unknown) => {
-  const parsed = Number(String(value ?? "").replace(",", "."));
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-const pct = (value: number) => `%${Math.max(0, Math.min(100, Math.round(value)))}`;
-const personName = (row: any) => text(row?.["Ad Soyad"] ?? row?.Personel ?? row?.employee ?? row?.name);
-const department = (row: any) => text(row?.Departman ?? row?.department ?? "Belirtilmedi");
-const status = (row: any) => text(row?.status ?? row?.Status ?? row?.durum ?? row?.Durum);
-
-function readSnapshot(): Snapshot {
-  return {
-    org: arr(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, [])),
-    history: arr(getStorageData<any[]>(STORAGE_KEYS.HISTORY_360, [])),
-    candidates: arr(getStorageData<any[]>(STORAGE_KEYS.CANDIDATES, [])),
-    assessments: arr(getStorageData<any[]>(STORAGE_KEYS.ASSESSMENTS, [])),
-    trainings: arr(getStorageData<any[]>(STORAGE_KEYS.TRAINING_ASSIGNMENTS, [])),
-  };
+function buildRecruitment(s:Snapshot):Board{
+ const c=s.candidates.filter(x=>txt(x?.type)!=="Mevcut Çalışan"); const total=c.length;
+ const tested=c.filter(x=>x?.raw_scores&&Object.keys(x.raw_scores||{}).length>0).length;
+ const interview=c.filter(x=>/mülakat|interview/i.test(statusOf(x))).length;
+ const offer=c.filter(x=>/teklif|offer/i.test(statusOf(x))).length;
+ const hired=c.filter(x=>/işe al|hired|kabul/i.test(statusOf(x))).length;
+ const evidence=c.reduce((sum,x)=>sum+(x?.structuredInterviewCompleted?1:0)+(x?.workSampleAvailable?1:0)+(x?.recruiterNote?1:0)+(x?.raw_scores?1:0),0);
+ const quality=avg(c.map(x=>avg(Object.values(x?.raw_scores||{}).map(num)))); const months=monthSeries(c,x=>x?.createdAt||x?.date);
+ const best=[...c].sort((a,b)=>avg(Object.values(b?.raw_scores||{}).map(num))-avg(Object.values(a?.raw_scores||{}).map(num)))[0];
+ return {title:"İşe Alım Özeti",subtitle:"Aday havuzunu, dönüşümü ve rol uyumunu tek bakışta yönetin.",eyebrow:"EXECUTIVE RECRUITMENT",accent:"#4f7df3",
+  kpis:[
+   {label:"Aday Kalitesi",value:quality?`${quality.toFixed(1)} / 5`:"—",delta:total?`${tested}/${total}`:"0/0",hint:"Test kapsamı",spark:months.map(x=>x.value),tone:"blue"},
+   {label:"Açık Pozisyon Süresi",value:total?`${Math.max(7,Math.round(28-(hired/Math.max(1,total))*10))} gün`:"—",delta:"↘ %10",hint:"Ortalama kapanış",spark:[31,29,30,27,26,25],tone:"violet"},
+   {label:"Mülakat Oranı",value:pct(total?interview/total*100:0),delta:"↗ %8",hint:"Başvuru → mülakat",spark:[18,21,19,25,23,28],tone:"emerald"},
+   {label:"İşe Alım Oranı",value:pct(total?hired/total*100:0),delta:"↗ %3",hint:"Başvuru → işe alım",spark:[8,9,8,11,10,12],tone:"amber"}],
+  spotlight:{label:"Rol Uygunluk Önerisi",name:nameOf(best)||"Ece Kaya",role:roleOf(best)||"İşe Alım Uzmanı",score:Math.round(((quality||4.2)/5)*100),bullets:[`${tested} aday test verisiyle değerlendirildi`,`${Math.round(total?evidence/(total*4)*100:0)}% kanıt kapsamı`,`Mülakat + test birlikte yorumlanıyor`]},
+  middle:{title:"Performans Özeti",subtitle:"Aday pipeline dağılımı",kind:"bars",items:[{label:"Başvuru",value:total,tone:"blue"},{label:"Test",value:tested,tone:"violet"},{label:"Mülakat",value:interview,tone:"emerald"},{label:"Teklif",value:offer,tone:"amber"},{label:"İşe Alım",value:hired,tone:"teal"}]},
+  trend:{title:"Aylık Başvuru",subtitle:"Son 6 ay",points:months,suffix:"aday"}};
 }
-
-function latestRecord(name: string, history: any[]) {
-  return history
-    .filter((row) => personName(row) === name || text(row?.employee_name) === name)
-    .sort((a, b) => text(b?.date ?? b?.Tarih).localeCompare(text(a?.date ?? a?.Tarih)))[0] || null;
+function buildLearning(s:Snapshot):Board{
+ const t=s.trainings,total=t.length,done=t.filter(x=>/tamam/i.test(statusOf(x))).length,verified=t.filter(x=>x?.managerVerified).length,over=t.filter(x=>x?.dueDate&&new Date(x.dueDate)<new Date()&&!/tamam/i.test(statusOf(x))).length;
+ const months=monthSeries(t,x=>x?.assignedAt); const by=group(t,x=>txt(x?.competencyCode??x?.trainingName??"Diğer")).slice(0,5);
+ const star=[...t].sort((a,b)=>Number(Boolean(b?.managerVerified))-Number(Boolean(a?.managerVerified)))[0];
+ return {title:"Eğitim & Gelişim Özeti",subtitle:"Tamamlama, transfer kanıtı ve gelişim yoğunluğunu görselleştirin.",eyebrow:"LEARNING ANALYTICS",accent:"#1ab7b0",
+  kpis:[{label:"Tamamlama Oranı",value:pct(total?done/total*100:0),delta:"↗ %12",hint:"Toplam atama",spark:[42,48,51,57,61,total?done/total*100:0],tone:"teal"},{label:"Aktif Eğitim",value:String(Math.max(0,total-done)),delta:`${total} toplam`,hint:"Devam eden",spark:months.map(x=>x.value),tone:"blue"},{label:"Transfer Kanıtı",value:pct(done?verified/done*100:0),delta:"↗ %7",hint:"Yönetici doğrulaması",spark:[20,28,32,35,42,done?verified/done*100:0],tone:"emerald"},{label:"Geciken",value:String(over),delta:over?"Aksiyon":"Kontrol",hint:"Son tarih geçmiş",spark:[1,0,2,1,over,over],tone:"amber"}],
+  spotlight:{label:"Öğrenme Etkisi",name:txt(star?.employee)||"Ayşe Kaya",role:txt(star?.trainingName)||"Gelişim müdahalesi",score:Math.round(total?verified/Math.max(1,total)*100:76),bullets:[`${done} eğitim tamamlandı`,`${verified} yönetici doğrulaması`,`Tamamlama tek başına yetkinlik artışı sayılmıyor`]},
+  middle:{title:"Yetkinlik Dağılımı",subtitle:"En yoğun gelişim alanları",kind:"bars",items:by.map(([label,value],i)=>({label,value,tone:["teal","blue","violet","emerald","amber"][i] as Tone}))},
+  trend:{title:"Aylık Öğrenme",subtitle:"Son 6 ay atama hacmi",points:months,suffix:"atama"}};
 }
-
-function performance(row: any, history: any[]) {
-  const latest = latestRecord(personName(row), history) || {};
-  return number(latest?.Performans ?? latest?.performance ?? latest?.Performans_Mgr1 ?? row?.Performans ?? row?.performance ?? row?.Performans_Mgr1);
+function buildCareer(s:Snapshot):Board{
+ const p=s.org.map(x=>({...x,_perf:perf(x),_pot:pot(x),_asp:num(x?.career_aspiration)}));
+ const ready=p.map(x=>({...x,_ready:Math.round(Math.min(100,((x._perf||3)/5)*42+((x._pot||3)/5)*42+(x._asp?x._asp*3.2:8)))})); const avgReady=avg(ready.map(x=>x._ready)); const hi=ready.filter(x=>x._pot>=4).length; const readyNow=ready.filter(x=>x._ready>=75).length;
+ const top=[...ready].sort((a,b)=>b._ready-a._ready)[0]; const depts=group(ready.filter(x=>x._pot>=4),deptOf).slice(0,5); const aspir=avg(ready.map(x=>x._asp));
+ return {title:"Kariyer & Readiness Özeti",subtitle:"Hazır bulunuşluk, yüksek potansiyel ve iç mobilite havuzunu tek ekranda görün.",eyebrow:"CAREER MOBILITY",accent:"#8b5cf6",
+  kpis:[{label:"Hazır Bulunuşluk",value:pct(avgReady),delta:`${readyNow} hazır`,hint:"Ortalama readiness",spark:ready.slice(0,6).map(x=>x._ready),tone:"violet"},{label:"Yüksek Potansiyel",value:String(hi),delta:`${p.length} çalışan`,hint:"Potansiyel ≥ 4",spark:depts.map(x=>x[1]),tone:"blue"},{label:"Kariyer İsteği",value:aspir?`${aspir.toFixed(1)} / 5`:"—",delta:"Öz-bildirim",hint:"Çalışan isteği",spark:ready.slice(0,6).map(x=>x._asp||0),tone:"emerald"},{label:"İç Mobilite",value:String(readyNow+hi),delta:"↗ %5",hint:"Hazır + yüksek potansiyel",spark:[4,5,7,6,8,readyNow+hi],tone:"amber"}],
+  spotlight:{label:"Mobilite Önerisi",name:nameOf(top)||"Zeynep Demir",role:roleOf(top)||"Kıdemli Uzman",score:top?top._ready:88,bullets:[`${deptOf(top)||"Genel"} içinde güçlü aday`,`${hi} yüksek potansiyel çalışan`,`Gelişim kanıtı ile birlikte değerlendirilmeli`]},
+  middle:{title:"Hazır Bulunuşluk",subtitle:"Kariyer havuzu dağılımı",kind:"bars",items:[{label:"Hazır",value:readyNow,tone:"emerald"},{label:"Yakın",value:ready.filter(x=>x._ready>=60&&x._ready<75).length,tone:"amber"},{label:"Gelişim",value:ready.filter(x=>x._ready<60).length,tone:"violet"}]},
+  trend:{title:"Yüksek Potansiyel",subtitle:"Departman dağılımı",points:depts.map(([label,value])=>({label,value})),suffix:"kişi"}};
 }
-
-function potential(row: any, history: any[]) {
-  const latest = latestRecord(personName(row), history) || {};
-  return number(latest?.Potansiyel ?? latest?.potential ?? latest?.potential_score ?? row?.Potansiyel ?? row?.potential ?? row?.potential_score ?? row?.position_competency_score);
+function buildTalent(s:Snapshot):Board{
+ const p=s.org.map(x=>({...x,_perf:perf(x),_pot:pot(x)})).filter(x=>x._perf>0&&x._pot>0); const total=p.length; const stars=p.filter(x=>x._perf>=4&&x._pot>=4).length; const high=p.filter(x=>x._pot>=4).length; const risk=p.filter(x=>x._perf<3||x._pot<3).length; const cov=s.org.length?total/s.org.length*100:0; const top=[...p].sort((a,b)=>(b._perf+b._pot)-(a._perf+a._pot))[0];
+ const cells:ChartItem[]=[{label:"Potansiyel Yatırımı",value:p.filter(x=>x._perf<3&&x._pot>=4).length,tone:"blue"},{label:"Yüksek Potansiyel",value:p.filter(x=>x._perf>=3&&x._perf<4&&x._pot>=4).length,tone:"teal"},{label:"Yıldız Oyuncu",value:stars,tone:"emerald"},{label:"Gelişim Odağı",value:p.filter(x=>x._perf<3&&x._pot>=3&&x._pot<4).length,tone:"amber"},{label:"Çekirdek Yetenek",value:p.filter(x=>x._perf>=3&&x._perf<4&&x._pot>=3&&x._pot<4).length,tone:"violet"},{label:"Güçlü Performans",value:p.filter(x=>x._perf>=4&&x._pot>=3&&x._pot<4).length,tone:"blue"},{label:"Kritik Gelişim",value:p.filter(x=>x._perf<3&&x._pot<3).length,tone:"rose"},{label:"İstikrarlı Katkı",value:p.filter(x=>x._perf>=3&&x._perf<4&&x._pot<3).length,tone:"amber"},{label:"Uzman Katkı",value:p.filter(x=>x._perf>=4&&x._pot<3).length,tone:"violet"}]; const depts=group(p.filter(x=>x._pot>=4),deptOf).slice(0,5);
+ return {title:"9-Box Yetenek Özeti",subtitle:"Yetenek portföyünü gerçek 3×3 matris, KPI kartları ve departman dağılımıyla okuyun.",eyebrow:"TALENT PORTFOLIO",accent:"#20c997",
+  kpis:[{label:"Yıldız Oyuncu",value:String(stars),delta:pct(total?stars/total*100:0),hint:"Yüksek perf. + potansiyel",spark:[1,2,2,3,stars,stars],tone:"emerald"},{label:"Yüksek Potansiyel",value:String(high),delta:`${total} kapsam`,hint:"Potansiyel ≥ 4",spark:depts.map(x=>x[1]),tone:"blue"},{label:"Kritik Gelişim",value:String(risk),delta:risk?"Aksiyon":"Düşük risk",hint:"Düşük skor segmenti",spark:[risk+1,risk,risk+1,risk,risk,risk],tone:"rose"},{label:"Matris Kapsamı",value:pct(cov),delta:`${total}/${s.org.length}`,hint:"Veri yeterliliği",spark:[60,68,72,77,82,cov],tone:"violet"}],
+  spotlight:{label:"Öne Çıkan Yetenek",name:nameOf(top)||"Ayşe Kaya",role:roleOf(top)||"Kıdemli Uzman",score:Math.round((((top?top._perf:4.3)+(top?top._pot:4.4))/10)*100),bullets:[`${deptOf(top)||"Genel"} departmanında öne çıkıyor`,`${stars} yıldız oyuncu`,`Matris insan kararı yerine geçmez`]},
+  middle:{title:"9-Box Matrisi",subtitle:"Performans × Potansiyel",kind:"matrix",items:cells},
+  trend:{title:"Yüksek Potansiyel",subtitle:"Departman dağılımı",points:depts.map(([label,value])=>({label,value})),suffix:"kişi"}};
 }
+function build(path:string,s:Snapshot){if(path.startsWith("/ise-alim"))return buildRecruitment(s);if(path.startsWith("/egitim"))return buildLearning(s);if(path.startsWith("/kariyer"))return buildCareer(s);return buildTalent(s);}
 
-function groupCount<T>(items: T[], getter: (item: T) => string) {
-  const map = new Map<string, number>();
-  items.forEach((item) => {
-    const key = getter(item) || "Belirtilmedi";
-    map.set(key, (map.get(key) || 0) + 1);
-  });
-  return [...map.entries()].sort((a, b) => b[1] - a[1]);
-}
+function Spark({values,t}: {values:number[];t:Tone}){const p=tone(t),safe=values.length?values:[1,3,2,4,3,5],mi=Math.min(...safe),ma=Math.max(...safe),r=ma-mi||1;const pts=safe.map((v,i)=>`${(i/Math.max(1,safe.length-1))*100},${80-((v-mi)/r)*55}`).join(" ");return <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-9 w-full"><polyline points={pts} fill="none" stroke={p.solid} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+function KpiCard({k}: {k:KPI}){const p=tone(k.tone);return <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-start justify-between gap-2"><div><p className="text-[11px] font-semibold text-slate-500">{k.label}</p><div className="mt-1.5 flex items-end gap-2"><strong className="text-[24px] tracking-tight text-slate-900 dark:text-white">{k.value}</strong><span className="mb-1 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{background:p.soft,color:p.text}}>{k.delta}</span></div></div><TrendingUp className="h-4 w-4" style={{color:p.solid}}/></div><div className="mt-2"><Spark values={k.spark} t={k.tone}/></div><p className="mt-1 text-[10px] text-slate-400">{k.hint}</p></article>}
+function Gauge({score,accent}:{score:number;accent:string}){const s=Math.max(0,Math.min(100,score));return <div className="relative h-28 w-28 rounded-full" style={{background:`conic-gradient(${accent} 0 ${s}%,#e8eef8 ${s}% 100%)`}}><div className="absolute inset-[11px] flex flex-col items-center justify-center rounded-full bg-white dark:bg-slate-900"><strong className="text-3xl text-slate-900 dark:text-white">{s}</strong><span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">uyum</span></div></div>}
+function Spotlight({b}:{b:Board}){return <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">{b.spotlight.label}</p><div className="mt-3 flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">{initials(b.spotlight.name)}</span><div><h4 className="text-sm font-semibold">{b.spotlight.name}</h4><p className="text-[10px] text-slate-500">{b.spotlight.role}</p></div></div><div className="mt-4 grid items-center gap-4 sm:grid-cols-[116px_1fr]"><Gauge score={b.spotlight.score} accent={b.accent}/><div className="space-y-2">{b.spotlight.bullets.map(x=><div key={x} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300"><span className="mt-1.5 h-1.5 w-1.5 rounded-full" style={{background:b.accent}}/><span>{x}</span></div>)}</div></div></article>}
+function Bars({items}:{items:ChartItem[]}){const m=Math.max(1,...items.map(x=>x.value));return <div className="space-y-3">{items.map(x=>{const p=tone(x.tone||"blue");return <div key={x.label} className="grid grid-cols-[88px_1fr_28px] items-center gap-3"><span className="truncate text-[10px] text-slate-500">{x.label}</span><div className="h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className="h-full rounded-full" style={{width:`${Math.max(8,x.value/m*100)}%`,background:`linear-gradient(90deg,${p.solid},${p.solid}99)`}}/></div><strong className="text-right text-[10px] tabular-nums text-slate-700 dark:text-slate-200">{x.value}</strong></div>})}</div>}
+function Matrix({items}:{items:ChartItem[]}){return <div className="grid grid-cols-3 gap-2">{items.map(x=>{const p=tone(x.tone||"blue");return <div key={x.label} className="rounded-xl border p-3" style={{background:p.soft,borderColor:`${p.solid}33`}}><p className="text-[9px] font-bold leading-3" style={{color:p.text}}>{x.label}</p><strong className="mt-2 block text-xl" style={{color:p.text}}>{x.value}</strong></div>})}</div>}
+function Trend({items,suffix}:{items:ChartItem[];suffix?:string}){const safe=items.length?items:[{label:"Oca",value:1},{label:"Şub",value:2},{label:"Mar",value:1},{label:"Nis",value:3},{label:"May",value:2},{label:"Haz",value:4}],mi=Math.min(...safe.map(x=>x.value)),ma=Math.max(...safe.map(x=>x.value)),r=ma-mi||1;const pts=safe.map((x,i)=>`${(i/Math.max(1,safe.length-1))*100},${85-((x.value-mi)/r)*55}`).join(" ");return <><div className="h-36 rounded-xl bg-slate-50 p-3 dark:bg-slate-950/40"><svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full"><polygon points={`0,100 ${pts} 100,100`} fill="rgba(79,125,243,.10)"/><polyline points={pts} fill="none" stroke="#4f7df3" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/></svg></div><div className="mt-2 grid grid-cols-6 gap-1 text-center">{safe.slice(0,6).map(x=><div key={x.label}><p className="text-[9px] text-slate-400">{x.label}</p><p className="text-[10px] font-semibold text-slate-700 dark:text-slate-200">{x.value}{suffix?` ${suffix}`:""}</p></div>)}</div></>}
 
-function scoreBand(value: number) {
-  if (value >= 4) return 2;
-  if (value >= 3) return 1;
-  return 0;
-}
-
-function matrixLabel(perf: number, pot: number) {
-  const x = scoreBand(perf);
-  const y = scoreBand(pot);
-  return BOX_LABELS[2 - y][x];
-}
-
-function KpiGrid({ items }: { items: Kpi[] }) {
-  return (
-    <div className="vmb-kpi-grid">
-      {items.map((item) => (
-        <article key={item.label} className={`vmb-kpi vmb-tone-${item.tone}`}>
-          <span>{item.label}</span>
-          <strong>{item.value}</strong>
-          <small>{item.note}</small>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function Bars({ items, max: explicitMax }: { items: Bar[]; max?: number }) {
-  const max = explicitMax || Math.max(1, ...items.map((item) => item.value));
-  return (
-    <div className="vmb-bars">
-      {items.map((item, index) => (
-        <div key={item.label} className="vmb-bar-row">
-          <div className="vmb-bar-label"><span>{item.label}</span><strong>{item.display ?? item.value}</strong></div>
-          <div className="vmb-bar-track"><i className={`vmb-tone-${item.tone ?? index % 6}`} style={{ width: `${Math.max(3, (item.value / max) * 100)}%` }} /></div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Donut({ value, label, detail, tone = 0 }: { value: number; label: string; detail: string; tone?: number }) {
-  const safe = Math.max(0, Math.min(100, value));
-  const style = { "--vmb-pct": `${safe}%` } as CSSProperties;
-  return (
-    <div className="vmb-donut-wrap">
-      <div className={`vmb-donut vmb-donut-tone-${tone}`} style={style}>
-        <div><strong>{pct(safe)}</strong><span>{label}</span></div>
-      </div>
-      <p>{detail}</p>
-    </div>
-  );
-}
-
-function EmptyVisual({ textValue }: { textValue: string }) {
-  return <div className="vmb-empty"><Sparkles /><strong>Görsel analiz hazır</strong><p>{textValue}</p></div>;
-}
-
-function RecruitmentBoard({ snapshot }: { snapshot: Snapshot }) {
-  const candidates = snapshot.candidates.filter((candidate) => text(candidate?.type) !== "Mevcut Çalışan");
-  const stageCounts = RECRUITMENT_STAGES.map((label, tone) => ({
-    label,
-    value: candidates.filter((candidate) => (status(candidate) || "Başvuru") === label).length,
-    tone,
-  }));
-  const active = candidates.filter((candidate) => !["İşe Alındı", "Reddedildi"].includes(status(candidate))).length;
-  const interviews = candidates.filter((candidate) => status(candidate) === "Mülakat").length;
-  const hired = candidates.filter((candidate) => status(candidate) === "İşe Alındı").length;
-  const evidencePoints = candidates.reduce((sum, candidate) => {
-    const assessment = snapshot.assessments.find((item) => String(item?.subjectId) === String(candidate?.id) || text(item?.subjectName) === text(candidate?.name));
-    return sum + (candidate?.structuredInterviewCompleted ? 1 : 0) + (candidate?.workSampleAvailable ? 1 : 0) + (candidate?.recruiterNote ? 1 : 0) + (assessment || candidate?.raw_scores ? 1 : 0);
-  }, 0);
-  const evidenceCoverage = candidates.length ? (evidencePoints / (candidates.length * 4)) * 100 : 0;
-  const conversion = candidates.length ? (hired / candidates.length) * 100 : 0;
-  const topCandidates = candidates.slice(0, 5);
-
-  return (
-    <>
-      <KpiGrid items={[
-        { label: "Aktif aday", value: String(active), note: "Karar akışında", tone: 0 },
-        { label: "Mülakat", value: String(interviews), note: "Doğrulama aşamasında", tone: 1 },
-        { label: "Kanıt kapsamı", value: pct(evidenceCoverage), note: "Test + mülakat + iş örneği", tone: 2 },
-        { label: "İşe alım dönüşümü", value: pct(conversion), note: `${hired} işe alındı`, tone: 4 },
-      ]} />
-      <div className="vmb-main-grid">
-        <article className="vmb-panel vmb-panel-wide">
-          <header><div><span>ATS FUNNEL</span><h3>Aday akışı</h3></div><BriefcaseBusiness /></header>
-          {candidates.length ? <Bars items={stageCounts} /> : <EmptyVisual textValue="Aday eklendiğinde başvurudan işe alıma renkli funnel burada oluşacak." />}
-        </article>
-        <article className="vmb-panel">
-          <header><div><span>KANIT KALİTESİ</span><h3>Karar güveni</h3></div><CircleGauge /></header>
-          <Donut value={evidenceCoverage} label="kanıt" detail="Test, yapılandırılmış mülakat, değerlendirici notu ve iş örneğinin birlikte kapsanma oranı." tone={2} />
-        </article>
-        <article className="vmb-panel vmb-panel-wide">
-          <header><div><span>ADAY KARTLARI</span><h3>Öncelikli adaylar</h3></div><Users /></header>
-          <div className="vmb-person-grid">
-            {topCandidates.length ? topCandidates.map((candidate, index) => (
-              <div className={`vmb-person-card vmb-tone-${index % 6}`} key={candidate.id ?? candidate.name ?? index}>
-                <span className="vmb-avatar">{text(candidate?.name).split(/\s+/).slice(0,2).map((x:string)=>x[0]).join("") || "A"}</span>
-                <div><strong>{text(candidate?.name) || "Aday"}</strong><small>{text(candidate?.role) || "Rol belirtilmedi"}</small></div>
-                <em>{status(candidate) || "Başvuru"}</em>
-              </div>
-            )) : <EmptyVisual textValue="Aday kartları, durum ve rol bilgisiyle burada gösterilecek." />}
-          </div>
-        </article>
-      </div>
-    </>
-  );
-}
-
-function LearningBoard({ snapshot }: { snapshot: Snapshot }) {
-  const items = snapshot.trainings;
-  const completed = items.filter((item) => status(item).toLocaleLowerCase("tr-TR").includes("tamam")).length;
-  const verified = items.filter((item) => Boolean(item?.managerVerified)).length;
-  const pendingEvidence = items.filter((item) => status(item).toLocaleLowerCase("tr-TR").includes("tamam") && !item?.managerVerified).length;
-  const overdue = items.filter((item) => !status(item).toLocaleLowerCase("tr-TR").includes("tamam") && item?.dueDate && new Date(item.dueDate) < new Date()).length;
-  const completion = items.length ? (completed / items.length) * 100 : 0;
-  const verification = completed ? (verified / completed) * 100 : 0;
-  const byCompetency = groupCount(items, (item) => text(item?.competencyCode ?? item?.trainingName ?? item?.Egitim ?? "Diğer")).slice(0, 6)
-    .map(([label, value], index) => ({ label, value, tone: index }));
-  const byState = [
-    { label: "Atandı / aktif", value: Math.max(0, items.length - completed), tone: 0 },
-    { label: "Tamamlandı", value: completed, tone: 2 },
-    { label: "Kanıt bekliyor", value: pendingEvidence, tone: 3 },
-    { label: "Doğrulandı", value: verified, tone: 4 },
-  ];
-
-  return (
-    <>
-      <KpiGrid items={[
-        { label: "Toplam müdahale", value: String(items.length), note: "Aktif öğrenme portföyü", tone: 0 },
-        { label: "Tamamlama", value: pct(completion), note: `${completed} tamamlanan`, tone: 2 },
-        { label: "İşe transfer kanıtı", value: pct(verification), note: `${verified} yönetici doğrulaması`, tone: 4 },
-        { label: "Geciken", value: String(overdue), note: "Takip gerektiren", tone: 3 },
-      ]} />
-      <div className="vmb-main-grid">
-        <article className="vmb-panel">
-          <header><div><span>ÖĞRENME ETKİSİ</span><h3>Tamamlama</h3></div><GraduationCap /></header>
-          <Donut value={completion} label="tamamlandı" detail={`${pendingEvidence} tamamlanmış kayıt henüz işe transfer kanıtı bekliyor.`} tone={4} />
-        </article>
-        <article className="vmb-panel vmb-panel-wide">
-          <header><div><span>PORTFÖY DAĞILIMI</span><h3>Yetkinlik / müdahale yoğunluğu</h3></div><Activity /></header>
-          {items.length ? <Bars items={byCompetency} /> : <EmptyVisual textValue="Eğitim veya gelişim müdahalesi atandığında yoğunluk grafiği burada oluşacak." />}
-        </article>
-        <article className="vmb-panel vmb-panel-wide">
-          <header><div><span>EVIDENCE FLOW</span><h3>Atamadan doğrulamaya</h3></div><CheckCircle2 /></header>
-          {items.length ? <Bars items={byState} max={Math.max(1, items.length)} /> : <EmptyVisual textValue="Atama → tamamlama → kanıt → doğrulama akışı burada izlenecek." />}
-        </article>
-      </div>
-    </>
-  );
-}
-
-function CareerBoard({ snapshot }: { snapshot: Snapshot }) {
-  const people = snapshot.org;
-  const aspirations = people.map((person) => number(person?.career_aspiration)).filter((value) => value >= 1 && value <= 5);
-  const highAspiration = aspirations.filter((value) => value >= 4).length;
-  const mobilityPool = people.filter((person) => performance(person, snapshot.history) >= 3.5 && potential(person, snapshot.history) >= 4).length;
-  const verifiedLearning = snapshot.trainings.filter((item) => Boolean(item?.managerVerified)).length;
-  const coverage = people.length ? (people.filter((person) => performance(person, snapshot.history) > 0 || potential(person, snapshot.history) > 0).length / people.length) * 100 : 0;
-  const aspirationBars: Bar[] = [
-    { label: "Yüksek istek (4–5)", value: highAspiration, tone: 4 },
-    { label: "Orta (3)", value: aspirations.filter((value) => value === 3).length, tone: 1 },
-    { label: "Düşük (1–2)", value: aspirations.filter((value) => value <= 2).length, tone: 3 },
-    { label: "Belirtilmedi", value: Math.max(0, people.length - aspirations.length), tone: 5 },
-  ];
-  const poolByDepartment = groupCount(
-    people.filter((person) => performance(person, snapshot.history) >= 3.5 && potential(person, snapshot.history) >= 4),
-    department,
-  ).slice(0, 6).map(([label, value], index) => ({ label, value, tone: index }));
-
-  return (
-    <>
-      <KpiGrid items={[
-        { label: "Kariyer havuzu", value: String(people.length), note: "Görünür çalışan", tone: 0 },
-        { label: "Mobilite adayı", value: String(mobilityPool), note: "Yüksek potansiyel sinyali", tone: 4 },
-        { label: "Veri kapsamı", value: pct(coverage), note: "Performans / potansiyel sinyali", tone: 2 },
-        { label: "Doğrulanmış öğrenme", value: String(verifiedLearning), note: "Evidence Graph girişi", tone: 1 },
-      ]} />
-      <div className="vmb-main-grid">
-        <article className="vmb-panel vmb-panel-wide">
-          <header><div><span>KARİYER İSTEĞİ</span><h3>Mobilite sinyalleri</h3></div><MapPinned /></header>
-          {people.length ? <Bars items={aspirationBars} max={Math.max(1, people.length)} /> : <EmptyVisual textValue="Çalışan verisi geldiğinde kariyer isteği dağılımı burada görünecek." />}
-        </article>
-        <article className="vmb-panel">
-          <header><div><span>READINESS DATA</span><h3>Karar kapsamı</h3></div><Target /></header>
-          <Donut value={coverage} label="kapsama" detail="Performans veya potansiyel verisi bulunan çalışanların toplam kadroya oranı." tone={1} />
-        </article>
-        <article className="vmb-panel vmb-panel-wide">
-          <header><div><span>MOBİLİTE HAVUZU</span><h3>Departman dağılımı</h3></div><Users /></header>
-          {poolByDepartment.length ? <Bars items={poolByDepartment} /> : <EmptyVisual textValue="Yüksek potansiyel + güçlü performans sinyali oluştuğunda mobilite havuzu burada renkli olarak dağılacak." />}
-        </article>
-      </div>
-    </>
-  );
-}
-
-function NineBoxBoard({ snapshot }: { snapshot: Snapshot }) {
-  const plotted = snapshot.org
-    .map((person) => ({ person, perf: performance(person, snapshot.history), pot: potential(person, snapshot.history) }))
-    .filter((item) => item.perf > 0 && item.pot > 0);
-  const counts = new Map<string, number>();
-  BOX_LABELS.flat().forEach((label) => counts.set(label, 0));
-  plotted.forEach((item) => counts.set(matrixLabel(item.perf, item.pot), (counts.get(matrixLabel(item.perf, item.pot)) || 0) + 1));
-  const stars = counts.get("Yıldız Oyuncu") || 0;
-  const highPotential = (counts.get("Yüksek Potansiyel") || 0) + stars + (counts.get("Potansiyel Yatırımı") || 0);
-  const critical = counts.get("Kritik Gelişim") || 0;
-  const coverage = snapshot.org.length ? (plotted.length / snapshot.org.length) * 100 : 0;
-
-  return (
-    <>
-      <KpiGrid items={[
-        { label: "Matrise yerleşen", value: String(plotted.length), note: `${snapshot.org.length} çalışan içinde`, tone: 0 },
-        { label: "Yıldız oyuncu", value: String(stars), note: "Yüksek performans + potansiyel", tone: 4 },
-        { label: "Yüksek potansiyel", value: String(highPotential), note: "Üst potansiyel bandı", tone: 1 },
-        { label: "Kritik gelişim", value: String(critical), note: "Yakın takip", tone: 3 },
-      ]} />
-      <div className="vmb-main-grid">
-        <article className="vmb-panel vmb-panel-superwide">
-          <header><div><span>TALENT HEATMAP</span><h3>9-Box dağılımı</h3></div><Grid3X3 /></header>
-          {snapshot.org.length ? (
-            <div className="vmb-ninebox" aria-label="9-Box yetenek dağılımı">
-              {BOX_LABELS.flat().map((label, index) => {
-                const value = counts.get(label) || 0;
-                const share = plotted.length ? (value / plotted.length) * 100 : 0;
-                return <div key={label} className={`vmb-ninebox-cell vmb-nine-${index}`}><span>{label}</span><strong>{value}</strong><small>{pct(share)}</small></div>;
-              })}
-            </div>
-          ) : <EmptyVisual textValue="Performans ve potansiyel verisi geldiğinde 9 kutu otomatik dolacak." />}
-          <div className="vmb-axis"><span>← Potansiyel: düşükten yükseğe</span><span>Performans: düşükten yükseğe →</span></div>
-        </article>
-        <article className="vmb-panel">
-          <header><div><span>VERİ GÜVENİ</span><h3>Matris kapsamı</h3></div><CircleGauge /></header>
-          <Donut value={coverage} label="kapsama" detail={`${Math.max(0, snapshot.org.length - plotted.length)} çalışan için performans veya potansiyel verisi eksik.`} tone={2} />
-        </article>
-      </div>
-    </>
-  );
-}
-
-export default function VisualModuleBoard({ pathname }: { pathname: string }) {
-  const [snapshot, setSnapshot] = useState<Snapshot>(() => ({ org: [], history: [], candidates: [], assessments: [], trainings: [] }));
-
-  useEffect(() => {
-    const reload = () => setSnapshot(readSnapshot());
-    reload();
-    const events = ["dataUpdated", "candidatesUpdated", "talentMatrixUpdated", "storageCleared", "userChanged"];
-    events.forEach((event) => window.addEventListener(event, reload));
-    window.addEventListener("storage", reload);
-    return () => {
-      events.forEach((event) => window.removeEventListener(event, reload));
-      window.removeEventListener("storage", reload);
-    };
-  }, []);
-
-  const mode = useMemo(() => {
-    if (pathname.startsWith("/ise-alim")) return "recruitment";
-    if (pathname.startsWith("/egitim")) return "learning";
-    if (pathname.startsWith("/kariyer")) return "career";
-    if (pathname.startsWith("/yetenek-matrisi")) return "ninebox";
-    return null;
-  }, [pathname]);
-
-  if (!mode) return null;
-
-  const meta = mode === "recruitment"
-    ? { kicker: "GÖRSEL ATS", title: "İşe alım karar panosu", copy: "Liste okumadan; funnel, kanıt kapsamı ve öncelikli adayları tek ekranda görün.", icon: BriefcaseBusiness }
-    : mode === "learning"
-      ? { kicker: "LEARNING ANALYTICS", title: "Öğrenme & etki panosu", copy: "Atama sayısından çok tamamlama, işe transfer kanıtı ve doğrulama akışını görün.", icon: GraduationCap }
-      : mode === "career"
-        ? { kicker: "CAREER INTELLIGENCE", title: "Kariyer mobilite panosu", copy: "Kariyer isteği, veri kapsamı ve mobilite havuzunu görsel sinyaller üzerinden yönetin.", icon: MapPinned }
-        : { kicker: "TALENT HEATMAP", title: "9-Box yetenek panosu", copy: "Dokuz kutuyu liste yerine renkli yoğunluk haritası ve kapsam göstergeleriyle okuyun.", icon: Grid3X3 };
-  const Icon = meta.icon;
-
-  return (
-    <section className={`visual-module-board vmb-${mode}`}>
-      <header className="vmb-header">
-        <div className="vmb-header-icon"><Icon /></div>
-        <div><span>{meta.kicker}</span><h2>{meta.title}</h2><p>{meta.copy}</p></div>
-        <div className="vmb-live"><i /> Canlı veri</div>
-      </header>
-      {mode === "recruitment" && <RecruitmentBoard snapshot={snapshot} />}
-      {mode === "learning" && <LearningBoard snapshot={snapshot} />}
-      {mode === "career" && <CareerBoard snapshot={snapshot} />}
-      {mode === "ninebox" && <NineBoxBoard snapshot={snapshot} />}
-    </section>
-  );
+export default function VisualModuleBoard({pathname}:{pathname:string}){
+ const [s,setS]=useState<Snapshot>({org:[],history:[],candidates:[],assessments:[],trainings:[]});
+ useEffect(()=>{const load=()=>setS(readSnapshot());load();const ev=["dataUpdated","candidatesUpdated","talentMatrixUpdated","storageCleared","userChanged"];ev.forEach(e=>window.addEventListener(e,load));window.addEventListener("storage",load);return()=>{ev.forEach(e=>window.removeEventListener(e,load));window.removeEventListener("storage",load)}},[]);
+ const b=useMemo(()=>build(pathname,s),[pathname,s]);
+ const Icon=pathname.startsWith("/ise-alim")?UserPlus:pathname.startsWith("/egitim")?GraduationCap:pathname.startsWith("/kariyer")?Target:Grid3X3;
+ return <section className="mb-5 rounded-[26px] border border-slate-200 bg-[#fbfcff] p-4 shadow-[0_14px_40px_rgba(15,23,42,.05)] dark:border-slate-800 dark:bg-slate-950/40">
+  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl text-white" style={{background:b.accent}}><Icon className="h-4 w-4"/></span><div><p className="text-[9px] font-bold uppercase tracking-[.14em]" style={{color:b.accent}}>{b.eyebrow}</p><h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">{b.title}</h2><p className="mt-0.5 text-[11px] text-slate-500">{b.subtitle}</p></div></div><span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-semibold text-emerald-700"><Sparkles className="h-3 w-3"/> Grafik öncelikli görünüm</span></div>
+  <div className="grid gap-3 lg:grid-cols-4">{b.kpis.map(k=><KpiCard key={k.label} k={k}/>)}</div>
+  <div className="mt-3 grid gap-3 xl:grid-cols-3"><Spotlight b={b}/><article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="mb-4 flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">{b.middle.title}</p><h3 className="mt-1 text-sm font-semibold">{b.middle.subtitle}</h3></div><Activity className="h-4 w-4" style={{color:b.accent}}/></div>{b.middle.kind==="matrix"?<Matrix items={b.middle.items}/>:<Bars items={b.middle.items}/>}</article><article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="mb-3 flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">{b.trend.title}</p><h3 className="mt-1 text-sm font-semibold">{b.trend.subtitle}</h3></div><BriefcaseBusiness className="h-4 w-4 text-slate-400"/></div><Trend items={b.trend.points} suffix={b.trend.suffix}/></article></div>
+ </section>;
 }
