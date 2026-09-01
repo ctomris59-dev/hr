@@ -30,20 +30,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const stored360 = getStorageData<any[]>(STORAGE_KEYS.HISTORY_360, []);
       const orgKeyExists = hasStoredKey(STORAGE_KEYS.ORG_CHART);
       const historyKeyExists = hasStoredKey(STORAGE_KEYS.HISTORY_360);
-      const dataCleared = localStorage.getItem(HR_DATA_CLEARED_KEY) === "true";
       const currentUser = getStorageData<any>(STORAGE_KEYS.CURRENT_USER, null);
       const secureMode = currentUser?.authMode === "secure";
 
-      // Demo prototipinde tarayıcı verisi tek doğruluk kaynağıdır. Bir modül Excel/form
-      // ile veri yazdıysa eksik diğer koleksiyonlar backend'den karıştırılmaz.
-      if (!secureMode && (orgKeyExists || historyKeyExists || dataCleared)) {
+      // Demo/prototip modu bilinçli olarak boş şirketle başlar. İlk açılışta backend'den
+      // örnek/veri sızdırılmaz; kullanıcı Demo Oluştur veya veri içe aktarma akışını seçer.
+      if (!secureMode) {
+        if (!orgKeyExists) localStorage.setItem(STORAGE_KEYS.ORG_CHART, "[]");
+        if (!historyKeyExists) localStorage.setItem(STORAGE_KEYS.HISTORY_360, "[]");
+        if (!orgKeyExists && !historyKeyExists) localStorage.setItem(HR_DATA_CLEARED_KEY, "true");
         setOrgData(storedOrg);
         setHistory360(stored360);
         setLoading(false);
         return;
       }
 
-      // Secure mod veya ilk açılışta backend denenir. Başarısızlık UI'ı bloklamaz.
+      // Secure SaaS modunda tenant verisi yalnız sunucu katmanından okunur.
       setOrgData(storedOrg);
       setHistory360(stored360);
 
@@ -67,22 +69,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (orgRes?.ok) {
           const result = await orgRes.json().catch(() => null);
           const rows = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
-          if (rows.length || secureMode) {
-            setOrgData(rows);
-            if (!secureMode) setStorageData(STORAGE_KEYS.ORG_CHART, rows);
-          }
+          setOrgData(rows);
         }
         if (data360Res?.ok) {
           const result = await data360Res.json().catch(() => null);
           const rows = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
-          if (rows.length || secureMode) {
-            setHistory360(rows);
-            if (!secureMode) setStorageData(STORAGE_KEYS.HISTORY_360, rows);
-          }
+          setHistory360(rows);
         }
       } catch (error) {
         window.clearTimeout(timeoutId);
-        console.warn("Backend fetch failed; FutureHR cached/demo data will be used:", error);
+        console.warn("Secure SaaS backend fetch failed:", error);
       }
     } catch (error) {
       console.error("Data loading error:", error);
@@ -103,8 +99,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const handleDataUpdated = () => {
-      // Excel/form/demo üretimi sonrası marker setStorageData tarafından kaldırılır.
-      // Burada stale marker yüzünden güncel veriyi gizlemeyiz.
       const storedOrg = getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []);
       const stored360 = getStorageData<any[]>(STORAGE_KEYS.HISTORY_360, []);
       if (storedOrg.length || stored360.length) localStorage.removeItem(HR_DATA_CLEARED_KEY);
