@@ -2,13 +2,14 @@ import { canAccessRoute } from "@/lib/hr/accessControl";
 import { normalizeEmployeeName } from "@/lib/hr/employeeIdentity";
 import { collectFutureHRData, localAgentFallback } from "@/lib/hr/futureHRAgent";
 import { SAAS_DATA_MODE, fetchSaasCompensationWorkspace } from "@/lib/hr/saasWorkforceClient";
+import { getPulseAnalytics } from "@/app/services/surveyService";
 import {
   buildUniversalAgentAugmentation,
   containsCjk,
   mergeUniversalPackage,
   restoreUniversalAliases,
 } from "@/lib/hr/futureHRUniversalData";
-import type { AgentAIResponse, AgentPackage } from "@/lib/hr/futureHRAgentTypes";
+import type { AgentAIResponse, AgentPackage, AgentToolResult } from "@/lib/hr/futureHRAgentTypes";
 
 const PERSONAL_SALARY_PATTERNS = [
   /maaşı\s+(?:nedir|ne\s+kadar|kaç)/i,
@@ -18,6 +19,13 @@ const PERSONAL_SALARY_PATTERNS = [
   /mevcut\s+ücret/i,
   /salary\s+(?:is|amount|how much)/i,
 ];
+
+const EXPERIENCE_TERMS = [
+  "çalışan deneyimi", "calisan deneyimi", "pulse", "moral", "motivasyon", "iş yükü", "is yuku",
+  "enerji", "yönetici desteği", "yonetici destegi", "rol netliği", "rol netligi", "memnuniyet",
+  "ceo", "yönetici özeti", "yonetici ozeti", "bu hafta", "bu ay", "öncelik", "oncelik",
+];
+const EXPERIENCE_MANAGEMENT_ROLES = new Set(["CEO", "IK", "ADMIN", "DIRECTOR", "MANAGER", "HR_ADMIN"]);
 
 function isDirectPersonalSalaryQuestion(question: string) {
   return PERSONAL_SALARY_PATTERNS.some((pattern) => pattern.test(question));
@@ -88,8 +96,6 @@ async function directSalaryAnswer(
   let employees = baseData.org;
   let benchmarks = baseData.benchmarks;
 
-  // SaaS'ta ham bireysel ücret yalnız yetkili compensation workspace'ten okunur.
-  // Böylece talent/team workspace aynı çalışan sayısına sahip olsa bile maaş alanı kaybolmaz.
   if (SAAS_DATA_MODE) {
     try {
       const compensation = await fetchSaasCompensationWorkspace();
@@ -167,6 +173,84 @@ async function directSalaryAnswer(
   };
 }
 
+function shouldIncludeExperience(question: string, role: any) {
+  const normalizedRole = String(role || "").toUpperCase();
+  if (!EXPERIENCE_MANAGEMENT_ROLES.has(normalizedRole)) return false;
+  const q = question.toLocaleLowerCase("tr-TR");
+  return EXPERIENCE_TERMS.some((term) => q.includes(term));
+}
+
+async function attachExperienceAnalytics(question: string, agentPackage: AgentPackage, role: any) {
+  if (!shouldIncludeExperience(question, role)) return agentPackage;
+  try {
+    const data = await collectFutureHRData();
+    const roleName = String(role || data.user?.role || "").toUpperCase();
+    const userDept = String(data.user?.department || data.user?.dept || "");
+    const isAdminScope = roleName === "CEO" || roleName === "IK" || roleName === "ADMIN" || roleName === "HR_ADMIN";
+    const analytics = await getPulseAnalytics({
+      role: roleName,
+      userDept: userDept || undefined,
+      department: isAdminScope ? undefined : userDept || undefined,
+    });
+    if (!analytics) return agentPackage;
+
+    const latest = analytics.latest;
+    const tool: AgentToolResult = {
+      tool: "employeeExperienceAnalytics",
+      label: "Çalışan Deneyimi",
+      domain: "executive",
+      summary: latest && !latest.suppressed && latest.average_score !== null
+        ? `Son anonim deneyim skoru ${latest.average_score}/10; katılım ${latest.participation ?? "—"}%.`
+        : `Çalışan deneyimi görünümü anonimlik eşiği nedeniyle korumalı; güncel yanıt ${analytics.anonymity.currentRespondents}/${analytics.anonymity.threshold}.`,
+      confidence: latest && !latest.suppressed ? "orta" : "düşük",
+      evidence: [{
+        id: "employee-experience-aggregate",
+        label: "Anonim Çalışan Deneyimi",
+        detail: latest && latest.average_score !== null ? `${latest.average_score}/10 · ${latest.count} anonim yanıt` : `${analytics.anonymity.currentRespondents}/${analytics.anonymity.threshold} anonimlik eşiği`,
+        route: "/calisan-deneyimi",
+        domain: "executive",
+        confidence: latest && !latest.suppressed ? "orta" : "düşük",
+      }],
+      facts: {
+        scope: analytics.scope,
+        anonymity: analytics.anonymity,
+        latest: analytics.latest,
+        latestDelta: analytics.latestDelta,
+        lowestDriver: analytics.lowestDriver,
+        strongestDriver: analytics.strongestDriver,
+        trend: analytics.trend.slice(-12),
+        privacyNote: analytics.privacyNote,
+      },
+      evidenceGaps: latest ? [] : ["Anonimlik eşiğini geçen güncel çalışan deneyimi dönemi bulunmuyor."],
+      preparedActions: [],
+    };
+
+    return {
+      ...agentPackage,
+      toolsUsed: Array.from(new Set([...agentPackage.toolsUsed, "employeeExperienceAnalytics"])),
+      toolResults: [...agentPackage.toolResults, tool],
+      evidenceSources: [...agentPackage.evidenceSources, ...tool.evidence]
+        .filter((item, index, rows) => rows.findIndex((row) => `${row.route}|${row.label}` === `${item.route}|${item.label}`) === index)
+        .slice(0, 16),
+      externalContext: {
+        ...agentPackage.externalContext,
+        employeeExperience: {
+          privacySafeAggregateOnly: true,
+          scope: analytics.scope,
+          anonymity: analytics.anonymity,
+          latest: analytics.latest,
+          latestDelta: analytics.latestDelta,
+          lowestDriver: analytics.lowestDriver,
+          strongestDriver: analytics.strongestDriver,
+          trend: analytics.trend.slice(-12),
+        },
+      },
+    };
+  } catch {
+    return agentPackage;
+  }
+}
+
 /**
  * Adı geriye dönük uyumluluk için korunuyor. V2'de bu fonksiyon yalnız ücret değil,
  * bütün FutureHR veri registry'sini hazırlar. Doğrudan doğrulanabilir soruları yerel
@@ -182,10 +266,9 @@ export async function buildLocalSensitiveAnswer(
   if (salary) return salary;
 
   const augmentation = await buildUniversalAgentAugmentation(question, agentPackage, currentUserRole);
-  const mergedPackage = mergeUniversalPackage(agentPackage, augmentation);
+  let mergedPackage = mergeUniversalPackage(agentPackage, augmentation);
+  mergedPackage = await attachExperienceAnalytics(question, mergedPackage, currentUserRole);
 
-  // Component aynı nesne referansını tuttuğu için kanıt kaynakları, araçlar ve güvenli
-  // evrensel context mevcut akışa otomatik olarak aktarılır.
   Object.assign(agentPackage, mergedPackage);
 
   if (augmentation.directAnswer) {
@@ -207,8 +290,6 @@ export async function buildLocalSensitiveAnswer(
     if (!response.ok) return null;
     const analysis = (payload?.analysis || fallback) as AgentAIResponse;
 
-    // Dil güvenlik valfi: sağlayıcı Türkçe yanıtın içine CJK karakteri karıştırırsa
-    // kullanıcıya o çıktı gösterilmez; doğrulanmış yerel FutureHR özeti kullanılır.
     const languageSafe = containsCjk(analysis) ? fallback : analysis;
     return restoreUniversalAliases(languageSafe, augmentation);
   } catch {
