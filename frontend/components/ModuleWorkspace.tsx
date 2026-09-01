@@ -41,15 +41,33 @@ function findConfig(pathname:string){return [...MODULES].sort((a,b)=>b.path.leng
 export default function ModuleWorkspace({pathname,children}:{pathname:string;children:ReactNode}){
   if(pathname==="/dashboard")return <><ProductHealthStrip/>{children}</>;
   const config=findConfig(pathname);if(!config)return <>{children}</>;const Icon=config.icon;const style={"--module-accent":config.accent,"--module-accent-2":config.accent2,"--module-soft":config.soft} as CSSProperties;
-  return <div className={`module-workspace workspace-${config.id}`} data-module={config.id} style={style}>
-    <section className="module-hero mb-3 overflow-hidden border bg-white dark:border-slate-800 dark:bg-slate-900" aria-label={`${config.title} çalışma akışı`}><div className="grid gap-2.5 px-4 py-2.5 md:grid-cols-[minmax(0,1.35fr)_auto] md:items-center"><div className="flex min-w-0 items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center text-white" style={{background:config.accent}}><Icon className="h-4 w-4" strokeWidth={1.7}/></span><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[.11em] text-slate-400">Çalışma akışı</p><p className="mt-0.5 text-[12.5px] leading-[1.1rem] text-slate-600 dark:text-slate-300">{config.focus}</p></div></div><div className="futurehr-workflow-steps flex flex-wrap items-center gap-x-3 gap-y-1.5">{config.steps.map((step,index)=><span key={step} className="futurehr-workflow-step inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400"><b className="font-semibold tabular-nums text-slate-400">{String(index+1).padStart(2,"0")}</b><span>{step}</span></span>)}</div></div></section>
-    <ModuleFamilyNavigator pathname={pathname}/>
+  return <div className={`module-workspace workspace-${config.id} module-workspace-v2`} data-module={config.id} style={style}>
+    <section className="module-hero module-command-hero" aria-label={`${config.title} çalışma akışı`}>
+      <div className="module-command-copy">
+        <div className="module-command-kicker"><span className="module-command-live-dot"/>FUTUREHR · KARAR ÇALIŞMA ALANI</div>
+        <div className="module-command-title-row"><span className="module-command-icon" style={{background:config.accent}}><Icon strokeWidth={1.7}/></span><div><h1>{config.title}</h1><p>{config.focus}</p></div></div>
+      </div>
+      <div className="module-command-flow" aria-label="İş akışı adımları">
+        <div className="module-command-flow-label">İş akışı</div>
+        <div className="module-command-flow-steps">{config.steps.map((step,index)=><div key={step} className="module-command-flow-step"><span>{String(index+1).padStart(2,"0")}</span><strong>{step}</strong></div>)}</div>
+      </div>
+    </section>
+
+    <div className="module-family-stage"><ModuleFamilyNavigator pathname={pathname}/></div>
     {(pathname==="/degerlendirme"||pathname==="/kalibrasyon")&&<PerformanceCycleBar/>}
     {(pathname==="/maas"||pathname==="/yonetici/maas-talep")&&<CompensationCycleBar/>}
     {(pathname==="/organizasyon"||pathname==="/admin/veri-aktarimi")&&<ImportRecoveryPanel/>}
     {pathname==="/organizasyon"&&<div className="mb-4"><OrganizationExcelExchange/></div>}
     {pathname==="/maas"&&<div className="mb-4"><SalaryExcelExchange/></div>}
-    <ModuleDecisionSummary pathname={pathname}/>
-    <section className="module-native-content visualized-native-content">{children}</section>
+
+    <div className="module-decision-stage"><ModuleDecisionSummary pathname={pathname}/></div>
+
+    <section className="module-detail-stage" aria-label={`${config.title} detaylı çalışma alanı`}>
+      <header className="module-detail-stage-header">
+        <div><span>OPERASYON ALANI</span><h2>Detaylı çalışma alanı</h2></div>
+        <p>Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin.</p>
+      </header>
+      <div className="module-native-content visualized-native-content">{children}</div>
+    </section>
   </div>;
 }
