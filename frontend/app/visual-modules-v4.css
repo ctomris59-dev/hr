@@ -1,0 +1,463 @@
+/* FutureHR visual-first module boards v4
+   Converts recruitment, learning, career and 9-box into chart/card-first workspaces.
+   Native list-heavy screens remain available behind a progressive disclosure panel. */
+
+.visual-module-board {
+  display: grid;
+  gap: 16px;
+  overflow: hidden;
+  border: 1px solid #dbe4ea;
+  border-radius: 24px;
+  background: #f8fafb;
+  padding: 18px;
+  box-shadow: 0 14px 38px rgba(15,23,42,.065);
+}
+
+.vmb-header {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  border: 1px solid #dfe7ec;
+  border-radius: 18px;
+  background: linear-gradient(135deg,#fff 0%,#f8fbfc 100%);
+  padding: 16px 18px;
+}
+.vmb-header-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 13px;
+  background: #111d28;
+  color: #fff;
+}
+.vmb-header-icon svg { width: 21px; height: 21px; }
+.vmb-header span {
+  display: block;
+  color: #748392;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+.vmb-header h2 {
+  margin: 4px 0 0;
+  color: #101820;
+  font-size: 21px;
+  font-weight: 720;
+  letter-spacing: -.035em;
+}
+.vmb-header p {
+  max-width: 780px;
+  margin: 4px 0 0;
+  color: #667789;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+.vmb-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #dbe8e4;
+  border-radius: 999px;
+  background: #f4faf7;
+  padding: 7px 10px;
+  color: #2d6658;
+  font-size: 9.5px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.vmb-live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #45a483;
+  box-shadow: 0 0 0 4px rgba(69,164,131,.12);
+}
+
+.vmb-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 10px;
+}
+.vmb-kpi {
+  position: relative;
+  min-height: 112px;
+  overflow: hidden;
+  border: 1px solid #dfe6eb;
+  border-radius: 17px;
+  background: #fff;
+  padding: 15px 16px;
+}
+.vmb-kpi::after {
+  content: "";
+  position: absolute;
+  width: 88px;
+  height: 88px;
+  right: -28px;
+  bottom: -38px;
+  border-radius: 50%;
+  background: var(--vmb-soft,#eef4f8);
+}
+.vmb-kpi > * { position: relative; z-index: 1; }
+.vmb-kpi span {
+  display: block;
+  color: #748392;
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.vmb-kpi strong {
+  display: block;
+  margin-top: 9px;
+  color: #14202b;
+  font-size: 28px;
+  font-weight: 730;
+  letter-spacing: -.045em;
+}
+.vmb-kpi small {
+  display: block;
+  margin-top: 4px;
+  color: #6f7f8e;
+  font-size: 10px;
+}
+
+.vmb-main-grid {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 12px;
+}
+.vmb-panel {
+  min-width: 0;
+  border: 1px solid #dfe6eb;
+  border-radius: 19px;
+  background: #fff;
+  padding: 16px;
+}
+.vmb-panel-wide { grid-column: span 2; }
+.vmb-panel-superwide { grid-column: span 2; }
+.vmb-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+.vmb-panel > header span {
+  display: block;
+  color: #80909d;
+  font-size: 8.5px;
+  font-weight: 790;
+  letter-spacing: .13em;
+}
+.vmb-panel > header h3 {
+  margin: 3px 0 0;
+  color: #1a2630;
+  font-size: 14px;
+  font-weight: 700;
+}
+.vmb-panel > header > svg { width: 17px; height: 17px; color: #788996; }
+
+.vmb-bars { display: grid; gap: 11px; }
+.vmb-bar-row { min-width: 0; }
+.vmb-bar-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+  color: #526473;
+  font-size: 10px;
+}
+.vmb-bar-label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vmb-bar-label strong { color: #1d2933; font-weight: 720; }
+.vmb-bar-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf2f5;
+}
+.vmb-bar-track i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: var(--vmb-accent,#527493);
+  transition: width .35s ease;
+}
+
+.vmb-tone-0 { --vmb-accent:#4b78c8; --vmb-soft:#edf3fd; }
+.vmb-tone-1 { --vmb-accent:#4d9a9a; --vmb-soft:#eaf7f6; }
+.vmb-tone-2 { --vmb-accent:#53a56e; --vmb-soft:#edf8f0; }
+.vmb-tone-3 { --vmb-accent:#d48a4b; --vmb-soft:#fff4e9; }
+.vmb-tone-4 { --vmb-accent:#8b6cc4; --vmb-soft:#f3eefb; }
+.vmb-tone-5 { --vmb-accent:#b8637c; --vmb-soft:#faeef2; }
+.vmb-tone-6 { --vmb-accent:#60758c; --vmb-soft:#eef2f5; }
+
+.vmb-donut-wrap {
+  display: grid;
+  place-items: center;
+  gap: 13px;
+  min-height: 220px;
+  text-align: center;
+}
+.vmb-donut {
+  display: grid;
+  width: 150px;
+  height: 150px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--vmb-donut,#507bb0) var(--vmb-pct),#e8eef2 0);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.6);
+}
+.vmb-donut::before {
+  content: "";
+  grid-area: 1/1;
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px #edf1f4;
+}
+.vmb-donut > div { grid-area: 1/1; z-index: 1; }
+.vmb-donut strong {
+  display: block;
+  color: #17232d;
+  font-size: 26px;
+  font-weight: 740;
+  letter-spacing: -.04em;
+}
+.vmb-donut span {
+  display: block;
+  margin-top: 1px;
+  color: #7a8996;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.vmb-donut-wrap p {
+  max-width: 260px;
+  margin: 0;
+  color: #697a89;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.vmb-donut-tone-0 { --vmb-donut:#4b78c8; }
+.vmb-donut-tone-1 { --vmb-donut:#4d9a9a; }
+.vmb-donut-tone-2 { --vmb-donut:#53a56e; }
+.vmb-donut-tone-3 { --vmb-donut:#d48a4b; }
+.vmb-donut-tone-4 { --vmb-donut:#8b6cc4; }
+
+.vmb-person-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 9px;
+}
+.vmb-person-card {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb,var(--vmb-accent) 18%,#dfe6eb);
+  border-radius: 14px;
+  background: linear-gradient(135deg,#fff,var(--vmb-soft));
+  padding: 10px;
+}
+.vmb-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--vmb-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+}
+.vmb-person-card div { min-width: 0; }
+.vmb-person-card strong,.vmb-person-card small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vmb-person-card strong { color: #1d2933; font-size: 10.5px; }
+.vmb-person-card small { margin-top: 2px; color: #758491; font-size: 9px; }
+.vmb-person-card em {
+  border-radius: 999px;
+  background: rgba(255,255,255,.78);
+  padding: 4px 6px;
+  color: var(--vmb-accent);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.vmb-ninebox {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 8px;
+  min-height: 330px;
+}
+.vmb-ninebox-cell {
+  position: relative;
+  display: flex;
+  min-height: 96px;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border: 1px solid rgba(21,34,44,.08);
+  border-radius: 15px;
+  padding: 12px;
+}
+.vmb-ninebox-cell::after {
+  content: "";
+  position: absolute;
+  width: 82px;
+  height: 82px;
+  right: -34px;
+  bottom: -36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.45);
+}
+.vmb-ninebox-cell > * { position: relative; z-index: 1; }
+.vmb-ninebox-cell span { max-width: 85%; color: #34444f; font-size: 9.5px; font-weight: 700; line-height: 1.3; }
+.vmb-ninebox-cell strong { color: #15212a; font-size: 28px; font-weight: 760; }
+.vmb-ninebox-cell small { color: #60717e; font-size: 9px; }
+.vmb-nine-0 { background:#edf7fb; }
+.vmb-nine-1 { background:#e9f8f8; }
+.vmb-nine-2 { background:#e9f8ee; }
+.vmb-nine-3 { background:#fff4df; }
+.vmb-nine-4 { background:#f1f3f5; }
+.vmb-nine-5 { background:#e9f7f2; }
+.vmb-nine-6 { background:#fcebed; }
+.vmb-nine-7 { background:#f1efec; }
+.vmb-nine-8 { background:#f2edfa; }
+.vmb-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  color: #91a0ab;
+  font-size: 8.5px;
+}
+
+.vmb-empty {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  border: 1px dashed #d8e1e7;
+  border-radius: 14px;
+  background: #fafcfd;
+  padding: 18px;
+  text-align: center;
+}
+.vmb-empty svg { width: 20px; height: 20px; color: #8da0ad; }
+.vmb-empty strong { color: #435562; font-size: 11px; }
+.vmb-empty p { max-width: 400px; margin: 0; color: #8796a2; font-size: 9.5px; line-height: 1.5; }
+
+/* The old spreadsheet/list-heavy workspace is no longer the first thing users see. */
+.visual-first-native-shell {
+  overflow: hidden;
+  border: 1px solid #dfe6eb;
+  border-radius: 18px;
+  background: #fff;
+}
+.visual-first-native-shell > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 62px;
+  cursor: pointer;
+  list-style: none;
+  background: linear-gradient(180deg,#fff,#fafcfd);
+  padding: 13px 16px;
+}
+.visual-first-native-shell > summary::-webkit-details-marker { display:none; }
+.visual-first-native-shell > summary::after {
+  content: "+";
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid #d9e2e8;
+  border-radius: 9px;
+  color: #60717e;
+  font-size: 17px;
+}
+.visual-first-native-shell[open] > summary::after { content:"−"; }
+.visual-first-native-shell .vf-summary-copy span {
+  display: block;
+  color: #7d8d99;
+  font-size: 8.5px;
+  font-weight: 790;
+  letter-spacing: .12em;
+}
+.visual-first-native-shell .vf-summary-copy strong {
+  display: block;
+  margin-top: 3px;
+  color: #1d2933;
+  font-size: 12px;
+}
+.visual-first-native-shell .vf-summary-copy small {
+  display: block;
+  margin-top: 2px;
+  color: #81909b;
+  font-size: 9.5px;
+}
+.visual-first-native-shell .module-native-content {
+  border-top: 1px solid #e5ebef;
+  background: #fbfcfd;
+  padding: 15px;
+}
+
+/* Reduce the visual dominance of grids/tables when a user deliberately expands legacy details. */
+.visual-first-native-shell table {
+  font-size: 11px !important;
+}
+.visual-first-native-shell thead {
+  background: #f3f6f8 !important;
+}
+.visual-first-native-shell tbody tr:nth-child(even) {
+  background: #fbfcfd;
+}
+.visual-first-native-shell .rounded-2xl,
+.visual-first-native-shell .rounded-xl {
+  box-shadow: none !important;
+}
+
+.dark .visual-module-board,
+.dark .vmb-panel,
+.dark .vmb-kpi,
+.dark .vmb-header,
+.dark .visual-first-native-shell { border-color:#273744; background:#111a22; }
+.dark .vmb-header { background:linear-gradient(135deg,#121d26,#16232d); }
+.dark .vmb-header h2,.dark .vmb-panel > header h3,.dark .vmb-kpi strong,.dark .vmb-bar-label strong,.dark .vmb-person-card strong,.dark .vmb-ninebox-cell strong { color:#f4f7f9; }
+.dark .vmb-header p,.dark .vmb-donut-wrap p,.dark .vmb-bar-label,.dark .vmb-person-card small { color:#9eabb5; }
+.dark .vmb-bar-track { background:#22313d; }
+.dark .vmb-donut::before { background:#111a22; box-shadow:0 0 0 1px #263540; }
+.dark .vmb-donut strong { color:#f6f8fa; }
+.dark .vmb-person-card { background:#16232c; border-color:#2b3b47; }
+.dark .vmb-empty { background:#14202a; border-color:#30404c; }
+.dark .visual-first-native-shell > summary { background:#121d26; }
+.dark .visual-first-native-shell .module-native-content { background:#0f171e; border-color:#283844; }
+
+@media (max-width: 1100px) {
+  .vmb-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .vmb-main-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .vmb-panel-wide,.vmb-panel-superwide { grid-column: span 2; }
+}
+@media (max-width: 720px) {
+  .visual-module-board { border-radius:18px; padding:12px; }
+  .vmb-header { grid-template-columns:auto 1fr; align-items:start; }
+  .vmb-live { grid-column:1/-1; width:max-content; }
+  .vmb-kpi-grid,.vmb-main-grid,.vmb-person-grid { grid-template-columns:1fr; }
+  .vmb-panel-wide,.vmb-panel-superwide { grid-column:span 1; }
+  .vmb-ninebox { gap:5px; }
+  .vmb-ninebox-cell { min-height:82px; padding:8px; border-radius:11px; }
+  .vmb-ninebox-cell span { font-size:8px; }
+  .vmb-ninebox-cell strong { font-size:22px; }
+  .vmb-axis { flex-direction:column; }
+}
