@@ -1,0 +1,195 @@
+/* FutureHR module header polish — removes the legacy dark command-surface conflict.
+   The module header now follows the analytics SaaS design language: light surface,
+   clear hierarchy, visible workflow labels and module-specific accent color. */
+
+.module-workspace-v2 .module-command-hero{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:22px!important;
+  min-height:82px!important;
+  margin-bottom:12px!important;
+  padding:14px 16px!important;
+  overflow:hidden!important;
+  border:1px solid var(--fh-line)!important;
+  border-radius:14px!important;
+  background:linear-gradient(110deg,var(--fh-panel) 0%,var(--fh-panel) 64%,color-mix(in srgb,var(--module-accent) 8%,var(--fh-panel)) 100%)!important;
+  box-shadow:var(--fh-shadow)!important;
+}
+.module-workspace-v2 .module-command-hero::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0 auto 0 0!important;
+  width:4px!important;
+  background:linear-gradient(180deg,var(--module-accent),var(--module-accent-2))!important;
+}
+.module-workspace-v2 .module-command-hero::after{
+  content:""!important;
+  position:absolute!important;
+  right:-54px!important;
+  top:-90px!important;
+  width:220px!important;
+  height:220px!important;
+  border-radius:999px!important;
+  background:color-mix(in srgb,var(--module-accent) 7%,transparent)!important;
+  pointer-events:none!important;
+}
+
+.module-workspace-v2 .module-command-copy{
+  position:relative!important;
+  z-index:2!important;
+  min-width:0!important;
+  align-self:center!important;
+  padding:0 0 0 6px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.module-workspace-v2 .module-command-kicker{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin:0!important;
+  background:transparent!important;
+  color:var(--module-accent)!important;
+  font-size:9px!important;
+  font-weight:750!important;
+  letter-spacing:.13em!important;
+}
+.module-workspace-v2 .module-command-live-dot{
+  width:6px!important;
+  height:6px!important;
+  border-radius:999px!important;
+  background:var(--module-accent)!important;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--module-accent) 11%,transparent)!important;
+}
+.module-workspace-v2 .module-command-title-row,
+.module-workspace-v2 .module-command-title-row>div{
+  background:transparent!important;
+}
+.module-workspace-v2 .module-command-title-row{
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  margin-top:7px!important;
+}
+.module-workspace-v2 .module-command-icon{
+  display:flex!important;
+  width:38px!important;
+  height:38px!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:10px!important;
+  color:#fff!important;
+  box-shadow:0 8px 18px color-mix(in srgb,var(--module-accent) 18%,transparent)!important;
+}
+.module-workspace-v2 .module-command-icon svg{
+  width:18px!important;
+  height:18px!important;
+  color:#fff!important;
+}
+.module-workspace-v2 .module-command-title-row h1{
+  margin:0!important;
+  background:transparent!important;
+  color:var(--fh-ink)!important;
+  font-size:20px!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+  letter-spacing:-.028em!important;
+}
+.module-workspace-v2 .module-command-title-row p{
+  max-width:780px!important;
+  margin:4px 0 0!important;
+  background:transparent!important;
+  color:var(--fh-muted)!important;
+  font-size:11.5px!important;
+  line-height:1.45!important;
+}
+
+.module-workspace-v2 .module-command-flow{
+  position:relative!important;
+  z-index:2!important;
+  min-width:390px!important;
+  align-self:center!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.module-workspace-v2 .module-command-flow-label{
+  margin:0 0 6px!important;
+  background:transparent!important;
+  color:var(--fh-muted)!important;
+  text-align:right!important;
+  font-size:9px!important;
+  font-weight:750!important;
+  letter-spacing:.12em!important;
+  text-transform:uppercase!important;
+}
+.module-workspace-v2 .module-command-flow-steps{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:7px!important;
+  background:transparent!important;
+}
+.module-workspace-v2 .module-command-flow-step{
+  display:flex!important;
+  min-width:86px!important;
+  min-height:35px!important;
+  align-items:center!important;
+  gap:7px!important;
+  padding:6px 9px!important;
+  border:1px solid var(--fh-line)!important;
+  border-radius:9px!important;
+  background:color-mix(in srgb,var(--module-accent) 3.5%,var(--fh-panel))!important;
+  color:var(--fh-ink)!important;
+  box-shadow:0 1px 2px rgba(15,23,42,.025)!important;
+}
+.module-workspace-v2 .module-command-flow-step span{
+  display:flex!important;
+  width:20px!important;
+  height:20px!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border:1px solid color-mix(in srgb,var(--module-accent) 28%,var(--fh-line))!important;
+  border-radius:6px!important;
+  background:color-mix(in srgb,var(--module-accent) 10%,var(--fh-panel))!important;
+  color:var(--module-accent)!important;
+  font-size:8.5px!important;
+  font-weight:800!important;
+}
+.module-workspace-v2 .module-command-flow-step strong{
+  overflow:hidden!important;
+  background:transparent!important;
+  color:var(--fh-ink)!important;
+  font-size:10px!important;
+  font-weight:700!important;
+  line-height:1.2!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+.dark .module-workspace-v2 .module-command-hero{
+  background:linear-gradient(110deg,var(--fh-panel) 0%,var(--fh-panel) 65%,color-mix(in srgb,var(--module-accent) 10%,var(--fh-panel)) 100%)!important;
+}
+.dark .module-workspace-v2 .module-command-flow-step{
+  background:color-mix(in srgb,var(--module-accent) 7%,var(--fh-panel))!important;
+}
+
+@media(max-width:1100px){
+  .module-workspace-v2 .module-command-hero{grid-template-columns:1fr!important;gap:12px!important;}
+  .module-workspace-v2 .module-command-flow{min-width:0!important;}
+  .module-workspace-v2 .module-command-flow-label{text-align:left!important;}
+  .module-workspace-v2 .module-command-flow-steps{justify-content:flex-start!important;flex-wrap:wrap!important;}
+}
+@media(max-width:680px){
+  .module-workspace-v2 .module-command-hero{padding:13px 14px!important;border-radius:12px!important;}
+  .module-workspace-v2 .module-command-title-row h1{font-size:18px!important;}
+  .module-workspace-v2 .module-command-flow{display:none!important;}
+}
