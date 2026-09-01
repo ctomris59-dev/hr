@@ -1,0 +1,95 @@
+/* FutureHR Visual Redesign v2 — command surface contrast guard.
+   Text-bearing elements use explicit opaque dark surfaces so readability remains
+   deterministic across browsers, test engines and inherited/transparent layers. */
+
+.module-workspace-v2 .module-command-copy {
+  position: relative;
+  z-index: 1;
+  align-self: stretch;
+  border: 1px solid #263b49;
+  border-radius: 18px;
+  background-color: #101b25;
+  padding: 20px 22px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.module-workspace-v2 .module-command-kicker {
+  background-color: #101b25;
+  color: #d5e1e7;
+}
+
+.module-workspace-v2 .module-command-title-row,
+.module-workspace-v2 .module-command-title-row > div {
+  background-color: #101b25;
+}
+
+.module-workspace-v2 .module-command-title-row h1 {
+  background-color: #101b25;
+  color: #ffffff;
+}
+
+.module-workspace-v2 .module-command-title-row p {
+  background-color: #101b25;
+  color: #dbe5ea;
+}
+
+.module-workspace-v2 .module-command-flow {
+  position: relative;
+  z-index: 1;
+  align-self: stretch;
+  border: 1px solid #263b49;
+  border-radius: 18px;
+  background-color: #101b25;
+  padding: 18px 20px;
+}
+
+.module-workspace-v2 .module-command-flow-label {
+  background-color: #101b25;
+  color: #cfdae1;
+}
+
+.module-workspace-v2 .module-command-flow-steps {
+  background-color: #101b25;
+}
+
+.module-workspace-v2 .module-command-flow-step {
+  min-height: 38px;
+  border: 1px solid #2b4352;
+  border-radius: 10px;
+  background-color: #152531;
+  padding: 5px 8px;
+  color: #f6fafc;
+}
+
+.module-workspace-v2 .module-command-flow-step strong {
+  background-color: #152531;
+  color: #f6fafc;
+  font-size: 11.5px;
+  font-weight: 680;
+}
+
+.module-workspace-v2 .module-command-flow-step span {
+  border-color: #3a5668;
+  background-color: #1c3040;
+  color: #e5eef3;
+}
+
+.module-workspace-v2 .module-command-icon,
+.module-workspace-v2 .module-command-icon svg {
+  color: #ffffff;
+}
+
+@media (max-width: 1100px) {
+  .module-workspace-v2 .module-command-flow {
+    border-top: 1px solid #263b49;
+    padding: 18px 20px;
+  }
+}
+
+@media (max-width: 680px) {
+  .module-workspace-v2 .module-command-copy,
+  .module-workspace-v2 .module-command-flow {
+    border-radius: 14px;
+    padding: 16px;
+  }
+}
