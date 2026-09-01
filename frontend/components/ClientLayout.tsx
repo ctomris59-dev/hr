@@ -18,7 +18,7 @@ import DemoPresentationMode from "./DemoPresentationMode";
 import DemoDataHardeningBridge from "./DemoDataHardeningBridge";
 import ModuleWorkspace from "./ModuleWorkspace";
 import GuidedOnboarding from "./GuidedOnboarding";
-import FutureHRCopilotV2 from "./FutureHRCopilotV2";
+import FutureHRIntelligenceAgent from "./FutureHRIntelligenceAgent";
 import AIGovernanceCapture from "./AIGovernanceCapture";
 
 const familyIcons:Record<NavigationFamilyId,typeof Building2>={
@@ -182,7 +182,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
       <header data-tour="topbar" className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[#dfe3e1] bg-[#fbfbf8] px-4 sm:px-5 lg:px-6 dark:border-slate-800 dark:bg-[#141b22]">
         <WelcomeWidget/>
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-          <FutureHRCopilotV2 pathname={normalizedPathname}/><DemoPresentationMode/><GuidedOnboarding/><DemoRoleSwitcher/>
+          <FutureHRIntelligenceAgent pathname={normalizedPathname}/><DemoPresentationMode/><GuidedOnboarding/><DemoRoleSwitcher/>
           <button type="button" onClick={()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"k",ctrlKey:true}))} aria-label="Komut paletini aç, Ctrl K" title="Komut paletini aç (Ctrl+K)" className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-transparent px-3 text-xs font-medium text-slate-500 hover:bg-slate-100/70 xl:flex dark:border-slate-700 dark:text-slate-400"><SearchIcon className="h-3.5 w-3.5"/><span>Ctrl + K</span></button>
           <ThemeToggle/><NotificationBell/>
         </div>
