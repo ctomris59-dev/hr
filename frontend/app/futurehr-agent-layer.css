@@ -1,7 +1,7 @@
-/* FutureHR Intelligence — overlay / stacking hardening
-   The agent is mounted from the top bar. Some dashboard visual layers create
-   stacking/containing contexts, so the dialog must explicitly own a full
-   viewport layer and its own opaque surface. */
+/* FutureHR Intelligence — overlay / stacking + responsive hardening
+   Keep the agent above workspace visuals and inside the visible viewport at
+   every window width. The drawer itself owns scrolling; the page underneath
+   must never dictate its minimum width. */
 
 header[data-tour="topbar"] {
   position: relative;
@@ -12,14 +12,16 @@ header[data-tour="topbar"] {
 [role="dialog"][aria-labelledby="futurehr-agent-title"] {
   position: fixed !important;
   inset: 0 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  min-height: 100dvh !important;
-  max-height: 100dvh !important;
+  inline-size: 100dvw !important;
+  max-inline-size: 100dvw !important;
+  block-size: 100dvh !important;
+  min-block-size: 100dvh !important;
+  max-block-size: 100dvh !important;
   overflow: hidden !important;
   isolation: isolate !important;
   z-index: 2147483000 !important;
   pointer-events: auto !important;
+  box-sizing: border-box !important;
 }
 
 [role="dialog"][aria-labelledby="futurehr-agent-title"] > button[aria-label="FutureHR Intelligence'ı kapat"] {
@@ -31,25 +33,43 @@ header[data-tour="topbar"] {
 [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside {
   position: absolute !important;
   inset-block: 0 !important;
-  right: 0 !important;
-  width: min(680px, 100vw) !important;
-  height: 100dvh !important;
-  min-height: 100dvh !important;
-  max-height: 100dvh !important;
+  inset-inline-end: 0 !important;
+  inline-size: min(680px, 100dvw) !important;
+  max-inline-size: 100dvw !important;
+  min-inline-size: 0 !important;
+  block-size: 100dvh !important;
+  min-block-size: 100dvh !important;
+  max-block-size: 100dvh !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+  overflow-x: hidden !important;
   isolation: isolate !important;
   z-index: 1 !important;
   background: #f5f7f8 !important;
   opacity: 1 !important;
   box-shadow: -24px 0 70px rgba(15, 23, 42, 0.18) !important;
+  box-sizing: border-box !important;
+}
+
+/* Every direct region must be allowed to shrink. This is important for long
+   Turkish copy, evidence labels and flex rows on narrow screens. */
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > *,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside header *,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside section *,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside article *,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside form * {
+  min-inline-size: 0;
+  box-sizing: border-box;
 }
 
 [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > header {
   position: relative !important;
   z-index: 3 !important;
   flex: 0 0 auto !important;
+  inline-size: 100% !important;
+  max-inline-size: 100% !important;
+  overflow-x: hidden !important;
   background: #ffffff !important;
   opacity: 1 !important;
 }
@@ -58,8 +78,11 @@ header[data-tour="topbar"] {
   position: relative !important;
   z-index: 1 !important;
   flex: 1 1 auto !important;
+  inline-size: 100% !important;
+  max-inline-size: 100% !important;
   min-height: 0 !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   overscroll-behavior: contain;
   background: #f5f7f8 !important;
   opacity: 1 !important;
@@ -69,6 +92,9 @@ header[data-tour="topbar"] {
   position: relative !important;
   z-index: 4 !important;
   flex: 0 0 auto !important;
+  inline-size: 100% !important;
+  max-inline-size: 100% !important;
+  overflow-x: hidden !important;
   background: #ffffff !important;
   opacity: 1 !important;
   box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.06);
@@ -82,6 +108,14 @@ header[data-tour="topbar"] {
 [role="dialog"][aria-labelledby="futurehr-agent-title"] aside form > div {
   position: relative;
   z-index: 2;
+  max-inline-size: 100%;
+}
+
+[role="dialog"][aria-labelledby="futurehr-agent-title"] aside p,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] aside span,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] aside button,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] aside textarea {
+  overflow-wrap: anywhere;
 }
 
 .dark [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside,
@@ -94,10 +128,55 @@ header[data-tour="topbar"] {
   background: #141b22 !important;
 }
 
-@media (max-width: 720px) {
+/* Tablet / narrow desktop: treat the agent as a full-screen work surface.
+   Using inset-inline instead of a fixed pixel width also handles resized
+   desktop browser windows correctly. */
+@media (max-width: 900px) {
   [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside {
-    width: 100vw !important;
-    max-width: 100vw !important;
+    inset-inline: 0 !important;
+    inline-size: auto !important;
+    width: auto !important;
+    max-inline-size: none !important;
+    max-width: none !important;
+    min-width: 0 !important;
     border-left: 0 !important;
+    box-shadow: none !important;
+  }
+
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > header {
+    padding: 14px 14px 12px !important;
+  }
+
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > div {
+    padding: 14px !important;
+  }
+
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > form {
+    padding: 10px 12px max(10px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > header {
+    padding-inline: 12px !important;
+  }
+
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > div {
+    padding: 12px !important;
+  }
+
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > form {
+    padding-inline: 10px !important;
+  }
+
+  /* Header copy gets the available width while icon/close stay compact. */
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > header > div:first-child,
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > header > div:first-child > div:first-child {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside textarea {
+    max-width: 100% !important;
   }
 }
