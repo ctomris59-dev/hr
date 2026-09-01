@@ -1,6 +1,6 @@
 const key = process.env.GROQ_API_KEY;
 const endpoint = "https://api.groq.com/openai/v1/chat/completions";
-const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+const models = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"];
 
 const actionKinds = ["open_employee","open_performance","open_development","open_training","open_career","open_talent","open_succession","open_compensation","open_recruitment","prepare_development_plan","prepare_training_assignment","prepare_reassessment","prepare_calibration_review","prepare_succession_review","prepare_compensation_review","prepare_recruitment_review","none"];
 const schema = {
@@ -34,22 +34,27 @@ const tests = [
 ];
 
 const cjk = /[\u3400-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]/;
-function prompt(question, context){return `Sen FutureHR Intelligence'sın. Yalnız verilen FutureHR kanıtlarına dayan. Türkçe cevap ver. Nihai işe alma/işten çıkarma/terfi/ücret/halef kararını verme. Kanıt yoksa uydurma. evidenceSources.value yoksa boş string, nextActions.actionKind yoksa none kullan.\nSORU:${question}\nKANIT:${JSON.stringify(context)}\nYalnız JSON schema ile uyumlu tek JSON nesnesi üret.`}
-function valid(x){return x&&typeof x.answer==="string"&&typeof x.executiveSummary==="string"&&["düşük","orta","yüksek"].includes(x.confidence)&&Array.isArray(x.recommendations)&&Array.isArray(x.evidenceSources)&&Array.isArray(x.nextActions)&&Array.isArray(x.evidenceGaps)&&typeof x.guardrail==="string"&&!cjk.test(JSON.stringify(x));}
+function prompt(question, context){return `Sen FutureHR Intelligence'sın. Yalnız verilen FutureHR kanıtlarına dayan. Tamamen Türkçe cevap ver. Nihai işe alma/işten çıkarma/terfi/ücret/halef kararını verme. Kanıt yoksa uydurma. Tüm kök alanları mutlaka üret; kullanılmayan diziler boş olabilir. evidenceSources içindeki confidence mutlaka düşük/orta/yüksek ve value mutlaka string olsun. nextActions içindeki actionKind mutlaka izin verilen enumlardan biri olsun; aksiyon yoksa dizi boş olabilir.\nSORU:${question}\nKANIT:${JSON.stringify(context)}\nYalnız JSON schema ile uyumlu tek JSON nesnesi üret.`}
+function valid(x){return x&&typeof x.answer==="string"&&typeof x.executiveSummary==="string"&&["düşük","orta","yüksek"].includes(x.confidence)&&typeof x.confidenceReason==="string"&&Array.isArray(x.recommendations)&&Array.isArray(x.evidenceSources)&&Array.isArray(x.nextActions)&&Array.isArray(x.evidenceGaps)&&typeof x.guardrail==="string"&&!cjk.test(JSON.stringify(x));}
+function bodyFor(model, question, context){
+  const body={model,messages:[{role:"user",content:prompt(question,context)}],max_completion_tokens:900,response_format:{type:"json_schema",json_schema:{name:"futurehr_intelligence_agent",strict:true,schema}}};
+  if(model.startsWith("openai/gpt-oss-")){body.reasoning_effort="low";body.include_reasoning=false}else{body.reasoning_effort="none";body.reasoning_format="hidden"}
+  return body;
+}
 
 if(!key){console.log("AGENT_STRESS SKIP: GROQ_API_KEY build ortamında yok"); process.exit(0)}
 let pass=0, fail=0;
 for(let i=0;i<tests.length;i++){
-  const [name,question,context]=tests[i];
+  const [name,question,context]=tests[i]; const model=models[i%models.length];
   try{
-    const response=await fetch(endpoint,{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model,messages:[{role:"user",content:prompt(question,context)}],max_completion_tokens:350,reasoning_effort:"low",include_reasoning:false,response_format:{type:"json_schema",json_schema:{name:"futurehr_intelligence_agent",strict:true,schema}}})});
+    const response=await fetch(endpoint,{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify(bodyFor(model,question,context))});
     const raw=await response.text();
-    if(!response.ok) throw new Error(`HTTP ${response.status} ${raw.slice(0,240)}`);
+    if(!response.ok) throw new Error(`HTTP ${response.status} ${raw.slice(0,300)}`);
     const payload=JSON.parse(raw); const text=payload?.choices?.[0]?.message?.content||""; const parsed=JSON.parse(text);
     if(!valid(parsed)) throw new Error("schema/language validation failed");
-    pass++; console.log(`AGENT_STRESS PASS ${i+1}/15 ${name} :: ${parsed.answer.slice(0,120).replace(/\n/g," ")}`);
-  }catch(error){fail++; console.log(`AGENT_STRESS FAIL ${i+1}/15 ${name} :: ${String(error).slice(0,300)}`)}
-  await new Promise(r=>setTimeout(r,250));
+    pass++; console.log(`AGENT_STRESS PASS ${i+1}/15 ${name} model=${model} :: ${parsed.answer.slice(0,140).replace(/\n/g," ")}`);
+  }catch(error){fail++; console.log(`AGENT_STRESS FAIL ${i+1}/15 ${name} model=${model} :: ${String(error).slice(0,360)}`)}
+  await new Promise(r=>setTimeout(r,4000));
 }
-console.log(`AGENT_STRESS RESULT pass=${pass} fail=${fail} total=15 model=${model}`);
+console.log(`AGENT_STRESS RESULT pass=${pass} fail=${fail} total=15`);
 process.exit(0);
