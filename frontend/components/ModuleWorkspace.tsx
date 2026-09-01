@@ -10,6 +10,7 @@ import SalaryExcelExchange from "./salary/SalaryExcelExchange";
 import CompensationCycleBar from "./salary/CompensationCycleBar";
 import ModuleFamilyNavigator from "./ModuleFamilyNavigator";
 import ModuleDecisionSummary from "./VisualDecisionSystem";
+import VisualModuleBoard from "./VisualModuleBoard";
 
 type ModuleConfig = { path:string; id:string; title:string; focus:string; steps:string[]; icon:LucideIcon; accent:string; accent2:string; soft:string; };
 const MODULES: ModuleConfig[] = [
@@ -41,6 +42,7 @@ function findConfig(pathname:string){return [...MODULES].sort((a,b)=>b.path.leng
 export default function ModuleWorkspace({pathname,children}:{pathname:string;children:ReactNode}){
   if(pathname==="/dashboard")return <><ProductHealthStrip/>{children}</>;
   const config=findConfig(pathname);if(!config)return <>{children}</>;const Icon=config.icon;const style={"--module-accent":config.accent,"--module-accent-2":config.accent2,"--module-soft":config.soft} as CSSProperties;
+  const visualFirst=["/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
   return <div className={`module-workspace workspace-${config.id} module-workspace-v2`} data-module={config.id} style={style}>
     <section className="module-hero module-command-hero" aria-label={`${config.title} çalışma akışı`}>
       <div className="module-command-copy">
@@ -61,13 +63,21 @@ export default function ModuleWorkspace({pathname,children}:{pathname:string;chi
     {pathname==="/maas"&&<div className="mb-4"><SalaryExcelExchange/></div>}
 
     <div className="module-decision-stage"><ModuleDecisionSummary pathname={pathname}/></div>
+    {visualFirst&&<VisualModuleBoard pathname={pathname}/>}
 
     <section className="module-detail-stage" aria-label={`${config.title} detaylı çalışma alanı`}>
       <header className="module-detail-stage-header">
-        <div><span>OPERASYON ALANI</span><h2>Detaylı çalışma alanı</h2></div>
-        <p>Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin.</p>
+        <div><span>{visualFirst?"DETAY KATMANI":"OPERASYON ALANI"}</span><h2>{visualFirst?"Kayıtlar ve işlemler":"Detaylı çalışma alanı"}</h2></div>
+        <p>{visualFirst?"Ana görünüm grafik ve karar kartıdır. Liste ve form ağırlıklı detayları yalnız ihtiyaç olduğunda açın.":"Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin."}</p>
       </header>
-      <div className="module-native-content visualized-native-content">{children}</div>
+      {visualFirst ? (
+        <details className="visual-first-native-shell">
+          <summary>
+            <div className="vf-summary-copy"><span>İSTEĞE BAĞLI DETAY</span><strong>Liste, kayıt ve işlem ekranlarını aç</strong><small>Filtreleme, düzenleme ve tekil kayıt işlemleri burada korunur.</small></div>
+          </summary>
+          <div className="module-native-content visualized-native-content">{children}</div>
+        </details>
+      ) : <div className="module-native-content visualized-native-content">{children}</div>}
     </section>
   </div>;
 }
