@@ -1,6 +1,13 @@
 import { canAccessRoute } from "@/lib/hr/accessControl";
 import { normalizeEmployeeName } from "@/lib/hr/employeeIdentity";
-import { collectFutureHRData } from "@/lib/hr/futureHRAgent";
+import { collectFutureHRData, localAgentFallback } from "@/lib/hr/futureHRAgent";
+import { SAAS_DATA_MODE, fetchSaasCompensationWorkspace } from "@/lib/hr/saasWorkforceClient";
+import {
+  buildUniversalAgentAugmentation,
+  containsCjk,
+  mergeUniversalPackage,
+  restoreUniversalAliases,
+} from "@/lib/hr/futureHRUniversalData";
 import type { AgentAIResponse, AgentPackage } from "@/lib/hr/futureHRAgentTypes";
 
 const PERSONAL_SALARY_PATTERNS = [
@@ -67,7 +74,7 @@ function accessDeniedAnswer(displayName: string): AgentAIResponse {
   };
 }
 
-export async function buildLocalSensitiveAnswer(
+async function directSalaryAnswer(
   question: string,
   agentPackage: AgentPackage,
   currentUserRole: any,
@@ -77,14 +84,29 @@ export async function buildLocalSensitiveAnswer(
   const displayName = agentPackage.focusEmployee.displayName;
   if (!canAccessRoute(currentUserRole, "/maas")) return accessDeniedAnswer(displayName);
 
-  const data = await collectFutureHRData();
-  const employee = data.org.find((row: any) =>
-    normalizeEmployeeName(row?.["Ad Soyad"] || row?.employee_name || row?.name) === normalizeEmployeeName(displayName),
+  const baseData = await collectFutureHRData();
+  let employees = baseData.org;
+  let benchmarks = baseData.benchmarks;
+
+  // SaaS'ta ham bireysel ücret yalnız yetkili compensation workspace'ten okunur.
+  // Böylece talent/team workspace aynı çalışan sayısına sahip olsa bile maaş alanı kaybolmaz.
+  if (SAAS_DATA_MODE) {
+    try {
+      const compensation = await fetchSaasCompensationWorkspace();
+      employees = compensation.employees;
+      benchmarks = compensation.benchmarks;
+    } catch {
+      // Yetkili compensation endpoint geçici olarak erişilemiyorsa mevcut güvenli paketle devam edilir.
+    }
+  }
+
+  const employee = employees.find((row: any) =>
+    normalizeEmployeeName(row?.["Ad Soyad"] || row?.employee_name || row?.name || row?.full_name) === normalizeEmployeeName(displayName),
   );
 
   if (!employee) {
     return {
-      answer: `${displayName} için FutureHR organizasyon verisinde eşleşen çalışan kaydı bulunamadı.`,
+      answer: `${displayName} için FutureHR organizasyon/ücret verisinde eşleşen çalışan kaydı bulunamadı.`,
       executiveSummary: "Çalışan kaydı eşleşmediği için bireysel ücret okunamadı.",
       confidence: "düşük",
       confidenceReason: "Yetki mevcut ancak çalışan kaydı ücret veri kaynağıyla eşleşmedi.",
@@ -99,7 +121,7 @@ export async function buildLocalSensitiveAnswer(
   const salary = employeeSalary(employee);
   const department = String(employee?.Departman || agentPackage.focusEmployee.department || "").trim();
   const position = String(employee?.Pozisyon || agentPackage.focusEmployee.position || "").trim();
-  const benchmark = data.benchmarks.find((row: any) =>
+  const benchmark = benchmarks.find((row: any) =>
     String(row?.Departman || row?.department || "") === department &&
     String(row?.Pozisyon || row?.position || "") === position,
   );
@@ -143,4 +165,53 @@ export async function buildLocalSensitiveAnswer(
     evidenceGaps: market > 0 ? [] : ["Bu rol için karşılaştırılabilir piyasa benchmarkı bulunmuyor."],
     guardrail: "Bu kişisel ücret bilgisi yalnız mevcut RBAC yetkisi kapsamında yerel FutureHR katmanında gösterildi; dış AI sağlayıcısına kişisel ücret tutarı gönderilmedi.",
   };
+}
+
+/**
+ * Adı geriye dönük uyumluluk için korunuyor. V2'de bu fonksiyon yalnız ücret değil,
+ * bütün FutureHR veri registry'sini hazırlar. Doğrudan doğrulanabilir soruları yerel
+ * deterministik motor yanıtlar; analitik sorular yetkili ve minimize edilmiş registry
+ * bağlamıyla AI sentezine gider.
+ */
+export async function buildLocalSensitiveAnswer(
+  question: string,
+  agentPackage: AgentPackage,
+  currentUserRole: any,
+): Promise<AgentAIResponse | null> {
+  const salary = await directSalaryAnswer(question, agentPackage, currentUserRole);
+  if (salary) return salary;
+
+  const augmentation = await buildUniversalAgentAugmentation(question, agentPackage, currentUserRole);
+  const mergedPackage = mergeUniversalPackage(agentPackage, augmentation);
+
+  // Component aynı nesne referansını tuttuğu için kanıt kaynakları, araçlar ve güvenli
+  // evrensel context mevcut akışa otomatik olarak aktarılır.
+  Object.assign(agentPackage, mergedPackage);
+
+  if (augmentation.directAnswer) {
+    return restoreUniversalAliases(augmentation.directAnswer, augmentation);
+  }
+
+  const fallback = localAgentFallback(mergedPackage) as AgentAIResponse;
+  try {
+    const response = await fetch("/api/ai/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question: mergedPackage.sanitizedQuestion,
+        context: mergedPackage.externalContext,
+        fallback,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) return null;
+    const analysis = (payload?.analysis || fallback) as AgentAIResponse;
+
+    // Dil güvenlik valfi: sağlayıcı Türkçe yanıtın içine CJK karakteri karıştırırsa
+    // kullanıcıya o çıktı gösterilmez; doğrulanmış yerel FutureHR özeti kullanılır.
+    const languageSafe = containsCjk(analysis) ? fallback : analysis;
+    return restoreUniversalAliases(languageSafe, augmentation);
+  } catch {
+    return restoreUniversalAliases(fallback, augmentation);
+  }
 }
