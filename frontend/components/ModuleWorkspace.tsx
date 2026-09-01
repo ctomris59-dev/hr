@@ -9,6 +9,7 @@ import PerformanceCycleBar from "./hr/PerformanceCycleBar";
 import SalaryExcelExchange from "./salary/SalaryExcelExchange";
 import CompensationCycleBar from "./salary/CompensationCycleBar";
 import ModuleFamilyNavigator from "./ModuleFamilyNavigator";
+import ModuleDecisionSummary from "./VisualDecisionSystem";
 
 type ModuleConfig = { path:string; id:string; title:string; focus:string; steps:string[]; icon:LucideIcon; accent:string; accent2:string; soft:string; };
 const MODULES: ModuleConfig[] = [
@@ -48,6 +49,7 @@ export default function ModuleWorkspace({pathname,children}:{pathname:string;chi
     {(pathname==="/organizasyon"||pathname==="/admin/veri-aktarimi")&&<ImportRecoveryPanel/>}
     {pathname==="/organizasyon"&&<div className="mb-4"><OrganizationExcelExchange/></div>}
     {pathname==="/maas"&&<div className="mb-4"><SalaryExcelExchange/></div>}
-    <section className="module-native-content">{children}</section>
+    <ModuleDecisionSummary pathname={pathname}/>
+    <section className="module-native-content visualized-native-content">{children}</section>
   </div>;
 }
