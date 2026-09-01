@@ -8,6 +8,7 @@ import "./readability-actions.css";
 import "./visual-decision-system.css";
 import "./visual-decision-readability.css";
 import "./visual-command-contrast.css";
+import "./visual-cards-v3.css";
 import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { DataProvider } from "../context/DataContext";
