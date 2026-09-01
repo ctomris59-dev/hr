@@ -16,6 +16,7 @@ const COST_CENTERS: Record<string, string> = {
 };
 
 const COMPETENCY_CODES = ["DIG", "ANA", "RES", "DET", "LRN", "ETH", "DIS", "STR", "TEA", "COM"];
+const DEMO_ROLE_FIT_CALIBRATION_VERSION = 2;
 
 function isV1Demo(org: any[]) {
   const names = new Set(org.map((person) => String(person?.["Ad Soyad"] || "")));
@@ -44,6 +45,15 @@ function demoUsername(name: string) {
     .replace(/ö/g, "o")
     .replace(/ç/g, "c")
     .replace(/[^a-z0-9]/g, "");
+}
+
+function calibratedDemoCompetencyScore(rawScore: number, personIndex: number, totalPeople: number, competencyIndex: number) {
+  const population = Math.max(2, totalPeople);
+  const permutedRank = (personIndex * 13) % population;
+  const personBias = (permutedRank / (population - 1)) * 1.8 - 0.9;
+  const competencyShape = ((((personIndex + 1) * (competencyIndex + 3) * 7) % 11) - 5) * 0.07;
+  const calibrated = rawScore + personBias + competencyShape;
+  return Math.round(Math.max(2.25, Math.min(4.95, calibrated)) * 100) / 100;
 }
 
 export default function DemoDataHardeningBridge() {
@@ -82,20 +92,36 @@ export default function DemoDataHardeningBridge() {
         setStorageData(STORAGE_KEYS.ORG_CHART, enrichedOrg);
 
         // Rol Uyum Grafiği yalnız doğrulanmış ölçümleri kullanır. Demo 360 kayıtlarındaki
-        // manager_scores haritasını aynı zamanda düz yetkinlik alanlarına açarak radarın
-        // seçilen her çalışan için 10 doğrulanmış eksende çalışmasını garanti ederiz.
+        // manager_scores haritasını düz yetkinlik alanlarına açarken çalışan bazlı kalibre
+        // ederiz. Böylece demo radarları ve rol uyumu yüzdeleri tek bir %93 şablonuna
+        // kilitlenmez; aynı çalışan ise sayfa yenilense bile aynı deterministik profili korur.
+        const employeeOrder = new Map(enrichedOrg.map((person, index) => [String(person["Ad Soyad"] || ""), index]));
         const history = getStorageData<any[]>(STORAGE_KEYS.HISTORY_360, []);
-        const hardenedHistory = history.map((row) => {
+        const hardenedHistory = history.map((row, rowIndex) => {
           const nested = row?.manager_scores && typeof row.manager_scores === "object" ? row.manager_scores : {};
           const flattened: Record<string, number> = {};
-          COMPETENCY_CODES.forEach((code) => {
-            const score = Number(nested[code] ?? row[code] ?? row[`${code}_Mgr`]);
-            if (score > 0 && score <= 5) {
-              flattened[code] = score;
-              flattened[`${code}_Mgr`] = score;
-            }
+          const calibratedNested: Record<string, number> = { ...nested };
+          const personName = String(row?.Personel || row?.["Ad Soyad"] || "");
+          const personIndex = employeeOrder.get(personName) ?? (rowIndex % Math.max(1, enrichedOrg.length));
+          const alreadyCalibrated = Number(row?.demo_role_fit_calibration_version) === DEMO_ROLE_FIT_CALIBRATION_VERSION;
+
+          COMPETENCY_CODES.forEach((code, competencyIndex) => {
+            const rawScore = Number(nested[code] ?? row[code] ?? row[`${code}_Mgr`]);
+            if (!(rawScore > 0 && rawScore <= 5)) return;
+            const score = alreadyCalibrated
+              ? rawScore
+              : calibratedDemoCompetencyScore(rawScore, personIndex, enrichedOrg.length, competencyIndex);
+            calibratedNested[code] = score;
+            flattened[code] = score;
+            flattened[`${code}_Mgr`] = score;
           });
-          return { ...row, ...flattened };
+
+          return {
+            ...row,
+            manager_scores: calibratedNested,
+            ...flattened,
+            demo_role_fit_calibration_version: DEMO_ROLE_FIT_CALIBRATION_VERSION,
+          };
         });
         setStorageData(STORAGE_KEYS.HISTORY_360, hardenedHistory);
 
