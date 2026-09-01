@@ -1,0 +1,103 @@
+/* FutureHR Intelligence — overlay / stacking hardening
+   The agent is mounted from the top bar. Some dashboard visual layers create
+   stacking/containing contexts, so the dialog must explicitly own a full
+   viewport layer and its own opaque surface. */
+
+header[data-tour="topbar"] {
+  position: relative;
+  z-index: 1000;
+  overflow: visible;
+}
+
+[role="dialog"][aria-labelledby="futurehr-agent-title"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  z-index: 2147483000 !important;
+  pointer-events: auto !important;
+}
+
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > button[aria-label="FutureHR Intelligence'ı kapat"] {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+}
+
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside {
+  position: absolute !important;
+  inset-block: 0 !important;
+  right: 0 !important;
+  width: min(680px, 100vw) !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  z-index: 1 !important;
+  background: #f5f7f8 !important;
+  opacity: 1 !important;
+  box-shadow: -24px 0 70px rgba(15, 23, 42, 0.18) !important;
+}
+
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > header {
+  position: relative !important;
+  z-index: 3 !important;
+  flex: 0 0 auto !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > div {
+  position: relative !important;
+  z-index: 1 !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  background: #f5f7f8 !important;
+  opacity: 1 !important;
+}
+
+[role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > form {
+  position: relative !important;
+  z-index: 4 !important;
+  flex: 0 0 auto !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+  box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.06);
+}
+
+/* Conversation cards and evidence links must always paint on the agent surface,
+   never under charts from the underlying workspace. */
+[role="dialog"][aria-labelledby="futurehr-agent-title"] aside section,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] aside article,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] aside a,
+[role="dialog"][aria-labelledby="futurehr-agent-title"] aside form > div {
+  position: relative;
+  z-index: 2;
+}
+
+.dark [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside,
+.dark [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > div {
+  background: #0f151b !important;
+}
+
+.dark [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > header,
+.dark [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside > form {
+  background: #141b22 !important;
+}
+
+@media (max-width: 720px) {
+  [role="dialog"][aria-labelledby="futurehr-agent-title"] > aside {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-left: 0 !important;
+  }
+}
