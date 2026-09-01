@@ -43,9 +43,10 @@ export default function ModuleWorkspace({pathname,children}:{pathname:string;chi
   if(pathname==="/dashboard")return <><ProductHealthStrip/>{children}</>;
   const config=findConfig(pathname);if(!config)return <>{children}</>;const Icon=config.icon;const style={"--module-accent":config.accent,"--module-accent-2":config.accent2,"--module-soft":config.soft} as CSSProperties;
   const visualBoard=["/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
-  const visualFirst=["/organizasyon","/maas","/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
+  const visualFirst=["/organizasyon","/ise-alim","/egitim","/kariyer","/yetenek-matrisi"].some((path)=>pathname===path||pathname.startsWith(`${path}/`));
+  const salaryCore=pathname==="/maas";
   const organizationTools=pathname==="/organizasyon"?<><ImportRecoveryPanel/><div className="mb-4"><OrganizationExcelExchange/></div></>:null;
-  const salaryTools=pathname==="/maas"?<div className="mb-4"><SalaryExcelExchange/></div>:null;
+  const salaryTools=salaryCore?<div className="mb-4"><SalaryExcelExchange/></div>:null;
   return <div className={`module-workspace workspace-${config.id} module-workspace-v2`} data-module={config.id} style={style}>
     <section className="module-hero module-command-hero" aria-label={`${config.title} çalışma akışı`}>
       <div className="module-command-copy">
@@ -68,15 +69,25 @@ export default function ModuleWorkspace({pathname,children}:{pathname:string;chi
 
     <section className="module-detail-stage" aria-label={`${config.title} detaylı çalışma alanı`}>
       <header className="module-detail-stage-header">
-        <div><span>{visualFirst?"DETAY KATMANI":"OPERASYON ALANI"}</span><h2>{visualFirst?"Kayıtlar ve işlemler":"Detaylı çalışma alanı"}</h2></div>
-        <p>{visualFirst?"Ana görünüm grafik ve karar kartıdır. Liste, Excel ve form ağırlıklı detayları yalnız ihtiyaç olduğunda açın.":"Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin."}</p>
+        <div><span>{salaryCore?"SİMÜLASYON MERKEZİ":visualFirst?"DETAY KATMANI":"OPERASYON ALANI"}</span><h2>{salaryCore?"Ücret simülasyonları":visualFirst?"Kayıtlar ve işlemler":"Detaylı çalışma alanı"}</h2></div>
+        <p>{salaryCore?"A/B/C/D senaryoları, enflasyon varsayımı, benchmark, bütçe etkisi ve ücret döngüsü bu ekranın ana çalışma alanıdır. Simülasyonlar gizlenmez; Excel araçları ikincil kalır.":visualFirst?"Ana görünüm grafik ve karar kartıdır. Liste, Excel ve form ağırlıklı detayları yalnız ihtiyaç olduğunda açın.":"Karar özetindeki sinyalleri burada kayıt, kanıt ve iş akışı seviyesinde yönetin."}</p>
       </header>
-      {visualFirst ? (
+      {salaryCore ? (
+        <>
+          <div className="module-native-content visualized-native-content">{children}</div>
+          <details className="visual-first-native-shell mt-4">
+            <summary>
+              <div className="vf-summary-copy"><span>İSTEĞE BAĞLI ARAÇLAR</span><strong>Excel içe/dışa aktarma araçlarını aç</strong><small>Simülasyon motoru ana ekranda kalır; veri alışverişi araçları burada ikincildir.</small></div>
+            </summary>
+            <div className="module-native-content visualized-native-content">{salaryTools}</div>
+          </details>
+        </>
+      ) : visualFirst ? (
         <details className="visual-first-native-shell">
           <summary>
             <div className="vf-summary-copy"><span>İSTEĞE BAĞLI DETAY</span><strong>Liste, kayıt ve işlem ekranlarını aç</strong><small>Filtreleme, Excel, düzenleme ve tekil kayıt işlemleri burada korunur.</small></div>
           </summary>
-          <div className="module-native-content visualized-native-content">{organizationTools}{salaryTools}{children}</div>
+          <div className="module-native-content visualized-native-content">{organizationTools}{children}</div>
         </details>
       ) : <div className="module-native-content visualized-native-content">{children}</div>}
     </section>
