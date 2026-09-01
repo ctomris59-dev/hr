@@ -10,6 +10,7 @@ import "./visual-decision-readability.css";
 import "./visual-command-contrast.css";
 import "./visual-cards-v3.css";
 import "./visual-modules-v4.css";
+import "./analytics-dashboard.css";
 import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { DataProvider } from "../context/DataContext";
