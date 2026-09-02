@@ -1,5 +1,6 @@
 import "server-only";
 import { getSecureUserFromSession, isSaasMode } from "../saasAuthServer";
+import { applyFutureHROutputGuardrails } from "./futurehr-output-guardrails.mjs";
 
 export type AIProviderName = "groq" | "openai";
 export type StructuredAIResult = { provider: AIProviderName; model: string; text: string; latencyMs: number; attempts: Array<{ provider: AIProviderName; model: string; ok: boolean; status?: number; latencyMs: number; error?: string }> };
@@ -28,6 +29,13 @@ function shouldTryRelaxed(status: number, detail: string) { return status === 40
 function parseJsonObject(text: string) { const clean = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim(); const first = clean.indexOf("{"); const last = clean.lastIndexOf("}"); for (const candidate of [clean, first >= 0 && last > first ? clean.slice(first, last + 1) : ""]) { if (!candidate) continue; try { return JSON.parse(candidate); } catch {} } return null; }
 function mapStrings(value: unknown, fn: (text: string) => string): unknown { if (typeof value === "string") return fn(value); if (Array.isArray(value)) return value.map((item) => mapStrings(item, fn)); if (value && typeof value === "object") { const out: Record<string, unknown> = {}; for (const [key, child] of Object.entries(value as Record<string, unknown>)) out[key] = mapStrings(child, fn); return out; } return value; }
 function highImpactSafeText(input: string) { const directDecision = /(?:terfi\s+ettiril(?:mesi|sin|melidir)|terfi\s+edil(?:mesi|sin|melidir)|işe\s+alın(?:ması|sın|malıdır)|işten\s+çıkarıl(?:ması|sın|malıdır)|maaş(?:ı|ını|ının)?\s+(?:artırıl|arttırıl|yükseltil)(?:ması|sin|melidir)|ücret(?:i|ini|inin)?\s+(?:artırıl|arttırıl|yükseltil)(?:ması|sin|melidir)|halef\s+(?:olarak\s+)?atan(?:ması|sın|malıdır)|aday(?:ı|ın)?\s+reddedil(?:mesi|sin|melidir)).{0,80}(?:öner|uygun|gerek)|(?:öner|uygun|gerek).{0,80}(?:terfi|işe\s+al|işten\s+çıkar|maaş|ücret|halef\s+ata|aday\s+reddet)/i; if (!directDecision.test(input)) return input; return "Bu yüksek etkili İK kararı için doğrudan karar veya kişi bazlı nihai öneri verilmemelidir. FutureHR mevcut kanıtları, riskleri ve veri boşluklarını sunar; karar yetkili insan değerlendirmesiyle verilmelidir."; }
+function extractFutureHRInputs(prompt: string) {
+  const qMatch = prompt.match(/SORU:\s*\n([\s\S]*?)\n\nYETKİLİ VE GÜVENLİ FUTUREHR BAĞLAMI:/i);
+  const cMatch = prompt.match(/YETKİLİ VE GÜVENLİ FUTUREHR BAĞLAMI:\s*\n([\s\S]*?)\n\nZORUNLU KURALLAR/i);
+  let context: Record<string, unknown> = {};
+  if (cMatch?.[1]) { try { context = JSON.parse(cMatch[1]); } catch {} }
+  return { question: qMatch?.[1]?.trim() || "", context };
+}
 function repairFutureHRSemantics(text: string, request: StructuredAIRequest) {
   if (request.schemaName !== "futurehr_intelligence_agent") return text;
   const parsed = parseJsonObject(text); if (!parsed) return text;
@@ -46,6 +54,8 @@ function repairFutureHRSemantics(text: string, request: StructuredAIRequest) {
     if (hasLowWorkloadSignal) value = value.replace(/iş yükünün\s+(?:artırılması|arttırılması|yükseltilmesi)/gi, "aşırı iş yükünün azaltılması ve iş yükünün dengelenmesi").replace(/iş yükünü\s+(?:artır|arttır|yükselt)/gi, "iş yükünü dengele ve aşırı yükü azalt");
     return highImpactSafeText(value);
   }) as Record<string, unknown>;
+  const { question, context } = extractFutureHRInputs(promptText);
+  repaired = applyFutureHROutputGuardrails(question, context, repaired) as Record<string, unknown>;
   if (!String(repaired?.answer || "").trim()) repaired = { ...repaired, answer: "FutureHR kanıtları mevcut; ancak güvenli ve doğrulanabilir bir Türkçe sonuç üretilemedi. İlgili kanıtların yetkili insan değerlendirmesiyle incelenmesi gerekir." };
   return JSON.stringify(repaired);
 }
