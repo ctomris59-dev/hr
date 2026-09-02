@@ -1,5 +1,6 @@
 import { canAccessRoute } from "@/lib/hr/accessControl";
 import { normalizeEmployeeName } from "@/lib/hr/employeeIdentity";
+import { findEmployeeInQuestion, scopedEmployees } from "@/lib/hr/employee360Context";
 import { collectFutureHRData, localAgentFallback } from "@/lib/hr/futureHRAgent";
 import { SAAS_DATA_MODE, fetchSaasCompensationWorkspace } from "@/lib/hr/saasWorkforceClient";
 import { getPulseAnalytics } from "@/app/services/surveyService";
@@ -12,13 +13,14 @@ import {
 import type { AgentAIResponse, AgentPackage, AgentToolResult } from "@/lib/hr/futureHRAgentTypes";
 
 const PERSONAL_SALARY_PATTERNS = [
-  /maaşı\s+(?:nedir|ne\s+kadar|kaç)/i,
-  /maaş(?:ı|i)?\s+ne\s+kadar/i,
+  /maaşı\s*(?:\?|$|nedir|ne\s+kadar|kaç)/i,
+  /maaş(?:ı|i)?\s*(?:\?|$|ne\s+kadar|nedir|kaç)/i,
   /mevcut\s+maaş/i,
-  /ücreti\s+(?:nedir|ne\s+kadar|kaç)/i,
+  /ücreti\s*(?:\?|$|nedir|ne\s+kadar|kaç)/i,
   /mevcut\s+ücret/i,
-  /salary\s+(?:is|amount|how much)/i,
+  /salary\s*(?:\?|$|is|amount|how much|current)/i,
 ];
+const SALARY_TERMS = /(maaş|maas|ücret|ucret|salary)/i;
 
 const EXPERIENCE_TERMS = [
   "çalışan deneyimi", "calisan deneyimi", "pulse", "moral", "motivasyon", "iş yükü", "is yuku",
@@ -27,8 +29,11 @@ const EXPERIENCE_TERMS = [
 ];
 const EXPERIENCE_MANAGEMENT_ROLES = new Set(["CEO", "IK", "ADMIN", "DIRECTOR", "MANAGER", "HR_ADMIN"]);
 
-function isDirectPersonalSalaryQuestion(question: string) {
-  return PERSONAL_SALARY_PATTERNS.some((pattern) => pattern.test(question));
+function isDirectPersonalSalaryQuestion(question: string, hasEmployee = false) {
+  if (PERSONAL_SALARY_PATTERNS.some((pattern) => pattern.test(question))) return true;
+  // Kişi zaten güvenli Employee360 kapsamından çözüldüyse maaş/ücret geçen soruyu
+  // dış AI'ya göndermeyiz. Bu aynı zamanda "Ayşe Kaya maaşı?" gibi kısa varyasyonları kapsar.
+  return hasEmployee && SALARY_TERMS.test(question);
 }
 
 function parseMoney(value: unknown): number {
@@ -45,6 +50,7 @@ function parseMoney(value: unknown): number {
 function employeeSalary(row: any) {
   return parseMoney(
     row?.["Maaş (TL)"] ??
+    row?.["Mevcut Maaş"] ??
     row?.Maaş ??
     row?.salary ??
     row?.current_salary ??
@@ -52,6 +58,35 @@ function employeeSalary(row: any) {
     row?.gross_salary ??
     row?.currentSalary,
   );
+}
+
+function employeeName(row: any) {
+  return String(row?.["Ad Soyad"] || row?.Personel || row?.employee || row?.employee_name || row?.name || row?.full_name || "").trim();
+}
+
+function sameCompensationEmployee(row: any, employee: any, displayName: string) {
+  const employeeId = String(employee?.id || employee?.employee_id || employee?.["Personel Kodu"] || "").trim();
+  const rowId = String(row?.employee_id || row?.employeeId || row?.person_id || row?.personId || "").trim();
+  if (employeeId && rowId && employeeId === rowId) return true;
+  const rowName = employeeName(row);
+  return Boolean(rowName) && normalizeEmployeeName(rowName) === normalizeEmployeeName(displayName);
+}
+
+function compensationRows(cycles: any[]) {
+  return (cycles || []).flatMap((cycle: any) => [
+    cycle?.results,
+    cycle?.employees,
+    cycle?.items,
+    cycle?.rows,
+    cycle?.salaryResults,
+    cycle?.simulationResults,
+  ].filter(Array.isArray).flat());
+}
+
+function salaryFromCompensationCycles(cycles: any[], employee: any, displayName: string) {
+  const row = compensationRows(cycles).find((item: any) => sameCompensationEmployee(item, employee, displayName));
+  const salary = employeeSalary(row);
+  return { salary, row };
 }
 
 function benchmarkAmount(row: any) {
@@ -87,62 +122,77 @@ async function directSalaryAnswer(
   agentPackage: AgentPackage,
   currentUserRole: any,
 ): Promise<AgentAIResponse | null> {
-  if (!isDirectPersonalSalaryQuestion(question) || !agentPackage.focusEmployee) return null;
-
-  const displayName = agentPackage.focusEmployee.displayName;
-  if (!canAccessRoute(currentUserRole, "/maas")) return accessDeniedAnswer(displayName);
+  if (!SALARY_TERMS.test(question)) return null;
 
   const baseData = await collectFutureHRData();
   let employees = baseData.org;
   let benchmarks = baseData.benchmarks;
+  let compensationCycles = baseData.compensationCycles || [];
 
   if (SAAS_DATA_MODE) {
     try {
       const compensation = await fetchSaasCompensationWorkspace();
-      employees = compensation.employees;
-      benchmarks = compensation.benchmarks;
+      employees = compensation.employees?.length ? compensation.employees : employees;
+      benchmarks = compensation.benchmarks?.length ? compensation.benchmarks : benchmarks;
+      compensationCycles = compensation.cycles?.length ? compensation.cycles : compensationCycles;
     } catch {
       // Yetkili compensation endpoint geçici olarak erişilemiyorsa mevcut güvenli paketle devam edilir.
     }
   }
 
-  const employee = employees.find((row: any) =>
-    normalizeEmployeeName(row?.["Ad Soyad"] || row?.employee_name || row?.name || row?.full_name) === normalizeEmployeeName(displayName),
-  );
+  const dataForScope = { ...baseData, org: employees, benchmarks, compensationCycles };
+  const visibleEmployees = scopedEmployees(dataForScope);
+  const focusName = agentPackage.focusEmployee?.displayName || "";
+  const employee = focusName
+    ? visibleEmployees.find((row: any) => normalizeEmployeeName(employeeName(row)) === normalizeEmployeeName(focusName))
+    : findEmployeeInQuestion(question, visibleEmployees);
+
+  if (!isDirectPersonalSalaryQuestion(question, Boolean(employee))) return null;
 
   if (!employee) {
+    // Bireysel maaş niyeti var fakat kişi mevcut yetki kapsamındaki Employee360 içinde
+    // çözülemiyorsa soruyu dış AI'ya taşıyarak kişi/maaş çıkarımı yaptırmayız.
     return {
-      answer: `${displayName} için FutureHR organizasyon/ücret verisinde eşleşen çalışan kaydı bulunamadı.`,
-      executiveSummary: "Çalışan kaydı eşleşmediği için bireysel ücret okunamadı.",
+      answer: "Sorudaki çalışan mevcut yetki kapsamındaki FutureHR çalışan kayıtlarıyla eşleştirilemedi.",
+      executiveSummary: "Bireysel ücret sorgusu yerel güvenli katmanda durduruldu.",
       confidence: "düşük",
-      confidenceReason: "Yetki mevcut ancak çalışan kaydı ücret veri kaynağıyla eşleşmedi.",
-      recommendations: [{ title: "Ücret kaydını kontrol et", why: "Çalışan kimliği ile ücret kaynağının eşleşmesi doğrulanmalı.", evidence: "FutureHR organizasyon/ücret veri eşleşmesi", route: "/maas" }],
+      confidenceReason: "Maaş niyeti algılandı ancak yetkili çalışan kaydı deterministik olarak çözülemedi.",
+      recommendations: [{ title: "Çalışanı doğrula", why: "Ad-soyad veya çalışan kaydı eşleşmesi kontrol edilmeli.", evidence: "FutureHR Employee360 eşleşmesi", route: "/organizasyon" }],
       evidenceSources: [],
-      nextActions: [{ label: "Ücret ekranını aç", route: "/maas", actionKind: "open_compensation" }],
-      evidenceGaps: ["Çalışan ile ücret kaydı eşleştirilemedi."],
-      guardrail: "FutureHR Intelligence tutar uydurmaz; yalnız yetkili ve eşleşen kaydı gösterir.",
+      nextActions: [{ label: "Çalışanları aç", route: "/organizasyon", actionKind: "open_employee" }],
+      evidenceGaps: ["Yetkili kapsamda eşleşen çalışan kaydı bulunamadı."],
+      guardrail: "FutureHR Intelligence eşleşmeyen kişi için ücret tutarı tahmin etmez ve kişisel ücret sorusunu dış AI'ya göndermez.",
     };
   }
 
-  const salary = employeeSalary(employee);
-  const department = String(employee?.Departman || agentPackage.focusEmployee.department || "").trim();
-  const position = String(employee?.Pozisyon || agentPackage.focusEmployee.position || "").trim();
-  const benchmark = benchmarks.find((row: any) =>
-    String(row?.Departman || row?.department || "") === department &&
-    String(row?.Pozisyon || row?.position || "") === position,
-  );
+  const displayName = employeeName(employee) || focusName;
+  if (!canAccessRoute(currentUserRole, "/maas")) return accessDeniedAnswer(displayName);
+
+  const directSalary = employeeSalary(employee);
+  const cycleSalary = salaryFromCompensationCycles(compensationCycles, employee, displayName);
+  const salary = directSalary > 0 ? directSalary : cycleSalary.salary;
+  const salarySource = directSalary > 0 ? "çalışan ücret kaydı" : cycleSalary.salary > 0 ? "aktif ücret dönemi" : "ücret kaydı";
+  const department = String(employee?.Departman || employee?.department || agentPackage.focusEmployee?.department || "").trim();
+  const position = String(employee?.Pozisyon || employee?.position || agentPackage.focusEmployee?.position || "").trim();
+  const employeeId = String(employee?.id || employee?.employee_id || "").trim();
+  const benchmark = benchmarks.find((row: any) => {
+    const benchmarkEmployeeId = String(row?.employee_id || row?.employeeId || "").trim();
+    if (employeeId && benchmarkEmployeeId && employeeId === benchmarkEmployeeId) return true;
+    return String(row?.Departman || row?.department || "").trim() === department &&
+      String(row?.Pozisyon || row?.position || "").trim() === position;
+  });
   const market = benchmarkAmount(benchmark);
 
   if (!(salary > 0)) {
     return {
-      answer: `${displayName} için bireysel ücret kaydı erişilebilir, ancak mevcut maaş tutarı FutureHR veri kaynağında boş veya geçersiz görünüyor.`,
-      executiveSummary: "Yetki var; kayıtlı geçerli maaş tutarı yok.",
+      answer: `${displayName} için bireysel ücret kaydı erişilebilir, ancak mevcut maaş tutarı organizasyon kaydında veya aktif ücret dönemi sonuçlarında bulunamadı.`,
+      executiveSummary: "Yetki var; doğrulanabilir mevcut maaş tutarı yok.",
       confidence: "yüksek",
-      confidenceReason: "Çalışan kaydı bulundu ancak maaş alanı pozitif sayısal bir tutar içermiyor.",
-      recommendations: [{ title: "Ücret verisini doğrula", why: "Çalışan ücret alanı eksik veya hatalı.", evidence: "FutureHR bireysel ücret kaydı", route: "/maas" }],
-      evidenceSources: [{ id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · tutar eksik`, route: "/maas", domain: "compensation", confidence: "yüksek" }],
+      confidenceReason: "FutureHR yerel ücret resolver'ı çalışan kaydını ve ücret dönemi sonuçlarını kontrol etti; pozitif mevcut ücret bulunamadı.",
+      recommendations: [{ title: "Ücret verisini doğrula", why: "Çalışanın mevcut maaş alanı veya aktif ücret dönemi girdisi eksik.", evidence: "FutureHR bireysel ücret + ücret dönemi kayıtları", route: "/maas" }],
+      evidenceSources: [{ id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · mevcut tutar eksik`, route: "/maas", domain: "compensation", confidence: "yüksek" }],
       nextActions: [{ label: "Ücret ekranını aç", route: "/maas", actionKind: "open_compensation" }],
-      evidenceGaps: ["Mevcut maaş tutarı kayıtlı değil veya geçersiz."],
+      evidenceGaps: ["Mevcut maaş tutarı organizasyon veya aktif ücret dönemi kayıtlarında yok."],
       guardrail: "FutureHR Intelligence tutar uydurmaz; yalnız yetkili ve doğrulanabilir ücret verisini gösterir.",
     };
   }
@@ -156,7 +206,7 @@ async function directSalaryAnswer(
     answer: `${displayName}'nın FutureHR'da kayıtlı mevcut maaşı ${formatTl(salary)}.${comparison}`,
     executiveSummary: `${displayName} · mevcut maaş ${formatTl(salary)}${market > 0 ? ` · benchmark ${formatTl(market)}` : ""}.`,
     confidence: "yüksek",
-    confidenceReason: "Tutar, yetki kontrolünden sonra FutureHR'ın bireysel ücret kaydından doğrudan okundu; dış AI sağlayıcısına gönderilmedi.",
+    confidenceReason: `Tutar, RBAC kontrolünden sonra FutureHR ${salarySource} üzerinden yerel olarak okundu; dış AI sağlayıcısına gönderilmedi.`,
     recommendations: market > 0 ? [{
       title: "Benchmark konumunu incele",
       why: `Mevcut ücret piyasa referansının %${(compaRatio! * 100).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} seviyesinde.`,
@@ -164,7 +214,7 @@ async function directSalaryAnswer(
       route: "/maas",
     }] : [],
     evidenceSources: [
-      { id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"}`, route: "/maas", domain: "compensation", confidence: "yüksek", value: formatTl(salary) },
+      { id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · kaynak: ${salarySource}`, route: "/maas", domain: "compensation", confidence: "yüksek", value: formatTl(salary) },
       ...(market > 0 ? [{ id: "salary-benchmark", label: "Piyasa Benchmarkı", detail: `${department || "—"} · ${position || "—"}`, route: "/maas", domain: "compensation" as const, confidence: "orta" as const, value: formatTl(market) }] : []),
     ],
     nextActions: [{ label: "Ücret detayını aç", route: "/maas", actionKind: "open_compensation" }],
