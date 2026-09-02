@@ -128,7 +128,8 @@ jobs:
         run: docker build -t futurehr-backend-ci .
       - name: Production container migration and health smoke test
         run: |
-          docker run --rm -d --name futurehr-backend-ci --network host \
+          set -o pipefail
+          docker run -d --name futurehr-backend-ci --network host \
             -e PORT=8010 \
             -e ENVIRONMENT=production \
             -e APP_ENV=production \
@@ -141,9 +142,10 @@ jobs:
             -e 'ALLOWED_HOSTS=["127.0.0.1","localhost"]' \
             -e 'CORS_ORIGINS=["https://hr-hibemotoru.vercel.app"]' \
             futurehr-backend-ci
-          trap 'docker logs futurehr-backend-ci || true; docker stop futurehr-backend-ci || true' EXIT
+          trap 'docker logs futurehr-backend-ci || true; docker rm -f futurehr-backend-ci || true' EXIT
           for attempt in $(seq 1 30); do
-            if curl --fail --silent --show-error http://127.0.0.1:8010/health | tee /tmp/futurehr-health.json; then
+            if curl --fail --silent --show-error --output /tmp/futurehr-health.json http://127.0.0.1:8010/health; then
+              cat /tmp/futurehr-health.json
               python - <<'PY'
           import json
           with open('/tmp/futurehr-health.json', encoding='utf-8') as handle:
@@ -155,7 +157,13 @@ jobs:
           PY
               exit 0
             fi
+            if ! docker ps --format '{{.Names}}' | grep -qx futurehr-backend-ci; then
+              echo 'Backend container exited before becoming healthy' >&2
+              docker logs futurehr-backend-ci || true
+              exit 1
+            fi
             sleep 2
           done
           echo 'Backend container did not become healthy' >&2
+          docker logs futurehr-backend-ci || true
           exit 1
