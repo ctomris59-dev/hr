@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { canManageConnectors, canPersistConnectorDomain, maskEmail, maskIdentifier, maskName } from "@/lib/hr/connectorSecurity";
-import { TURKEY_CONNECTORS, normalizeAttendanceRecord, normalizeEmployeeMaster, normalizePayrollRecord, type CanonicalEmployeeMaster, type TurkeyConnectorId } from "@/lib/hr/turkeyEnterprise";
+import { TURKEY_CONNECTORS, normalizeAttendanceRecord, normalizeEmployeeMaster, normalizePayrollRecord, type TurkeyConnectorId } from "@/lib/hr/turkeyEnterprise";
 import { fetchWithSession, getSecureUserFromSession, isSameOriginRequest } from "@/lib/saasAuthServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+type JsonRow = Record<string, unknown>;
 
 const ALLOWED = new Set(TURKEY_CONNECTORS.map((item) => item.id));
 const MAX_VENDOR_ROWS = 5000;
@@ -12,6 +14,14 @@ const env = (name?: string) => name ? String(process.env[name] || "").trim() : "
 
 function json(payload: unknown, status = 200) {
   return NextResponse.json(payload, { status, headers: { "Cache-Control": "no-store, max-age=0", Pragma: "no-cache", Vary: "Cookie" } });
+}
+
+function asObject(value: unknown): JsonRow | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonRow : null;
+}
+
+function compactRows(values: unknown[]): JsonRow[] {
+  return values.map(asObject).filter((row): row is JsonRow => row !== null);
 }
 
 async function requireConnectorAdmin() {
@@ -62,7 +72,7 @@ async function sapToken() {
       body: new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }),
     });
     if (!response.ok) throw new Error(`SAP OAuth ${response.status}`);
-    const payload = await response.json().catch(() => null);
+    const payload = asObject(await response.json().catch(() => null));
     return String(payload?.access_token || "");
   } finally {
     clearTimeout(timer);
@@ -85,13 +95,17 @@ async function headersFor(provider: TurkeyConnectorId) {
   return headers;
 }
 
-function rowsFrom(payload: any): Record<string, any>[] {
-  if (Array.isArray(payload)) return payload;
-  const candidates = [payload?.value, payload?.results, payload?.data, payload?.items, payload?.records, payload?.d?.results, payload?.result];
-  return candidates.find(Array.isArray) || [];
+function rowsFrom(payload: unknown): JsonRow[] {
+  if (Array.isArray(payload)) return compactRows(payload);
+  const root = asObject(payload);
+  if (!root) return [];
+  const nestedD = asObject(root.d);
+  const candidates: unknown[] = [root.value, root.results, root.data, root.items, root.records, nestedD?.results, root.result];
+  const rows = candidates.find(Array.isArray);
+  return Array.isArray(rows) ? compactRows(rows) : [];
 }
 
-async function vendorFetch(provider: TurkeyConnectorId, path: string) {
+async function vendorFetch(provider: TurkeyConnectorId, path: string): Promise<unknown> {
   const item = definition(provider)!;
   const base = env(item.env.baseUrl);
   if (!base) throw new Error("Connector base URL is not configured.");
@@ -102,13 +116,13 @@ async function vendorFetch(provider: TurkeyConnectorId, path: string) {
     if (!response.ok) throw new Error(`Provider request failed with HTTP ${response.status}`);
     const text = await response.text();
     if (!text) return null;
-    try { return JSON.parse(text); } catch { throw new Error("Provider returned an invalid JSON response"); }
+    try { return JSON.parse(text) as unknown; } catch { throw new Error("Provider returned an invalid JSON response"); }
   } finally {
     clearTimeout(timer);
   }
 }
 
-function previewRows(domain: string, rows: any[]) {
+function previewRows(domain: string, rows: JsonRow[]) {
   return rows.slice(0, 25).map((row) => {
     if (domain === "employees") return { ...row, employeeCode: maskIdentifier(row.employeeCode), name: maskName(row.name), email: maskEmail(row.email) };
     if (domain === "payroll") return { ...row, employeeCode: maskIdentifier(row.employeeCode), employeeName: maskName(row.employeeName), grossSalary: "••••", netSalary: "••••" };
@@ -116,48 +130,67 @@ function previewRows(domain: string, rows: any[]) {
   });
 }
 
-function employeePayload(row: CanonicalEmployeeMaster) {
-  const isoDate = /^\d{4}-\d{2}-\d{2}$/.test(String(row.hireDate || "")) ? row.hireDate : undefined;
-  return {
-    external_id: String(row.employeeCode || "").slice(0, 80) || null,
-    full_name: String(row.name || "").slice(0, 200),
-    email: row.email || null,
-    department: String(row.department || "").slice(0, 160) || null,
-    position: String(row.position || "").slice(0, 200) || null,
-    hire_date: isoDate || null,
-    employment_type: String(row.employmentType || "").slice(0, 48) || null,
-    location: String(row.location || row.branch || "").slice(0, 160) || null,
-  };
+function isoDate(value: unknown) {
+  const raw = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return raw.slice(0, 10);
+  const local = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (local) return `${local[3]}-${local[2].padStart(2, "0")}-${local[1].padStart(2, "0")}`;
+  return "";
 }
 
-async function syncEmployees(rows: CanonicalEmployeeMaster[]) {
-  const existingResponse = await fetchWithSession("/api/v1/employees");
-  if (!existingResponse) throw new Error("Secure backend session is unavailable");
-  if (!existingResponse.ok) throw new Error(`Employee master access failed with HTTP ${existingResponse.status}`);
-  const existing = await existingResponse.json().catch(() => []);
-  const byExternalId = new Map<string, any>();
-  const byEmail = new Map<string, any>();
-  for (const item of Array.isArray(existing) ? existing : []) {
-    if (item?.external_id) byExternalId.set(String(item.external_id), item);
-    if (item?.email) byEmail.set(String(item.email).toLowerCase(), item);
-  }
+function optionalNumber(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
-  let created = 0;
-  let updated = 0;
-  let skipped = 0;
-  for (const row of rows.slice(0, MAX_VENDOR_ROWS)) {
-    if (!row?.name || !row?.department || !row?.position) { skipped += 1; continue; }
-    const payload = employeePayload(row);
-    const match = byExternalId.get(String(row.employeeCode || "")) || (row.email ? byEmail.get(String(row.email).toLowerCase()) : null);
-    const path = match?.id ? `/api/v1/employees/${encodeURIComponent(String(match.id))}` : "/api/v1/employees";
-    const response = await fetchWithSession(path, { method: match?.id ? "PATCH" : "POST", body: JSON.stringify(payload) });
-    if (!response?.ok) { skipped += 1; continue; }
-    const saved = await response.json().catch(() => null);
-    if (saved?.external_id) byExternalId.set(String(saved.external_id), saved);
-    if (saved?.email) byEmail.set(String(saved.email).toLowerCase(), saved);
-    if (match?.id) updated += 1; else created += 1;
+function serverRecords(domain: string, rows: JsonRow[]) {
+  if (domain === "employees") {
+    return rows.map((row) => ({
+      employee_code: String(row.employeeCode || "").trim(),
+      full_name: String(row.name || "").trim(),
+      email: row.email ? String(row.email) : null,
+      department: String(row.department || "").trim(),
+      position: String(row.position || "").trim(),
+      hire_date: isoDate(row.hireDate) || null,
+      employment_type: row.employmentType ? String(row.employmentType) : null,
+      location: row.location ? String(row.location) : row.branch ? String(row.branch) : null,
+    })).filter((row) => row.employee_code && row.full_name && row.department && row.position);
   }
-  return { created, updated, skipped, processed: created + updated };
+  if (domain === "payroll") {
+    return rows.map((row) => ({
+      employee_code: String(row.employeeCode || "").trim(),
+      period: String(row.period || "").trim(),
+      gross_salary: optionalNumber(row.grossSalary),
+      net_salary: optionalNumber(row.netSalary),
+      currency: String(row.currency || "TRY").trim().toUpperCase(),
+    })).filter((row) => row.employee_code && row.period);
+  }
+  return rows.map((row) => ({
+    employee_code: String(row.employeeCode || "").trim(),
+    work_date: isoDate(row.date),
+    first_in: row.firstIn ? String(row.firstIn) : null,
+    last_out: row.lastOut ? String(row.lastOut) : null,
+    worked_minutes: optionalNumber(row.workedMinutes),
+    overtime_minutes: optionalNumber(row.overtimeMinutes),
+    absence_minutes: optionalNumber(row.absenceMinutes),
+  })).filter((row) => row.employee_code && row.work_date);
+}
+
+async function syncServerDomain(provider: TurkeyConnectorId, domain: string, normalized: JsonRow[]) {
+  if (!canPersistConnectorDomain(domain)) throw new Error("Unsupported persistent connector domain");
+  const records = serverRecords(domain, normalized);
+  if (!records.length) return { domain, received: normalized.length, processed: 0, created: 0, updated: 0, skipped: normalized.length };
+  const response = await fetchWithSession(`/api/v1/integrations/ingest/${domain}`, {
+    method: "POST",
+    body: JSON.stringify({ provider, records }),
+  });
+  if (!response) throw new Error("Secure backend session is unavailable");
+  if (!response.ok) throw new Error(`Secure ${domain} ingest failed with HTTP ${response.status}`);
+  const payload = asObject(await response.json().catch(() => null));
+  if (!payload || !Number.isFinite(Number(payload.processed))) throw new Error("Secure ingest returned an invalid response");
+  return payload;
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ provider: string }> }) {
@@ -183,39 +216,47 @@ export async function POST(request: Request, context: { params: Promise<{ provid
   if (!status.configured) return json({ ...status, ok: false, message: "Connector hazır; server-side credential ve endpoint ayarları bekleniyor." }, 409);
 
   const item = definition(id)!;
-  const body = await request.json().catch(() => ({}));
-  const action = String(body?.action || "health").toLowerCase();
+  const body = asObject(await request.json().catch(() => null)) || {};
+  const action = String(body.action || "health").toLowerCase();
   if (!new Set(["health", "preview", "sync"]).has(action)) return json({ provider: id, ok: false, message: "Unsupported connector action" }, 400);
-  const domain = String(body?.domain || "employees").toLowerCase();
+  const domain = String(body.domain || "employees").toLowerCase();
   if (!["employees", "payroll", "attendance"].includes(domain)) return json({ provider: id, ok: false, message: "Unsupported connector domain" }, 400);
 
   try {
     if (action === "health") {
-      const path = env(item.env.healthPath) || env(item.env.employeePath) || "/";
+      const path = env(item.env.healthPath) || env(item.env.employeePath) || env(item.env.payrollPath) || env(item.env.attendancePath) || "/";
       await vendorFetch(id, path);
       return json({ provider: id, ok: true, state: "active", message: "Bağlantı doğrulandı. Credential ve provider payload'u tarayıcıya aktarılmadı." });
     }
 
     const path = domain === "payroll" ? env(item.env.payrollPath) : domain === "attendance" ? env(item.env.attendancePath) : env(item.env.employeePath);
     if (!path) return json({ provider: id, ok: false, message: `${domain} endpoint path'i yapılandırılmamış.` }, 422);
-    const payload = await vendorFetch(id, path);
-    const raw = rowsFrom(payload).slice(0, MAX_VENDOR_ROWS);
+    const vendorRows = rowsFrom(await vendorFetch(id, path));
+    const raw = vendorRows.slice(0, MAX_VENDOR_ROWS);
     const normalized = domain === "payroll"
-      ? raw.map((row) => normalizePayrollRecord(row, id)).filter(Boolean)
+      ? compactRows(raw.map((row) => normalizePayrollRecord(row, id)).filter(Boolean))
       : domain === "attendance"
-        ? raw.map((row) => normalizeAttendanceRecord(row, id)).filter(Boolean)
-        : raw.map(normalizeEmployeeMaster).filter(Boolean);
+        ? compactRows(raw.map((row) => normalizeAttendanceRecord(row, id)).filter(Boolean))
+        : compactRows(raw.map((row) => normalizeEmployeeMaster(row)).filter(Boolean));
 
     if (action === "preview") {
-      return json({ provider: id, ok: true, state: "active", domain, rawCount: raw.length, normalizedCount: normalized.length, rows: previewRows(domain, normalized), truncated: normalized.length > 25, redacted: true });
+      return json({ provider: id, ok: true, state: "active", domain, rawCount: vendorRows.length, normalizedCount: normalized.length, rows: previewRows(domain, normalized), truncated: vendorRows.length > MAX_VENDOR_ROWS, redacted: true });
     }
 
-    if (!canPersistConnectorDomain(domain)) {
-      return json({ provider: id, ok: false, state: "server_ingest_required", domain, message: `${domain} senkronizasyonu tarayıcı depolamasına kapatıldı. Tenant-scoped server ingest adapter'i tamamlanmadan kalıcı sync yapılmaz.` }, 501);
-    }
-
-    const stats = await syncEmployees(normalized as CanonicalEmployeeMaster[]);
-    return json({ provider: id, ok: true, state: "active", domain, normalizedCount: normalized.length, synced: stats.processed, created: stats.created, updated: stats.updated, skipped: stats.skipped, truncated: raw.length >= MAX_VENDOR_ROWS });
+    const stats = await syncServerDomain(id, domain, normalized);
+    const normalizationSkipped = Math.max(0, raw.length - normalized.length);
+    return json({
+      provider: id,
+      ok: true,
+      state: "active",
+      domain,
+      normalizedCount: normalized.length,
+      synced: Number(stats.processed || 0),
+      created: Number(stats.created || 0),
+      updated: Number(stats.updated || 0),
+      skipped: Number(stats.skipped || 0) + normalizationSkipped,
+      truncated: vendorRows.length > MAX_VENDOR_ROWS,
+    });
   } catch (error) {
     const message = error instanceof Error && /HTTP \d{3}|not configured|invalid JSON|unavailable/.test(error.message) ? error.message : "Connector operation failed";
     return json({ provider: id, ok: false, state: "error", message }, 502);

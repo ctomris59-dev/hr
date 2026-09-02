@@ -9,7 +9,7 @@ export function canManageConnectors(role: unknown) {
 }
 
 export function canPersistConnectorDomain(domain: unknown) {
-  return String(domain || "").trim().toLowerCase() === "employees";
+  return ["employees", "payroll", "attendance"].includes(String(domain || "").trim().toLowerCase());
 }
 
 export function maskIdentifier(value: unknown) {

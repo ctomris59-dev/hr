@@ -41,7 +41,7 @@ add("canonical_employee_master", master?.employeeCode === "TEST-001" && master?.
 
 add("connector_rbac_allows_hr_admins", canManageConnectors("CEO") && canManageConnectors("IK") && canManageConnectors("hr-admin"), [canManageConnectors("CEO"), canManageConnectors("IK"), canManageConnectors("hr-admin")], [true, true, true]);
 add("connector_rbac_denies_non_admins", !canManageConnectors("MANAGER") && !canManageConnectors("EMPLOYEE") && !canManageConnectors(undefined), [canManageConnectors("MANAGER"), canManageConnectors("EMPLOYEE"), canManageConnectors(undefined)], [false, false, false]);
-add("connector_sync_only_persists_employee_master", canPersistConnectorDomain("employees") && !canPersistConnectorDomain("payroll") && !canPersistConnectorDomain("attendance"), [canPersistConnectorDomain("employees"), canPersistConnectorDomain("payroll"), canPersistConnectorDomain("attendance")], [true, false, false]);
+add("connector_sync_persists_all_secure_server_domains", canPersistConnectorDomain("employees") && canPersistConnectorDomain("payroll") && canPersistConnectorDomain("attendance") && !canPersistConnectorDomain("leave"), [canPersistConnectorDomain("employees"), canPersistConnectorDomain("payroll"), canPersistConnectorDomain("attendance"), canPersistConnectorDomain("leave")], [true, true, true, false]);
 add("connector_preview_masking", maskIdentifier("EMP-123456").endsWith("3456") && !maskName("Test Çalışanı").includes("Test Çalışanı") && maskEmail("test@example.com") === "t•••@example.com", { id: maskIdentifier("EMP-123456"), name: maskName("Test Çalışanı"), email: maskEmail("test@example.com") }, "masked values");
 
 const readiness = readinessChecklist();
