@@ -35,6 +35,19 @@ function objects(root, key) {
   visit(root);
   return found;
 }
+function arrays(root, key) {
+  const found = [];
+  const visit = (v) => {
+    if (!v || typeof v !== 'object') return;
+    if (Array.isArray(v)) { v.forEach(visit); return; }
+    for (const [k, child] of Object.entries(v)) {
+      if (k === key && Array.isArray(child)) found.push(child);
+      visit(child);
+    }
+  };
+  visit(root);
+  return found;
+}
 function findObject(root, key) {
   let match = null;
   const visit = (v) => {
@@ -63,6 +76,96 @@ function safeHighImpact(text) {
   return direct.test(text)
     ? 'Bu yüksek etkili İK kararı için doğrudan kişi bazlı nihai öneri verilmemelidir. FutureHR kanıtları, riskleri ve veri boşluklarını sunar; karar yetkili insan değerlendirmesiyle verilmelidir.'
     : text;
+}
+
+function trainingRecommendation(out, q, ctx) {
+  const asksTraining = /(hangi.*eğitim|hangi.*egitim|eğitim(?:leri)?\s+(?:almalı|almali|öner|oner)|ne.*eğitim|ne.*egitim|gelişim.*(?:öner|oner)|gelisim.*(?:öner|oner)|yetkinlik.*geliştir|yetkinlik.*gelistir)/i.test(q);
+  if (!asksTraining) return false;
+
+  const interventions = [
+    ...arrays(ctx, 'recommendedInterventions').flat(),
+    ...arrays(ctx, 'trainingAdvice').flat(),
+  ]
+    .filter((item) => item && typeof item === 'object' && String(item.name || '').trim() && item.alreadyCompleted !== true)
+    .filter((item, index, rows) => {
+      const key = String(item.id || item.interventionId || item.name || '');
+      return rows.findIndex((row) => String(row.id || row.interventionId || row.name || '') === key) === index;
+    })
+    .slice(0, 3);
+
+  const gaps = arrays(ctx, 'competencyGaps').flat()
+    .filter((item) => item && typeof item === 'object')
+    .slice(0, 4);
+
+  if (interventions.length) {
+    const details = interventions.map((item, index) => {
+      const competency = String(item.competency || item.competencyLabel || '').trim();
+      const gap = Number(item.gap);
+      const duration = String(item.duration || '').trim();
+      const reassessDays = Number(item.reassessDays);
+      const parts = [`${index + 1}) ${item.name}${competency ? ` — ${competency}` : ''}`];
+      if (Number.isFinite(gap) && gap > 0) parts.push(`açık ${gap}`);
+      if (duration) parts.push(duration);
+      if (Number.isFinite(reassessDays) && reassessDays > 0) parts.push(`${reassessDays} gün sonra yeniden ölçüm`);
+      return parts.join(' · ');
+    });
+
+    setAnswer(
+      out,
+      `Kayıtlı rol-yetkinlik kanıtına göre öncelikli gelişim önerileri: ${details.join('; ')}. Tamamlanmış eğitimler gerekçesiz tekrar önerilmedi.`,
+      gaps.length ? 'yüksek' : 'orta',
+      'Öneriler FutureHR gelişim danışmanındaki ölçülmüş yetkinlik açıkları ve gelişim kütüphanesi eşleşmelerinden oluşturuldu.',
+    );
+
+    out.recommendations = interventions.map((item) => ({
+      title: String(item.name),
+      why: `${String(item.competency || item.competencyLabel || 'Rol yetkinliği')} açığını kapatmaya yönelik.`,
+      evidence: `${Number(item.gap) > 0 ? `Yetkinlik açığı ${item.gap}` : 'FutureHR gelişim danışmanı eşleşmesi'}${item.transferTask ? ` · İşe transfer: ${item.transferTask}` : ''}`,
+      route: '/egitim',
+    }));
+    out.nextActions = [
+      { label: 'Eğitim atama taslağı hazırla', route: '/egitim', actionKind: 'prepare_training_assignment' },
+      { label: 'Gelişim planını aç', route: '/gelisim', actionKind: 'open_development' },
+    ];
+    const gapDetail = gaps.slice(0, 3).map((gap) => `${gap.label || gap.competency || 'Yetkinlik'}: ${gap.actual ?? '—'} → ${gap.target ?? gap.expected ?? '—'}`).join(' · ');
+    const existingEvidence = Array.isArray(out.evidenceSources) ? out.evidenceSources : [];
+    out.evidenceSources = [
+      ...existingEvidence,
+      {
+        label: 'Rol & Yetkinlik Açıkları',
+        detail: gapDetail || 'FutureHR rol-yetkinlik eşleşmesi',
+        route: '/rol-mimarisi',
+        domain: 'development',
+        confidence: gaps.length ? 'yüksek' : 'orta',
+        value: `${gaps.length} açık`,
+      },
+      {
+        label: 'FutureHR Gelişim Danışmanı',
+        detail: `${interventions.length} tamamlanmamış gelişim müdahalesi eşleşmesi`,
+        route: '/egitim',
+        domain: 'development',
+        confidence: 'yüksek',
+        value: interventions.map((item) => item.name).join(', '),
+      },
+    ].slice(0, 6);
+    out.evidenceGaps = Array.isArray(out.evidenceGaps) ? out.evidenceGaps.slice(0, 4) : [];
+    out.guardrail = 'Eğitim önerileri yalnız ölçülmüş rol-yetkinlik açıkları ve kayıtlı FutureHR gelişim kütüphanesinden üretildi; tamamlanmış eğitimler otomatik tekrar önerilmedi.';
+    return true;
+  }
+
+  if (gaps.length) {
+    const top = gaps.slice(0, 3).map((gap) => `${gap.label || gap.competency || 'Yetkinlik'} (${gap.actual ?? '—'} → ${gap.target ?? gap.expected ?? '—'})`).join(', ');
+    setAnswer(
+      out,
+      `Ölçülebilir gelişim açıkları var: ${top}. Ancak bu açıklarla eşleşen tamamlanmamış eğitim müdahalesi bağlamda bulunamadığı için eğitim adı uydurmayacağım; Eğitim/Gelişim kütüphanesi eşleştirmesi kontrol edilmeli.`,
+      'orta',
+      'Yetkinlik açığı mevcut, ancak doğrulanmış katalog müdahalesi bağlamda yok.',
+    );
+    out.nextActions = [{ label: 'Eğitim kütüphanesini aç', route: '/egitim', actionKind: 'open_training' }];
+    return true;
+  }
+
+  return false;
 }
 
 export function applyFutureHROutputGuardrails(question, context, analysis) {
@@ -127,6 +230,8 @@ export function applyFutureHROutputGuardrails(question, context, analysis) {
   if (calibrationDelta != null && Math.abs(calibrationDelta) >= 0.5 && /(ekip ortalaması|kalibrasyon|puanlar)/i.test(q)) {
     setAnswer(out, `Yönetici ekip ortalaması ile şirket ortalaması arasında ${calibrationDelta} puan sapma var. Bu fark otomatik olarak yanlışlık kanıtlamaz; ancak kalibrasyon ve kanıt incelemesini öncelikli hale getirir.`, 'yüksek', 'Kalibrasyon sapması belirgin.');
   }
+
+  trainingRecommendation(out, q, ctx);
 
   const completedTraining = objects(ctx, 'development').flatMap((d) => Array.isArray(d?.completedTraining) ? d.completedTraining : []);
   if (completedTraining.length && /(tekrar.*eğitim|eğitimi tekrar|tamamladığı eğitim)/i.test(q)) {
