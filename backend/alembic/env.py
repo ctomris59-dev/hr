@@ -9,6 +9,7 @@ from core.config import get_settings
 from core.database import Base, normalize_database_url
 from db import models  # noqa: F401 - registers core model metadata
 from db import recruitment_models  # noqa: F401 - registers recruitment lifecycle metadata
+from db import integration_models  # noqa: F401 - registers integration ingest metadata
 
 config = context.config
 settings = get_settings()

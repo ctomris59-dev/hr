@@ -24,6 +24,7 @@ from routers import (
     recruitment, org_chart, admin, dashboard, audit, workflow, observability,
     auth_v1, sso_v1, people_v1, employee_experience, performance_v1, talent_v1,
     workforce_ops_v1, decision_intelligence_v1, recruitment_v1, compensation_intelligence_v1,
+    integrations_v1,
 )
 
 settings = get_settings()
@@ -78,6 +79,7 @@ app.include_router(workforce_ops_v1.router)
 app.include_router(decision_intelligence_v1.router)
 app.include_router(recruitment_v1.router)
 app.include_router(compensation_intelligence_v1.router)
+app.include_router(integrations_v1.router)
 
 @app.on_event("startup")
 async def startup_event():
