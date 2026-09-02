@@ -55,6 +55,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
   const normalizedPathname=decodeURIComponent(pathname||"/");
   const[user,setUser]=useState<any>(null);
   const[sidebarOpen,setSidebarOpen]=useState(false);
+  const[expandedMenuKey,setExpandedMenuKey]=useState<string|null>(null);
   const[policyRevision,setPolicyRevision]=useState(0);
   const router=useRouter();
   const{currentUserRole}=useAuth();
@@ -118,6 +119,10 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
     .filter(item=>item.routes.some(route=>routeMatches(normalizedPathname,route)))
     .sort((a,b)=>Math.max(...b.routes.map(route=>route.length))-Math.max(...a.routes.map(route=>route.length)))[0]?.key;
 
+  useEffect(()=>{
+    if(activeMenuKey)setExpandedMenuKey(activeMenuKey);
+  },[activeMenuKey]);
+
   const userInitials=(user?.name||"FH").split(" ").filter(Boolean).slice(0,2).map((part:string)=>part[0]?.toUpperCase()).join("");
   const userRole=user?.position||user?.role||"Kullanıcı";
   const userDepartment=user?.dept||user?.department||"";
@@ -146,9 +151,19 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
             const showSection=index===0||menuItems[index-1]?.section!==item.section;
             const family=item.familyId?NAVIGATION_FAMILIES.find(entry=>entry.id===item.familyId):undefined;
             const childItems=family?.items.filter(entry=>canAccessRoute(currentUserRole,entry.href))||[];
-            const showChildren=isActive&&childItems.length>1;
+            const isExpandable=childItems.length>1;
+            const isExpanded=isExpandable&&expandedMenuKey===item.key;
+            const showChildren=isExpanded;
             const tone=item.familyId?familyTone[item.familyId]||"slate":item.key==="decision"?"ai":item.key==="dashboard"?"dashboard":"slate";
             const isDecision=item.key==="decision";
+            const handlePrimaryClick=(event:React.MouseEvent<HTMLAnchorElement>)=>{
+              if(isExpandable){
+                event.preventDefault();
+                setExpandedMenuKey(current=>current===item.key?null:item.key);
+                return;
+              }
+              setSidebarOpen(false);
+            };
             return <div key={item.key} className="futurehr-sidebar-group">
               {showSection&&<div className={`${index===0?"mt-0":"mt-4"} futurehr-sidebar-section mb-1.5 flex items-center gap-2 px-2.5`}>
                 <span className="text-[9px] font-semibold uppercase leading-4 tracking-[0.18em] text-slate-500">{item.section}</span>
@@ -157,9 +172,11 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
               <Link
                 data-tour-route={item.href}
                 href={item.href}
-                onClick={()=>setSidebarOpen(false)}
+                onClick={handlePrimaryClick}
                 aria-current={isActive?"page":undefined}
+                aria-expanded={isExpandable?isExpanded:undefined}
                 data-active={isActive?"true":"false"}
+                data-expanded={isExpanded?"true":"false"}
                 data-tone={tone}
                 className={`futurehr-sidebar-primary group relative mb-1 flex min-h-[44px] items-center gap-3 overflow-hidden rounded-xl px-2.5 text-[13px] leading-5 outline-none transition-all duration-180 focus-visible:ring-2 focus-visible:ring-teal-300/35 ${isDecision?"futurehr-sidebar-ai":""}`}
               >
@@ -169,7 +186,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
                   <span className="flex items-center gap-1.5"><span className="truncate font-semibold tracking-[-0.012em]">{item.label}</span>{isDecision&&<span className="futurehr-sidebar-ai-badge inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.08em]"><Sparkles className="h-2.5 w-2.5"/>AI</span>}</span>
                   {isDecision&&<span className="mt-0.5 block truncate text-[9.5px] font-medium text-slate-500">Kanıt tabanlı karar desteği</span>}
                 </span>
-                <span className="futurehr-sidebar-primary-arrow flex h-6 w-6 items-center justify-center rounded-lg"><ChevronRight className="h-3.5 w-3.5"/></span>
+                <span className={`futurehr-sidebar-primary-arrow flex h-6 w-6 items-center justify-center rounded-lg transition-transform ${isExpanded?"rotate-90":""}`}><ChevronRight className="h-3.5 w-3.5"/></span>
               </Link>
 
               {showChildren&&<div className="futurehr-sidebar-children mb-2 ml-[18px] border-l border-white/[0.08] pl-[18px]">
