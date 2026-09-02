@@ -18,6 +18,7 @@ from db.models import EmployeeModel, utcnow
 router = APIRouter(prefix="/api/v1/integrations", tags=["SaaS Integrations"])
 CONNECTOR_ADMIN_ROLES = ("CEO", "IK", "HR_ADMIN")
 MAX_BATCH = 5000
+INGEST_SCHEMA_REVISION = "20260902_0006"
 
 
 class EmployeeIngestRecord(BaseModel):
@@ -131,6 +132,31 @@ def _refresh_latest_salary(db: Session, tenant_id: str, employee_ids: set[str]) 
         record = latest.get(employee.id)
         if record and record.gross_salary is not None:
             employee.salary_amount = float(record.gross_salary)
+
+
+@router.get("/readiness")
+def integration_ingest_readiness(
+    principal: Principal = Depends(require_roles(*CONNECTOR_ADMIN_ROLES)),
+    db: Session = Depends(get_db),
+):
+    # These lightweight tenant-scoped reads intentionally fail if migration 0006
+    # has not been applied. The Next.js connector layer uses this as a fail-closed
+    # production gate before enabling any persistent sync action.
+    db.scalar(
+        select(IntegrationPayrollRecordModel.id)
+        .where(IntegrationPayrollRecordModel.tenant_id == principal.tenant_id)
+        .limit(1)
+    )
+    db.scalar(
+        select(IntegrationAttendanceRecordModel.id)
+        .where(IntegrationAttendanceRecordModel.tenant_id == principal.tenant_id)
+        .limit(1)
+    )
+    return {
+        "ready": True,
+        "schema_revision": INGEST_SCHEMA_REVISION,
+        "domains": ["employees", "payroll", "attendance"],
+    }
 
 
 @router.post("/ingest/employees")
