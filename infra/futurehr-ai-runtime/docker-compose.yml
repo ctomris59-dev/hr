@@ -1,0 +1,27 @@
+services:
+  futurehr-ai:
+    image: vllm/vllm-openai:latest
+    restart: unless-stopped
+    ipc: host
+    ports:
+      - "8000:8000"
+    volumes:
+      - huggingface-cache:/root/.cache/huggingface
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+    command:
+      - --model
+      - openai/gpt-oss-20b
+      - --served-model-name
+      - futurehr-local
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --max-model-len
+      - "16384"
+      - --gpu-memory-utilization
+      - "0.90"
+
+volumes:
+  huggingface-cache:
