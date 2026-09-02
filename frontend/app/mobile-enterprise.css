@@ -1,0 +1,7 @@
+@media (max-width: 1023px){
+  main[data-tour="workspace"]{padding-bottom:calc(5.75rem + env(safe-area-inset-bottom))!important;}
+  body{overscroll-behavior-y:none;}
+}
+@media (display-mode:standalone){
+  header[data-tour="topbar"]{padding-top:env(safe-area-inset-top);height:calc(4rem + env(safe-area-inset-top));}
+}
