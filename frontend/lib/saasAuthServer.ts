@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 
 export const ACCESS_COOKIE = "futurehr_access";
 export const REFRESH_COOKIE = "futurehr_refresh";
+const PRODUCTION_BACKEND_FALLBACK = "https://hr-system-backend.onrender.com";
 
 export interface SecureUser {
   id: string;
@@ -30,12 +31,19 @@ export function isSaasMode() {
   return process.env.FUTUREHR_SAAS_MODE === "true" || process.env.NEXT_PUBLIC_DATA_MODE === "saas";
 }
 
+function configuredBackendUrl() {
+  const explicit = String(process.env.BACKEND_URL || "").trim();
+  if (explicit) return explicit;
+  if (process.env.NODE_ENV === "production") return PRODUCTION_BACKEND_FALLBACK;
+  return "";
+}
+
 export function backendConfigured() {
-  return Boolean(process.env.BACKEND_URL);
+  return Boolean(configuredBackendUrl());
 }
 
 function backendBaseUrl() {
-  const configured = process.env.BACKEND_URL;
+  const configured = configuredBackendUrl();
   if (configured) return configured;
   if (process.env.NODE_ENV === "production" && isSaasMode()) {
     throw new Error("BACKEND_URL is required in SaaS production mode");
