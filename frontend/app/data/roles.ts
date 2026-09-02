@@ -6,10 +6,11 @@ export type UserRole = "ceo" | "hr_admin" | "director" | "manager" | "employee";
 export const ROLE_MAPPING: Record<string, UserRole> = { CEO:"ceo", IK:"hr_admin", HR:"hr_admin", HR_ADMIN:"hr_admin", DIRECTOR:"director", MANAGER:"manager", PERSONEL:"employee", EMPLOYEE:"employee" };
 export const REVERSE_ROLE_MAPPING: Record<UserRole,string[]> = { ceo:["CEO"], hr_admin:["IK"], director:["DIRECTOR"], manager:["MANAGER"], employee:["PERSONEL","EMPLOYEE"] };
 
+const EXECUTIVE_ROUTES=["/dashboard","/karar-merkezi","/calisan-deneyimi","/organizasyon","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetenek-matrisi","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/yedekleme","/maas","/ucret-adaleti","/ise-alim","/aday-testi","/ekip-yonetimi","/kurulum","/admin","/admin/entegrasyonlar","/admin/veri-aktarimi","/admin/guven-kvkk","/turkiye-uyum","/yonetici-raporlari","/izinler","/ayarlar/roller","/ayarlar/yetki-mimarisi","/yonetici/maas-talep"];
 export const ROLE_ACCESS_CONFIG: Record<UserRole,string[]> = {
-  ceo:["/dashboard","/karar-merkezi","/calisan-deneyimi","/organizasyon","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetenek-matrisi","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/yedekleme","/maas","/ucret-adaleti","/ise-alim","/aday-testi","/ekip-yonetimi","/kurulum","/admin","/turkiye-uyum","/izinler","/ayarlar/roller","/ayarlar/yetki-mimarisi","/yonetici/maas-talep"],
-  hr_admin:["/dashboard","/karar-merkezi","/calisan-deneyimi","/organizasyon","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetenek-matrisi","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/yedekleme","/maas","/ucret-adaleti","/ise-alim","/aday-testi","/ekip-yonetimi","/kurulum","/admin","/turkiye-uyum","/izinler","/ayarlar/yetki-mimarisi","/yonetici/maas-talep"],
-  director:["/dashboard","/karar-merkezi","/calisan-deneyimi","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/izinler","/ekip-yonetimi","/yonetici/maas-talep"],
+  ceo:[...EXECUTIVE_ROUTES],
+  hr_admin:[...EXECUTIVE_ROUTES.filter(route=>route!=="/ayarlar/roller")],
+  director:["/dashboard","/karar-merkezi","/calisan-deneyimi","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/izinler","/ekip-yonetimi","/yonetici/maas-talep","/yonetici-raporlari"],
   manager:["/dashboard","/karar-merkezi","/calisan-deneyimi","/rol-mimarisi","/degerlendirme","/kalibrasyon","/yetkinlik-haritasi","/egitim","/gelisim","/gelisim-analitigi","/kariyer","/izinler","/ekip-yonetimi","/yonetici/maas-talep"],
   employee:["/kariyer","/gelisim","/egitim","/izinler","/calisan-deneyimi"],
 };
