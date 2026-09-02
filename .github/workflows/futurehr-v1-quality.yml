@@ -71,7 +71,7 @@ jobs:
 
   backend-security:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:17
@@ -101,7 +101,7 @@ jobs:
       - name: Install backend dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Compile SaaS backend
-        run: python -m compileall -q core db routers
+        run: python -m compileall -q core db routers scripts
       - name: PostgreSQL migration smoke test
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/futurehr_test
@@ -124,3 +124,38 @@ jobs:
           tests/test_integration_ingest_v1.py
           tests/unit/test_roles_permissions.py
           tests/integration/test_org_chart_endpoint.py
+      - name: Build production backend image
+        run: docker build -t futurehr-backend-ci .
+      - name: Production container migration and health smoke test
+        run: |
+          docker run --rm -d --name futurehr-backend-ci --network host \
+            -e PORT=8010 \
+            -e ENVIRONMENT=production \
+            -e APP_ENV=production \
+            -e DEBUG=false \
+            -e DATA_MODE=database \
+            -e SAAS_AUTH_ENABLED=true \
+            -e ALLOW_LEGACY_API_IN_SAAS=false \
+            -e DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/futurehr_test \
+            -e SECRET_KEY=ci-production-secret-0123456789abcdefghijklmnopqrstuvwxyz \
+            -e 'ALLOWED_HOSTS=["127.0.0.1","localhost"]' \
+            -e 'CORS_ORIGINS=["https://hr-hibemotoru.vercel.app"]' \
+            futurehr-backend-ci
+          trap 'docker logs futurehr-backend-ci || true; docker stop futurehr-backend-ci || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:8010/health | tee /tmp/futurehr-health.json; then
+              python - <<'PY'
+          import json
+          with open('/tmp/futurehr-health.json', encoding='utf-8') as handle:
+              payload = json.load(handle)
+          assert payload['ready'] is True, payload
+          assert payload['database_ok'] is True, payload
+          assert payload['secure_auth_enabled'] is True, payload
+          print('Production container health verified')
+          PY
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Backend container did not become healthy' >&2
+          exit 1
