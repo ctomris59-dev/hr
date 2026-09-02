@@ -1,0 +1,235 @@
+/* FutureHR Premium Enterprise System — 50K SaaS finish */
+:root{
+  --pe-bg:#f4f7fb;
+  --pe-surface:#ffffff;
+  --pe-surface-2:#f8fafc;
+  --pe-surface-3:#f1f5f9;
+  --pe-border:#e2e8f0;
+  --pe-border-strong:#cbd5e1;
+  --pe-text:#0f172a;
+  --pe-muted:#64748b;
+  --pe-subtle:#94a3b8;
+  --pe-blue:#4f7cff;
+  --pe-cyan:#22c7b8;
+  --pe-violet:#8b5cf6;
+  --pe-emerald:#22b984;
+  --pe-amber:#f4b740;
+  --pe-rose:#f05f7a;
+  --pe-shadow-sm:0 1px 2px rgba(15,23,42,.04),0 4px 10px rgba(15,23,42,.035);
+  --pe-shadow-md:0 12px 28px rgba(15,23,42,.075),0 2px 6px rgba(15,23,42,.04);
+  --pe-shadow-lg:0 26px 64px rgba(15,23,42,.12),0 6px 18px rgba(15,23,42,.06);
+  --pe-radius:16px;
+  --pe-ease:cubic-bezier(.22,1,.36,1);
+}
+
+.dark{
+  --pe-bg:#08111b;
+  --pe-surface:#0d1824;
+  --pe-surface-2:#111e2b;
+  --pe-surface-3:#142332;
+  --pe-border:#203143;
+  --pe-border-strong:#31485f;
+  --pe-text:#f3f7fb;
+  --pe-muted:#9aabba;
+  --pe-subtle:#6e8295;
+  --pe-shadow-sm:0 1px 2px rgba(0,0,0,.18),0 4px 12px rgba(0,0,0,.18);
+  --pe-shadow-md:0 16px 36px rgba(0,0,0,.28),0 2px 8px rgba(0,0,0,.18);
+  --pe-shadow-lg:0 30px 70px rgba(0,0,0,.38),0 8px 24px rgba(0,0,0,.22);
+}
+
+html{background:var(--pe-bg);}
+body{background:var(--pe-bg);color:var(--pe-text);}
+[data-testid="app-shell"]{background:var(--pe-bg)!important;}
+[data-tour="workspace"]{
+  background:
+    radial-gradient(circle at 18% 0%,color-mix(in srgb,var(--pe-blue) 4%,transparent),transparent 28%),
+    radial-gradient(circle at 86% 12%,color-mix(in srgb,var(--pe-cyan) 3%,transparent),transparent 25%),
+    var(--pe-bg)!important;
+}
+
+/* Premium application surfaces */
+.enterprise-card,
+.dashboard-visual-card,
+.futurehr-analytics-board,
+.futurehr-analytics-panel,
+.module-detail-stage,
+.module-hero,
+.futurehr-family-nav{
+  border-color:var(--pe-border)!important;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--pe-surface) 98%,white),var(--pe-surface))!important;
+  box-shadow:var(--pe-shadow-sm)!important;
+}
+
+.enterprise-card,
+.dashboard-visual-card,
+.futurehr-analytics-panel,
+.module-detail-stage{
+  transition:transform .26s var(--pe-ease),box-shadow .26s var(--pe-ease),border-color .26s ease,background .26s ease;
+}
+
+@media (hover:hover){
+  .futurehr-dashboard .enterprise-card:hover,
+  .module-workspace .futurehr-analytics-panel:hover,
+  .module-workspace .dashboard-visual-card:hover{
+    transform:translateY(-2px);
+    border-color:color-mix(in srgb,var(--module-accent,var(--pe-blue)) 18%,var(--pe-border))!important;
+    box-shadow:var(--pe-shadow-md)!important;
+  }
+}
+
+.dark .enterprise-card,
+.dark .dashboard-visual-card,
+.dark .futurehr-analytics-board,
+.dark .futurehr-analytics-panel,
+.dark .module-detail-stage,
+.dark .module-hero,
+.dark .futurehr-family-nav{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,0)),
+    var(--pe-surface)!important;
+  border-color:var(--pe-border)!important;
+}
+
+.dark [data-tour="topbar"]{
+  background:rgba(9,18,28,.86)!important;
+  border-color:var(--pe-border)!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.02),0 10px 30px rgba(0,0,0,.12);
+  backdrop-filter:blur(18px) saturate(130%);
+}
+
+/* Dashboard hierarchy */
+.futurehr-dashboard h1,
+.module-workspace h1{letter-spacing:-.04em!important;}
+.futurehr-dashboard .enterprise-card,
+.module-workspace .futurehr-analytics-panel{border-radius:var(--pe-radius)!important;}
+.futurehr-dashboard .enterprise-card{position:relative;}
+.futurehr-dashboard .enterprise-card::after{
+  content:"";pointer-events:none;position:absolute;inset:0;border-radius:inherit;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);opacity:.5;
+}
+.dark .futurehr-dashboard .enterprise-card::after{box-shadow:inset 0 1px 0 rgba(255,255,255,.045);}
+
+/* KPI cards feel like real product controls */
+.futurehr-dashboard [class*="grid"]>.enterprise-card,
+.futurehr-analytics-kpis>*{
+  isolation:isolate;
+}
+.futurehr-analytics-kpis>*{
+  border-radius:14px!important;
+  border:1px solid var(--pe-border)!important;
+  background:var(--pe-surface)!important;
+  box-shadow:var(--pe-shadow-sm)!important;
+  transition:transform .25s var(--pe-ease),box-shadow .25s var(--pe-ease),border-color .25s ease;
+}
+@media (hover:hover){
+  .futurehr-analytics-kpis>*:hover{transform:translateY(-2px);box-shadow:var(--pe-shadow-md)!important;}
+}
+
+/* Buttons / controls */
+.module-workspace button,
+.futurehr-dashboard button,
+.module-workspace a,
+.futurehr-dashboard a{
+  transition:transform .18s var(--pe-ease),background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease;
+}
+@media (hover:hover){
+  .module-workspace button:not(:disabled):active,
+  .futurehr-dashboard button:not(:disabled):active{transform:translateY(1px) scale(.99);}
+}
+
+/* Premium dark palette hardening */
+.dark .text-slate-950,.dark .text-slate-900,.dark .text-slate-800{color:#f3f7fb!important;}
+.dark .text-slate-700{color:#d7e0e8!important;}
+.dark .text-slate-600{color:#b3c0cc!important;}
+.dark .text-slate-500{color:#93a4b5!important;}
+.dark .text-slate-400{color:#7d91a4!important;}
+.dark .bg-white{background-color:var(--pe-surface)!important;}
+.dark .bg-slate-50,.dark .bg-slate-100{background-color:var(--pe-surface-2)!important;}
+.dark .border-slate-100,.dark .border-slate-200,.dark .border-slate-300{border-color:var(--pe-border)!important;}
+.dark input,.dark textarea,.dark select{
+  color:#eef5fb!important;background:#0a1621!important;border-color:#2a3c4f!important;
+}
+.dark input::placeholder,.dark textarea::placeholder{color:#64798d!important;}
+.dark input:focus,.dark textarea:focus,.dark select:focus{
+  border-color:color-mix(in srgb,var(--module-accent,var(--pe-blue)) 55%,#2a3c4f)!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--module-accent,var(--pe-blue)) 14%,transparent)!important;
+}
+
+/* Charts: responsive, polished and animated */
+.futurehr-dashboard svg,
+.futurehr-analytics-board svg,
+.module-workspace [class*="chart"] svg,
+.module-workspace [class*="Chart"] svg{overflow:visible;}
+.futurehr-dashboard svg path[stroke],
+.futurehr-analytics-board svg path[stroke],
+.module-workspace [class*="chart"] svg path[stroke]{
+  vector-effect:non-scaling-stroke;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  animation:pe-line-reveal .85s var(--pe-ease) both;
+}
+.futurehr-dashboard svg polyline,
+.futurehr-analytics-board svg polyline{
+  stroke-linecap:round;stroke-linejoin:round;
+  animation:pe-line-reveal .85s var(--pe-ease) both;
+}
+.futurehr-dashboard svg rect,
+.futurehr-analytics-board svg rect,
+.module-workspace [class*="chart"] svg rect{
+  transform-box:fill-box;transform-origin:center bottom;
+  animation:pe-bar-rise .62s var(--pe-ease) both;
+}
+.futurehr-dashboard svg circle,
+.futurehr-analytics-board svg circle{animation:pe-dot-pop .48s var(--pe-ease) both;transform-box:fill-box;transform-origin:center;}
+.futurehr-dashboard [class*="bar"],
+.futurehr-analytics-board [class*="bar"]{transition:width .7s var(--pe-ease),height .7s var(--pe-ease),opacity .2s ease;}
+
+@keyframes pe-line-reveal{from{opacity:.05;stroke-dasharray:1 900;stroke-dashoffset:900}to{opacity:1;stroke-dasharray:900 0;stroke-dashoffset:0}}
+@keyframes pe-bar-rise{from{opacity:.15;transform:scaleY(.08)}to{opacity:1;transform:scaleY(1)}}
+@keyframes pe-dot-pop{0%{opacity:0;transform:scale(.4)}70%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+
+/* Smooth sidebar / accordion */
+.futurehr-premium-sidebar{transition:width .34s var(--pe-ease),transform .26s var(--pe-ease),box-shadow .26s ease!important;}
+.futurehr-sidebar-children{transform-origin:top;animation:pe-sidebar-open .26s var(--pe-ease) both!important;}
+.futurehr-sidebar-primary-arrow{transition:transform .28s var(--pe-ease),color .18s ease,background .18s ease!important;}
+.futurehr-sidebar-primary,.futurehr-sidebar-child{transition:transform .18s var(--pe-ease),background .18s ease,border-color .18s ease,color .18s ease!important;}
+@keyframes pe-sidebar-open{from{opacity:0;transform:translateY(-5px) scaleY(.96)}to{opacity:1;transform:translateY(0) scaleY(1)}}
+
+/* Empty states */
+.premium-empty-state{
+  position:relative;overflow:hidden;display:flex;min-height:280px;align-items:center;justify-content:center;
+  border:1px dashed color-mix(in srgb,var(--module-accent,var(--pe-blue)) 24%,var(--pe-border));
+  border-radius:20px;background:
+    radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--module-accent,var(--pe-blue)) 8%,transparent),transparent 36%),
+    var(--pe-surface);
+  padding:34px;text-align:center;
+}
+.premium-empty-state::before{content:"";position:absolute;inset:0;background-image:radial-gradient(color-mix(in srgb,var(--pe-border) 70%,transparent) .8px,transparent .8px);background-size:18px 18px;mask-image:linear-gradient(to bottom,black,transparent 76%);opacity:.35;pointer-events:none;}
+.premium-empty-icon{position:relative;margin:0 auto 16px;display:flex;height:58px;width:58px;align-items:center;justify-content:center;border-radius:18px;border:1px solid color-mix(in srgb,var(--module-accent,var(--pe-blue)) 22%,var(--pe-border));background:color-mix(in srgb,var(--module-accent,var(--pe-blue)) 9%,var(--pe-surface));color:var(--module-accent,var(--pe-blue));box-shadow:0 12px 26px color-mix(in srgb,var(--module-accent,var(--pe-blue)) 10%,transparent);}
+.premium-empty-state h3{font-size:15px;font-weight:680;letter-spacing:-.02em;color:var(--pe-text);}
+.premium-empty-state p{margin:7px auto 0;max-width:460px;font-size:12px;line-height:1.65;color:var(--pe-muted);}
+.premium-empty-actions{position:relative;margin-top:18px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}
+
+/* Skeleton / perceived performance */
+.premium-skeleton{
+  position:relative;overflow:hidden;background:linear-gradient(110deg,var(--pe-surface-3) 8%,color-mix(in srgb,var(--pe-surface) 65%,var(--pe-border)) 18%,var(--pe-surface-3) 33%);background-size:220% 100%;animation:pe-shimmer 1.45s linear infinite;
+}
+.premium-skeleton::after{content:"";position:absolute;inset:0;border:1px solid color-mix(in srgb,var(--pe-border) 70%,transparent);border-radius:inherit;pointer-events:none;}
+@keyframes pe-shimmer{to{background-position-x:-220%}}
+.premium-page-skeleton{animation:pe-page-in .28s var(--pe-ease) both;}
+@keyframes pe-page-in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+
+/* Accessible motion */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+}
+
+/* Responsive polish */
+@media(max-width:900px){
+  [data-tour="workspace"]{padding:14px!important;}
+  .futurehr-dashboard{padding-bottom:16px;}
+}
+@media(max-width:640px){
+  .futurehr-dashboard .enterprise-card,.futurehr-analytics-panel{border-radius:14px!important;}
+  .premium-empty-state{min-height:230px;padding:26px 18px;}
+}
