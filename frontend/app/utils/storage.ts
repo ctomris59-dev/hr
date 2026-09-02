@@ -18,6 +18,13 @@ export const STORAGE_KEYS = {
   COMPENSATION_CYCLES: "hr_compensation_cycles",
   MARKET_BENCHMARKS: "hr_market_benchmarks",
   PULSE_ANSWERS: "hr_pulse_answers",
+  ATTENDANCE_RECORDS: "hr_attendance_records_v1",
+  PAYROLL_RECORDS: "hr_payroll_records_v1",
+  INTEGRATION_CONFIGS: "hr_integration_configs_v1",
+  INTEGRATION_RUNS: "hr_integration_runs_v1",
+  SSO_CONFIG: "hr_sso_config_v1",
+  EXECUTIVE_REPORTS: "hr_executive_reports_v1",
+  KVKK_CONTROL_REGISTER: "hr_kvkk_control_register_v1",
   ACCESS_POLICY: "hr_access_policy_v2",
   AI_ACTION_DRAFTS: "hr_ai_action_drafts_v1",
   AI_FOCUS: "hr_ai_focus_v1",
@@ -37,6 +44,8 @@ const CORE_DATA_KEYS = new Set<string>([
   STORAGE_KEYS.COMPENSATION_CYCLES,
   STORAGE_KEYS.MARKET_BENCHMARKS,
   STORAGE_KEYS.PULSE_ANSWERS,
+  STORAGE_KEYS.ATTENDANCE_RECORDS,
+  STORAGE_KEYS.PAYROLL_RECORDS,
 ]);
 
 function hasMeaningfulData(data: unknown): boolean {
@@ -61,11 +70,7 @@ export function setStorageData<T>(key: string, data: T): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(key, JSON.stringify(data));
-    // Temizlenmiş demo ortamına daha sonra Excel/form/API ile gerçek veri yazılırsa
-    // DataContext bu veriyi tekrar görünür kabul etsin.
-    if (CORE_DATA_KEYS.has(key) && hasMeaningfulData(data)) {
-      localStorage.removeItem(HR_DATA_CLEARED_KEY);
-    }
+    if (CORE_DATA_KEYS.has(key) && hasMeaningfulData(data)) localStorage.removeItem(HR_DATA_CLEARED_KEY);
   } catch (error) {
     console.error("Storage error:", error);
   }
@@ -85,37 +90,26 @@ export function clearStorage(): void {
 // Merkezi demo veri temizleme fonksiyonu. Kimlik bilgilerini ve firma yetki politikasını korur.
 export function clearAllHRData(): void {
   if (typeof window === "undefined") return;
-
   const currentUserHr = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
   const currentUser = localStorage.getItem("user");
   const accessPolicy = localStorage.getItem(STORAGE_KEYS.ACCESS_POLICY);
-
   const allHrKeys = Object.keys(localStorage).filter(
     (key) => key.startsWith("hr_") && key !== STORAGE_KEYS.CURRENT_USER && key !== STORAGE_KEYS.ACCESS_POLICY && key !== HR_DATA_CLEARED_KEY
   );
   allHrKeys.forEach((key) => localStorage.removeItem(key));
 
-  // Doğrudan localStorage kullanılır; setStorageData burada marker'ı yanlışlıkla açmasın.
   const emptyKeys = [
-    STORAGE_KEYS.ORG_CHART,
-    STORAGE_KEYS.HISTORY_360,
-    STORAGE_KEYS.LEAVE_REQUESTS,
-    STORAGE_KEYS.REWARD_LEAVE,
-    STORAGE_KEYS.NOTIFICATIONS,
-    STORAGE_KEYS.CANDIDATE_RESULTS,
-    STORAGE_KEYS.CANDIDATES,
-    STORAGE_KEYS.ASSESSMENTS,
-    STORAGE_KEYS.TRAINING_ASSIGNMENTS,
-    STORAGE_KEYS.DEVELOPMENT_PLANS,
-    STORAGE_KEYS.CAREER_PROFILES,
-    STORAGE_KEYS.COMPENSATION_CYCLES,
-    STORAGE_KEYS.MARKET_BENCHMARKS,
-    STORAGE_KEYS.PULSE_ANSWERS,
-    STORAGE_KEYS.AI_ACTION_DRAFTS,
-    STORAGE_KEYS.AI_HISTORY,
+    STORAGE_KEYS.ORG_CHART, STORAGE_KEYS.HISTORY_360, STORAGE_KEYS.LEAVE_REQUESTS, STORAGE_KEYS.REWARD_LEAVE,
+    STORAGE_KEYS.NOTIFICATIONS, STORAGE_KEYS.CANDIDATE_RESULTS, STORAGE_KEYS.CANDIDATES, STORAGE_KEYS.ASSESSMENTS,
+    STORAGE_KEYS.TRAINING_ASSIGNMENTS, STORAGE_KEYS.DEVELOPMENT_PLANS, STORAGE_KEYS.CAREER_PROFILES,
+    STORAGE_KEYS.COMPENSATION_CYCLES, STORAGE_KEYS.MARKET_BENCHMARKS, STORAGE_KEYS.PULSE_ANSWERS,
+    STORAGE_KEYS.ATTENDANCE_RECORDS, STORAGE_KEYS.PAYROLL_RECORDS, STORAGE_KEYS.INTEGRATION_RUNS,
+    STORAGE_KEYS.EXECUTIVE_REPORTS, STORAGE_KEYS.KVKK_CONTROL_REGISTER, STORAGE_KEYS.AI_ACTION_DRAFTS, STORAGE_KEYS.AI_HISTORY,
   ];
   emptyKeys.forEach((key) => localStorage.setItem(key, "[]"));
   localStorage.setItem(STORAGE_KEYS.USERS, "{}");
+  localStorage.setItem(STORAGE_KEYS.INTEGRATION_CONFIGS, "{}");
+  localStorage.setItem(STORAGE_KEYS.SSO_CONFIG, "{}");
   localStorage.removeItem(STORAGE_KEYS.AI_FOCUS);
 
   localStorage.removeItem("hr_talent_matrix");
@@ -126,7 +120,6 @@ export function clearAllHRData(): void {
   if (currentUserHr) localStorage.setItem(STORAGE_KEYS.CURRENT_USER, currentUserHr);
   if (currentUser) localStorage.setItem("user", currentUser);
   if (accessPolicy) localStorage.setItem(STORAGE_KEYS.ACCESS_POLICY, accessPolicy);
-
   localStorage.setItem(HR_DATA_CLEARED_KEY, "true");
   window.dispatchEvent(new CustomEvent("storageCleared"));
 }
