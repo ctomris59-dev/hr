@@ -26,4 +26,5 @@ export const ReferenceArea = noSsr(() => import("recharts").then((m) => m.Refere
 export const LineChart = noSsr(() => import("recharts").then((m) => m.LineChart as ComponentType<any>));
 export const Line = noSsr(() => import("recharts").then((m) => m.Line as ComponentType<any>));
 export const Legend = noSsr(() => import("recharts").then((m) => m.Legend as ComponentType<any>));
+export const AreaChart = noSsr(() => import("recharts").then((m) => m.AreaChart as ComponentType<any>));
 export const Area = noSsr(() => import("recharts").then((m) => m.Area as ComponentType<any>));
