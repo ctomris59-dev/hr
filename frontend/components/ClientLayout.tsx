@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { BrainCircuit, LayoutDashboard, LogOut, Menu, X, Building2, Search as SearchIcon, Heart, Target, BriefcaseBusiness, GraduationCap, WalletCards, UserPlus, Settings2, UsersRound } from "lucide-react";
+import { BrainCircuit, ChevronRight, LayoutDashboard, LogOut, Menu, X, Building2, Search as SearchIcon, Heart, Target, BriefcaseBusiness, GraduationCap, WalletCards, UserPlus, Settings2, UsersRound, Sparkles, CircleUserRound } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useAuth } from "../context/AuthContext";
 import { canAccessRoute } from "../lib/hr/accessControl";
@@ -36,6 +36,18 @@ const familyIcons:Record<NavigationFamilyId,typeof Building2>={
 const familyMenuLabels:Partial<Record<NavigationFamilyId,string>>={
   experience:"Çalışan Deneyimi",
   employeeOps:"Ekip İşlemleri",
+};
+
+const familyTone:Partial<Record<NavigationFamilyId,string>>={
+  organization:"blue",
+  performance:"violet",
+  talentCareer:"teal",
+  development:"teal",
+  compensation:"emerald",
+  experience:"rose",
+  recruitment:"purple",
+  employeeOps:"sky",
+  system:"slate",
 };
 
 export default function ClientLayout({children}:{children:React.ReactNode}){
@@ -85,7 +97,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
   };
 
   const menuItems=useMemo(()=>{
-    const items:Array<{key:string;href:string;label:string;section:string;icon:typeof LayoutDashboard;routes:string[]}>=[];
+    const items:Array<{key:string;href:string;label:string;section:string;icon:typeof LayoutDashboard;routes:string[];familyId?:NavigationFamilyId}>=[];
     if(canAccessRoute(currentUserRole,"/dashboard"))items.push({key:"dashboard",href:"/dashboard",label:"Yönetici Özeti",section:"Karar Merkezi",icon:LayoutDashboard,routes:["/dashboard"]});
     if(canAccessRoute(currentUserRole,"/karar-merkezi"))items.push({key:"decision",href:"/karar-merkezi",label:"Karar Motoru",section:"Karar Merkezi",icon:BrainCircuit,routes:["/karar-merkezi"]});
     NAVIGATION_FAMILIES.forEach((family)=>{
@@ -97,7 +109,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
       if(accessible.length===1&&family.id==="compensation"&&destination==="/yonetici/maas-talep")label="Ücret Önerileri";
       if(accessible.length===1&&family.id==="organization"&&destination==="/rol-mimarisi")label="Rol & Yetkinlik";
       if(accessible.length===1&&family.id==="employeeOps"&&destination==="/izinler")label="İzinler";
-      items.push({key:family.id,href:destination,label,section:family.section,icon:familyIcons[family.id],routes:family.items.map(item=>item.href)});
+      items.push({key:family.id,href:destination,label,section:family.section,icon:familyIcons[family.id],routes:family.items.map(item=>item.href),familyId:family.id});
     });
     return items;
   },[currentUserRole,policyRevision]);
@@ -118,58 +130,77 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
       {sidebarOpen?<X size={18} aria-hidden="true"/>:<Menu size={18} aria-hidden="true"/>}
     </button>
 
-    <aside id="futurehr-sidebar" data-testid="app-sidebar" data-tour="sidebar" className={`${sidebarOpen?"translate-x-0":"-translate-x-full"} fixed inset-y-0 left-0 z-40 w-[280px] flex-shrink-0 border-r border-white/[0.07] bg-[#0b1521] text-slate-300 shadow-[8px_0_30px_rgba(15,23,42,0.05)] transition-transform duration-200 ease-out lg:static lg:translate-x-0`}>
+    <aside id="futurehr-sidebar" data-testid="app-sidebar" data-tour="sidebar" className={`${sidebarOpen?"translate-x-0":"-translate-x-full"} futurehr-premium-sidebar fixed inset-y-0 left-0 z-40 w-[286px] flex-shrink-0 border-r border-white/[0.07] text-slate-300 transition-transform duration-200 ease-out lg:static lg:translate-x-0`}>
       <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <div className="flex h-[84px] flex-shrink-0 items-center border-b border-white/[0.07] px-5">
+        <div className="futurehr-sidebar-brand flex h-[88px] flex-shrink-0 items-center px-5">
           <div className="min-w-0">
             <Image src="/futurehr-brand-dark.svg" alt="FutureHR" width={220} height={56} className="h-[38px] w-auto object-contain object-left" priority/>
-            <p className="mt-0.5 pl-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-500">People Intelligence Platform</p>
+            <div className="mt-1 flex items-center gap-2 pl-0.5"><span className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-[0_0_0_4px_rgba(94,234,212,.07)]"/><p className="text-[9px] font-semibold uppercase tracking-[0.17em] text-slate-500">People Intelligence Platform</p></div>
           </div>
         </div>
 
-        <nav className="futurehr-sidebar-nav min-h-0 flex-1 overflow-y-auto px-3.5 py-2.5" aria-label="Ana menü">
+        <nav className="futurehr-sidebar-nav min-h-0 flex-1 overflow-y-auto px-3 py-3" aria-label="Ana menü">
           {menuItems.map((item,index)=>{
             const Icon=item.icon;
             const isActive=item.key===activeMenuKey;
             const showSection=index===0||menuItems[index-1]?.section!==item.section;
-            return <div key={item.key}>
-              {showSection&&<div className={`${index===0?"mt-0":"mt-2"} mb-0.5 flex items-center gap-2 px-2.5`}>
-                <span className="text-[9.5px] font-semibold uppercase leading-4 tracking-[0.17em] text-slate-500">{item.section}</span>
-                <span className="h-px flex-1 bg-white/[0.045]"/>
+            const family=item.familyId?NAVIGATION_FAMILIES.find(entry=>entry.id===item.familyId):undefined;
+            const childItems=family?.items.filter(entry=>canAccessRoute(currentUserRole,entry.href))||[];
+            const showChildren=isActive&&childItems.length>1;
+            const tone=item.familyId?familyTone[item.familyId]||"slate":item.key==="decision"?"ai":item.key==="dashboard"?"dashboard":"slate";
+            const isDecision=item.key==="decision";
+            return <div key={item.key} className="futurehr-sidebar-group">
+              {showSection&&<div className={`${index===0?"mt-0":"mt-4"} futurehr-sidebar-section mb-1.5 flex items-center gap-2 px-2.5`}>
+                <span className="text-[9px] font-semibold uppercase leading-4 tracking-[0.18em] text-slate-500">{item.section}</span>
+                <span className="h-px flex-1 bg-gradient-to-r from-white/[0.09] to-transparent"/>
               </div>}
               <Link
                 data-tour-route={item.href}
                 href={item.href}
                 onClick={()=>setSidebarOpen(false)}
                 aria-current={isActive?"page":undefined}
-                className={`group relative mb-0.5 flex h-9 items-center gap-3 overflow-hidden rounded-[10px] px-3 text-[13.5px] leading-5 outline-none transition-[background-color,color,border-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#79aaa6]/45 ${isActive?"bg-[linear-gradient(90deg,rgba(72,115,112,0.24),rgba(255,255,255,0.075))] font-semibold text-white ring-1 ring-inset ring-white/[0.055]":"font-medium text-slate-300/90 hover:bg-white/[0.055] hover:text-white"}`}
+                data-active={isActive?"true":"false"}
+                data-tone={tone}
+                className={`futurehr-sidebar-primary group relative mb-1 flex min-h-[44px] items-center gap-3 overflow-hidden rounded-xl px-2.5 text-[13px] leading-5 outline-none transition-all duration-180 focus-visible:ring-2 focus-visible:ring-teal-300/35 ${isDecision?"futurehr-sidebar-ai":""}`}
               >
-                {isActive&&<span className="absolute inset-y-[8px] left-0 w-[3px] rounded-r-full bg-[#79aaa6]"/>}
-                <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border transition-colors ${isActive?"border-[#79aaa6]/20 bg-[#79aaa6]/10 text-[#a7cbc8]":"border-transparent bg-transparent text-slate-500 group-hover:text-slate-300"}`}>
-                  <Icon size={17.5} strokeWidth={1.65}/>
+                <span className="futurehr-sidebar-accent"/>
+                <span className="futurehr-sidebar-primary-icon flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] border"><Icon size={17} strokeWidth={1.65}/></span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5"><span className="truncate font-semibold tracking-[-0.012em]">{item.label}</span>{isDecision&&<span className="futurehr-sidebar-ai-badge inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.08em]"><Sparkles className="h-2.5 w-2.5"/>AI</span>}</span>
+                  {isDecision&&<span className="mt-0.5 block truncate text-[9.5px] font-medium text-slate-500">Kanıt tabanlı karar desteği</span>}
                 </span>
-                <span className="min-w-0 flex-1 truncate tracking-[-0.012em]">{item.label}</span>
-                {isActive&&<span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#79aaa6] shadow-[0_0_0_3px_rgba(121,170,166,0.10)]"/>}
+                <span className="futurehr-sidebar-primary-arrow flex h-6 w-6 items-center justify-center rounded-lg"><ChevronRight className="h-3.5 w-3.5"/></span>
               </Link>
+
+              {showChildren&&<div className="futurehr-sidebar-children mb-2 ml-[18px] border-l border-white/[0.08] pl-[18px]">
+                {childItems.map((child,childIndex)=>{
+                  const childActive=routeMatches(normalizedPathname,child.href);
+                  return <Link key={child.href} href={child.href} onClick={()=>setSidebarOpen(false)} aria-current={childActive?"page":undefined} className={`futurehr-sidebar-child group flex min-h-[34px] items-center gap-2 rounded-lg px-2.5 py-1.5 ${childActive?"is-active":""}`}>
+                    <span className="w-[18px] text-[8.5px] font-bold tabular-nums text-slate-600">{String(childIndex+1).padStart(2,"0")}</span>
+                    <span className="min-w-0 flex-1 truncate text-[11px] font-medium">{child.label}</span>
+                    {childActive&&<span className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-[0_0_0_3px_rgba(94,234,212,.08)]"/>}
+                  </Link>;
+                })}
+              </div>}
             </div>;
           })}
         </nav>
 
-        <div className="futurehr-sidebar-footer flex-shrink-0 border-t border-white/[0.07] bg-[#09131e] p-3.5">
-          {user&&<div className="mb-2 rounded-[11px] border border-white/[0.06] bg-white/[0.035] p-2.5">
-            <div className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] border border-white/[0.09] bg-[#172534] text-[11px] font-semibold text-slate-100">
-                {userInitials}
-                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#09131e] bg-emerald-500"/>
+        <div className="futurehr-sidebar-footer flex-shrink-0 p-3">
+          {user&&<div className="futurehr-profile-card mb-2.5 overflow-hidden rounded-2xl border border-white/[0.08]">
+            <div className="futurehr-profile-main flex items-center gap-3 p-3">
+              <div className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-white/[0.10] bg-white/[0.055] text-[11px] font-semibold text-slate-100 shadow-inner">
+                {userInitials||<CircleUserRound className="h-5 w-5"/>}
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-[2.5px] border-[#0a1520] bg-emerald-400"/>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] font-semibold leading-4 text-slate-100">{user.name}</p>
-                <p className="mt-0.5 truncate text-[10.5px] leading-4 text-slate-400">{userRole}</p>
+                <div className="flex items-center gap-2"><p className="truncate text-[12.5px] font-semibold leading-4 text-slate-100">{user.name}</p><span className="rounded-full bg-emerald-400/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[.06em] text-emerald-300">Aktif</span></div>
+                <p className="mt-1 truncate text-[10.5px] leading-4 text-slate-400">{userRole}</p>
               </div>
             </div>
-            {userDepartment&&<div className="mt-2 border-t border-white/[0.055] pt-2 text-[9.5px] font-medium uppercase tracking-[0.08em] text-slate-600">{userDepartment}</div>}
+            {userDepartment&&<div className="futurehr-profile-meta border-t border-white/[0.06] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.11em] text-slate-600">{userDepartment}</div>}
           </div>}
-          <button type="button" onClick={handleLogout} className="flex h-9 w-full items-center gap-3 rounded-[9px] px-3 text-[12px] font-medium text-slate-500 transition-colors hover:bg-red-500/[0.08] hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30">
+          <button type="button" onClick={handleLogout} className="futurehr-sidebar-logout flex h-9 w-full items-center gap-3 rounded-xl px-3 text-[11.5px] font-medium text-slate-500 transition-colors hover:bg-red-500/[0.08] hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30">
             <LogOut size={15} strokeWidth={1.7}/><span>Çıkış yap</span>
           </button>
         </div>
