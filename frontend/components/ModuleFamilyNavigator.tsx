@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { BarChart3, BookOpen, Building2, CheckCircle2, ChevronRight, Crown, DollarSign, FileInput, FileText, GraduationCap, Heart, Landmark, LockKeyhole, MapPin, Network, Plane, RefreshCw, Scale, Settings2, ShieldCheck, SlidersHorizontal, Target, UserPlus, Users, WalletCards, type LucideIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { canAccessRoute } from "../lib/hr/accessControl";
@@ -34,6 +35,34 @@ const routeIcons:Record<string,LucideIcon>={
   "/ayarlar/yetki-mimarisi":SlidersHorizontal,
 };
 
+const routeAccents:Record<string,[string,string,string]>={
+  "/organizasyon":["#3974f6","#17aaa5","#eef4ff"],
+  "/rol-mimarisi":["#4f46e5","#17aaa5","#eef2ff"],
+  "/degerlendirme":["#5b5ce2","#8255ef","#f0f0ff"],
+  "/kalibrasyon":["#8255ef","#3974f6","#f4f0ff"],
+  "/yetenek-matrisi":["#18a97d","#3974f6","#ebfbf5"],
+  "/yetkinlik-haritasi":["#3974f6","#5b5ce2","#eef4ff"],
+  "/kariyer":["#8255ef","#c026d3","#f4f0ff"],
+  "/yedekleme":["#ed516d","#f2a000","#fff0f3"],
+  "/gelisim":["#17aaa5","#18a97d","#eafaf9"],
+  "/egitim":["#3974f6","#5b5ce2","#eef4ff"],
+  "/gelisim-analitigi":["#18a97d","#17aaa5","#ebfbf5"],
+  "/maas":["#18a97d","#3974f6","#ebfbf5"],
+  "/ucret-adaleti":["#0f766e","#18a97d","#f0fdfa"],
+  "/yonetici/maas-talep":["#3974f6","#18a97d","#eef4ff"],
+  "/calisan-deneyimi":["#ed516d","#8255ef","#fff0f3"],
+  "/ise-alim":["#8255ef","#3974f6","#f4f0ff"],
+  "/aday-testi":["#3974f6","#8255ef","#eef4ff"],
+  "/ekip-yonetimi":["#3974f6","#17aaa5","#eef4ff"],
+  "/izinler":["#0284c7","#17aaa5","#eff6ff"],
+  "/admin":["#475569","#3974f6","#f1f5f9"],
+  "/kurulum":["#64748b","#3974f6","#f1f5f9"],
+  "/turkiye-uyum":["#b45309","#dc2626","#fffbeb"],
+  "/admin/veri-aktarimi":["#17aaa5","#3974f6","#eafaf9"],
+  "/admin/guven-kvkk":["#475569","#8255ef","#f1f5f9"],
+  "/ayarlar/yetki-mimarisi":["#64748b","#3974f6","#f1f5f9"],
+};
+
 function gridClass(count:number){
   if(count===2)return "md:grid-cols-2";
   if(count===3)return "md:grid-cols-3";
@@ -56,16 +85,21 @@ export default function ModuleFamilyNavigator({pathname}:{pathname:string}){
         <p className="max-w-3xl text-[12px] leading-[1.15rem] text-slate-500 dark:text-slate-400">{family.description}</p>
       </div>
     </div>
-    <div className={`grid gap-2 p-3 ${gridClass(visibleItems.length)}`}>
-      {visibleItems.map((item,index)=>{const Icon=routeIcons[item.href]||ChevronRight;const active=item.href===activeHref;return <Link key={item.href} href={item.href} aria-current={active?"page":undefined} data-workspace-module={item.href} data-active={active?"true":"false"} className="futurehr-family-card group relative min-h-[96px] overflow-hidden border px-3.5 py-3">
-        <div className="flex items-start gap-3">
-          <div className="futurehr-family-card-icon flex h-8 w-8 shrink-0 items-center justify-center"><Icon className="h-4 w-4" strokeWidth={1.65}/></div>
-          <div className="min-w-0 flex-1 pr-7">
-            <div className="flex min-w-0 items-center gap-2"><span className="text-[9.5px] font-semibold tabular-nums text-slate-300 dark:text-slate-600">{String(index+1).padStart(2,"0")}</span><h3 className="truncate text-[14px] font-semibold tracking-[-.015em] text-slate-950 dark:text-slate-100">{item.label}</h3>{active&&<span className="futurehr-family-current-inline inline-flex shrink-0 items-center gap-1 text-[9.5px] font-semibold uppercase tracking-[.05em]"><CheckCircle2 className="h-3 w-3"/>Aktif</span>}</div>
-            <p className="mt-1 text-[11.5px] leading-[1.05rem] text-slate-500 dark:text-slate-400">{item.description}</p>
+    <div className={`futurehr-family-grid grid gap-3 p-3 ${gridClass(visibleItems.length)}`}>
+      {visibleItems.map((item,index)=>{const Icon=routeIcons[item.href]||ChevronRight;const active=item.href===activeHref;const[accent,accent2,soft]=routeAccents[item.href]||["#3974f6","#17aaa5","#eef4ff"];const cardStyle={"--family-accent":accent,"--family-accent-2":accent2,"--family-soft":soft} as CSSProperties;return <Link key={item.href} href={item.href} aria-current={active?"page":undefined} data-workspace-module={item.href} data-active={active?"true":"false"} className="futurehr-family-card group relative overflow-hidden border" style={cardStyle}>
+        <div className="futurehr-family-card-content flex items-center gap-3.5">
+          <div className="futurehr-family-card-icon flex shrink-0 items-center justify-center"><Icon className="futurehr-family-icon-glyph" strokeWidth={1.8}/></div>
+          <div className="min-w-0 flex-1">
+            <div className="futurehr-family-card-meta flex min-w-0 items-center gap-2">
+              <span className="futurehr-family-index tabular-nums">{String(index+1).padStart(2,"0")}</span>
+              {active&&<span className="futurehr-family-current-inline inline-flex shrink-0 items-center gap-1"><CheckCircle2 className="h-3 w-3"/>Aktif</span>}
+            </div>
+            <h3 className="futurehr-family-title mt-1 truncate">{item.label}</h3>
+            <p className="futurehr-family-description mt-1 line-clamp-2">{item.description}</p>
           </div>
+          <span className="futurehr-family-arrow flex shrink-0 items-center justify-center" aria-hidden="true"><ChevronRight className="h-4 w-4"/></span>
         </div>
-        <span className="futurehr-family-arrow absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center" aria-hidden="true"><ChevronRight className="h-3.5 w-3.5"/></span>
+        <span className="futurehr-family-card-sheen" aria-hidden="true" />
       </Link>;})}
     </div>
   </section>;
