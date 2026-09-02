@@ -21,6 +21,7 @@ import { NotificationProvider } from "../context/NotificationContext";
 import { DataProvider } from "../context/DataContext";
 import { ThemeProvider } from "../components/ThemeProvider";
 import DemoCompany50Bridge from "../components/DemoCompany50Bridge";
+import DemoCompany50PerformanceNormalizer from "../components/DemoCompany50PerformanceNormalizer";
 import { Toaster } from "sonner";
 import ToastInterceptor from "../components/ToastInterceptor";
 
@@ -62,6 +63,7 @@ export default function RootLayout({
             <NotificationProvider>
               <DataProvider>
                 <DemoCompany50Bridge />
+                <DemoCompany50PerformanceNormalizer />
                 {children}
               </DataProvider>
             </NotificationProvider>
