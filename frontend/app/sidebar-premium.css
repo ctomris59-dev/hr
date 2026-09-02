@@ -1,0 +1,113 @@
+/* FutureHR Premium Sidebar — September 2026 */
+.futurehr-premium-sidebar{
+  background:
+    radial-gradient(circle at 15% 0%,rgba(45,212,191,.08),transparent 28%),
+    linear-gradient(180deg,#0a1420 0%,#0a1520 48%,#08121c 100%);
+  box-shadow:12px 0 36px rgba(2,8,23,.10);
+}
+.futurehr-sidebar-brand{
+  position:relative;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,0));
+}
+.futurehr-sidebar-brand::after{
+  content:"";
+  position:absolute;left:20px;right:20px;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,rgba(94,234,212,.42),rgba(99,102,241,.18),transparent);
+}
+.futurehr-sidebar-nav{scrollbar-width:thin;scrollbar-color:rgba(148,163,184,.18) transparent;}
+.futurehr-sidebar-nav::-webkit-scrollbar{width:5px;}
+.futurehr-sidebar-nav::-webkit-scrollbar-thumb{background:rgba(148,163,184,.16);border-radius:20px;}
+.futurehr-sidebar-primary{
+  color:#c6d0dc;
+  border:1px solid transparent;
+  background:transparent;
+}
+.futurehr-sidebar-primary:hover{
+  color:#fff;
+  border-color:rgba(255,255,255,.055);
+  background:linear-gradient(90deg,rgba(255,255,255,.055),rgba(255,255,255,.025));
+  transform:translateX(1px);
+}
+.futurehr-sidebar-primary-icon{
+  border-color:rgba(148,163,184,.16);
+  background:rgba(255,255,255,.025);
+  color:#8190a3;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.futurehr-sidebar-primary-arrow{color:#526174;transition:all .18s ease;}
+.futurehr-sidebar-primary:hover .futurehr-sidebar-primary-arrow{color:#aebac8;transform:translateX(1px);}
+.futurehr-sidebar-accent{
+  position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 8px 8px 0;
+  opacity:0;transform:scaleY(.6);transition:all .18s ease;
+}
+.futurehr-sidebar-primary[data-active="true"]{
+  color:#fff;
+  border-color:rgba(255,255,255,.075);
+  background:linear-gradient(100deg,rgba(255,255,255,.10),rgba(255,255,255,.045));
+  box-shadow:0 10px 25px rgba(2,8,23,.18),inset 0 1px 0 rgba(255,255,255,.04);
+}
+.futurehr-sidebar-primary[data-active="true"] .futurehr-sidebar-accent{opacity:1;transform:scaleY(1);}
+.futurehr-sidebar-primary[data-active="true"] .futurehr-sidebar-primary-icon{color:#fff;}
+.futurehr-sidebar-primary[data-active="true"] .futurehr-sidebar-primary-arrow{color:rgba(255,255,255,.78);background:rgba(255,255,255,.06);}
+
+/* Family color signatures */
+.futurehr-sidebar-primary[data-tone="blue"][data-active="true"]{background:linear-gradient(100deg,rgba(59,130,246,.24),rgba(14,165,233,.075));}
+.futurehr-sidebar-primary[data-tone="blue"] .futurehr-sidebar-accent{background:#60a5fa;box-shadow:0 0 14px rgba(96,165,250,.45);}
+.futurehr-sidebar-primary[data-tone="blue"][data-active="true"] .futurehr-sidebar-primary-icon{border-color:rgba(96,165,250,.22);background:rgba(96,165,250,.11);}
+.futurehr-sidebar-primary[data-tone="violet"][data-active="true"]{background:linear-gradient(100deg,rgba(124,58,237,.25),rgba(59,130,246,.07));}
+.futurehr-sidebar-primary[data-tone="violet"] .futurehr-sidebar-accent{background:#a78bfa;box-shadow:0 0 14px rgba(167,139,250,.42);}
+.futurehr-sidebar-primary[data-tone="violet"][data-active="true"] .futurehr-sidebar-primary-icon{border-color:rgba(167,139,250,.22);background:rgba(167,139,250,.11);}
+.futurehr-sidebar-primary[data-tone="teal"][data-active="true"]{background:linear-gradient(100deg,rgba(20,184,166,.25),rgba(16,185,129,.07));}
+.futurehr-sidebar-primary[data-tone="teal"] .futurehr-sidebar-accent{background:#5eead4;box-shadow:0 0 14px rgba(94,234,212,.42);}
+.futurehr-sidebar-primary[data-tone="teal"][data-active="true"] .futurehr-sidebar-primary-icon{border-color:rgba(94,234,212,.22);background:rgba(94,234,212,.10);}
+.futurehr-sidebar-primary[data-tone="emerald"][data-active="true"]{background:linear-gradient(100deg,rgba(16,185,129,.24),rgba(59,130,246,.07));}
+.futurehr-sidebar-primary[data-tone="emerald"] .futurehr-sidebar-accent{background:#6ee7b7;box-shadow:0 0 14px rgba(110,231,183,.38);}
+.futurehr-sidebar-primary[data-tone="emerald"][data-active="true"] .futurehr-sidebar-primary-icon{border-color:rgba(110,231,183,.22);background:rgba(110,231,183,.10);}
+.futurehr-sidebar-primary[data-tone="rose"][data-active="true"]{background:linear-gradient(100deg,rgba(244,63,94,.22),rgba(168,85,247,.07));}
+.futurehr-sidebar-primary[data-tone="rose"] .futurehr-sidebar-accent{background:#fb7185;box-shadow:0 0 14px rgba(251,113,133,.4);}
+.futurehr-sidebar-primary[data-tone="purple"][data-active="true"]{background:linear-gradient(100deg,rgba(168,85,247,.24),rgba(99,102,241,.07));}
+.futurehr-sidebar-primary[data-tone="purple"] .futurehr-sidebar-accent{background:#c084fc;box-shadow:0 0 14px rgba(192,132,252,.4);}
+.futurehr-sidebar-primary[data-tone="sky"][data-active="true"]{background:linear-gradient(100deg,rgba(14,165,233,.22),rgba(20,184,166,.07));}
+.futurehr-sidebar-primary[data-tone="sky"] .futurehr-sidebar-accent{background:#38bdf8;box-shadow:0 0 14px rgba(56,189,248,.38);}
+.futurehr-sidebar-primary[data-tone="slate"] .futurehr-sidebar-accent{background:#94a3b8;}
+.futurehr-sidebar-primary[data-tone="dashboard"][data-active="true"]{background:linear-gradient(100deg,rgba(45,212,191,.23),rgba(59,130,246,.06));}
+.futurehr-sidebar-primary[data-tone="dashboard"] .futurehr-sidebar-accent{background:#5eead4;box-shadow:0 0 14px rgba(94,234,212,.42);}
+
+/* AI decision engine is intentionally distinct. */
+.futurehr-sidebar-ai{
+  min-height:50px;
+  margin-top:2px;
+  border-color:rgba(129,140,248,.12);
+  background:linear-gradient(105deg,rgba(99,102,241,.075),rgba(45,212,191,.025));
+}
+.futurehr-sidebar-ai:hover{border-color:rgba(129,140,248,.22);background:linear-gradient(105deg,rgba(99,102,241,.13),rgba(45,212,191,.055));}
+.futurehr-sidebar-ai[data-active="true"]{background:linear-gradient(105deg,rgba(99,102,241,.26),rgba(45,212,191,.11));border-color:rgba(129,140,248,.25);}
+.futurehr-sidebar-ai .futurehr-sidebar-accent{background:linear-gradient(180deg,#a78bfa,#5eead4);box-shadow:0 0 16px rgba(129,140,248,.4);}
+.futurehr-sidebar-ai-badge{color:#c4b5fd;background:rgba(139,92,246,.12);border:1px solid rgba(167,139,250,.14);}
+
+/* Expanded child navigation */
+.futurehr-sidebar-children{position:relative;animation:futurehrSidebarReveal .18s ease-out;}
+.futurehr-sidebar-child{color:#718096;transition:all .15s ease;}
+.futurehr-sidebar-child:hover{color:#cbd5e1;background:rgba(255,255,255,.035);transform:translateX(1px);}
+.futurehr-sidebar-child.is-active{color:#ecfeff;background:linear-gradient(90deg,rgba(45,212,191,.09),rgba(255,255,255,.015));}
+.futurehr-sidebar-child.is-active span:first-child{color:#5eead4;}
+@keyframes futurehrSidebarReveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+.futurehr-sidebar-footer{
+  border-top:1px solid rgba(255,255,255,.07);
+  background:linear-gradient(180deg,rgba(5,12,20,.35),rgba(5,12,20,.72));
+  box-shadow:0 -12px 30px rgba(2,8,23,.08);
+}
+.futurehr-profile-card{
+  background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.025));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 20px rgba(2,8,23,.12);
+}
+.futurehr-profile-main{background:radial-gradient(circle at 0 0,rgba(45,212,191,.055),transparent 52%);}
+.futurehr-profile-meta{background:rgba(255,255,255,.018);}
+.futurehr-sidebar-logout{border:1px solid transparent;}
+.futurehr-sidebar-logout:hover{border-color:rgba(248,113,113,.10);}
+
+@media(max-width:1023px){
+  .futurehr-premium-sidebar{box-shadow:18px 0 50px rgba(2,8,23,.28);}
+}
