@@ -14,6 +14,7 @@ import "./analytics-dashboard.css";
 import "./module-hero-polish.css";
 import "./executive-dashboard-unification.css";
 import "./futurehr-family-nav-premium.css";
+import "./sidebar-premium.css";
 import "./futurehr-agent-layer.css";
 import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
