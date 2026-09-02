@@ -20,6 +20,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { DataProvider } from "../context/DataContext";
 import { ThemeProvider } from "../components/ThemeProvider";
+import DemoCompany50Bridge from "../components/DemoCompany50Bridge";
 import { Toaster } from "sonner";
 import ToastInterceptor from "../components/ToastInterceptor";
 
@@ -60,6 +61,7 @@ export default function RootLayout({
           <AuthProvider>
             <NotificationProvider>
               <DataProvider>
+                <DemoCompany50Bridge />
                 {children}
               </DataProvider>
             </NotificationProvider>
