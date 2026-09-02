@@ -10,6 +10,7 @@ type JsonRow = Record<string, unknown>;
 
 const ALLOWED = new Set(TURKEY_CONNECTORS.map((item) => item.id));
 const MAX_VENDOR_ROWS = 5000;
+const EXPECTED_INGEST_SCHEMA = "20260902_0006";
 const env = (name?: string) => name ? String(process.env[name] || "").trim() : "";
 
 function json(payload: unknown, status = 200) {
@@ -29,6 +30,17 @@ async function requireConnectorAdmin() {
   if (!user) return { user: null, response: json({ error: "Authentication required" }, 401) };
   if (!canManageConnectors(user.role)) return { user, response: json({ error: "Connector administration requires an HR administrator role" }, 403) };
   return { user, response: null };
+}
+
+async function secureIngestReadiness() {
+  try {
+    const response = await fetchWithSession("/api/v1/integrations/readiness");
+    if (!response?.ok) return false;
+    const payload = asObject(await response.json().catch(() => null));
+    return payload?.ready === true && String(payload.schema_revision || "") === EXPECTED_INGEST_SCHEMA;
+  } catch {
+    return false;
+  }
 }
 
 function definition(provider: string) {
@@ -199,7 +211,19 @@ export async function GET(_request: Request, context: { params: Promise<{ provid
   const { provider } = await context.params;
   if (!ALLOWED.has(provider as TurkeyConnectorId)) return json({ error: "Unsupported connector" }, 404);
   const item = definition(provider)!;
-  return json({ ...safeStatus(provider as TurkeyConnectorId), name: item.name, family: item.family, transport: item.transport, description: item.description });
+  const status = safeStatus(provider as TurkeyConnectorId);
+  if (provider === "excel") return json({ ...status, ingestReady: true, name: item.name, family: item.family, transport: item.transport, description: item.description });
+  const ingestReady = await secureIngestReadiness();
+  return json({
+    ...status,
+    configured: status.configured && ingestReady,
+    state: status.configured && !ingestReady ? "backend_upgrade_required" : status.state,
+    ingestReady,
+    name: item.name,
+    family: item.family,
+    transport: item.transport,
+    description: item.description,
+  });
 }
 
 export async function POST(request: Request, context: { params: Promise<{ provider: string }> }) {
@@ -221,6 +245,15 @@ export async function POST(request: Request, context: { params: Promise<{ provid
   if (!new Set(["health", "preview", "sync"]).has(action)) return json({ provider: id, ok: false, message: "Unsupported connector action" }, 400);
   const domain = String(body.domain || "employees").toLowerCase();
   if (!["employees", "payroll", "attendance"].includes(domain)) return json({ provider: id, ok: false, message: "Unsupported connector domain" }, 400);
+
+  if (action === "sync" && !(await secureIngestReadiness())) {
+    return json({
+      provider: id,
+      ok: false,
+      state: "backend_upgrade_required",
+      message: "Secure tenant ingest backend is not ready. Deploy the backend revision and apply migration 20260902_0006 before syncing.",
+    }, 503);
+  }
 
   try {
     if (action === "health") {
