@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build && node --experimental-strip-types scripts/turkey-enterprise-stress.mts",
+    "build": "next build && node --experimental-strip-types scripts/turkey-enterprise-stress.mjs",
     "start": "next start",
     "lint": "eslint",
     "demo:inspect": "playwright test demo-inspector.spec.ts",
