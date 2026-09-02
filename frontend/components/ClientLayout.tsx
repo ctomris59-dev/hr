@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { BrainCircuit, ChevronRight, LayoutDashboard, LogOut, Menu, X, Building2, Search as SearchIcon, Heart, Target, BriefcaseBusiness, GraduationCap, WalletCards, UserPlus, Settings2, UsersRound, Sparkles, CircleUserRound } from "lucide-react";
+import { BrainCircuit, ChevronRight, LayoutDashboard, LogOut, Menu, X, Building2, Search as SearchIcon, Heart, Target, BriefcaseBusiness, GraduationCap, WalletCards, UserPlus, Settings2, UsersRound, Sparkles, CircleUserRound, Crown, ShieldCheck, Clock3, CircleCheckBig } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useAuth } from "../context/AuthContext";
 import { canAccessRoute } from "../lib/hr/accessControl";
@@ -50,10 +50,23 @@ const familyTone:Partial<Record<NavigationFamilyId,string>>={
   system:"slate",
 };
 
+function formatLastLogin(value?:string){
+  if(!value)return "Bu oturum";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return "Bu oturum";
+  const now=new Date();
+  const time=date.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+  if(date.toDateString()===now.toDateString())return `Bugün, ${time}`;
+  const yesterday=new Date(now);yesterday.setDate(now.getDate()-1);
+  if(date.toDateString()===yesterday.toDateString())return `Dün, ${time}`;
+  return date.toLocaleDateString("tr-TR",{day:"2-digit",month:"short"});
+}
+
 export default function ClientLayout({children}:{children:React.ReactNode}){
   const pathname=usePathname();
   const normalizedPathname=decodeURIComponent(pathname||"/");
   const[user,setUser]=useState<any>(null);
+  const[profileOpenActions,setProfileOpenActions]=useState(0);
   const[sidebarOpen,setSidebarOpen]=useState(false);
   const[expandedMenuKey,setExpandedMenuKey]=useState<string|null>(null);
   const[policyRevision,setPolicyRevision]=useState(0);
@@ -61,19 +74,34 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
   const{currentUserRole}=useAuth();
 
   useEffect(()=>{
-    const loadUser=()=>setUser(getStorageData(STORAGE_KEYS.CURRENT_USER,null)||null);
-    const storage=(e:StorageEvent)=>{if(!e.key||e.key===STORAGE_KEYS.CURRENT_USER)loadUser();};
+    const loadUser=()=>{
+      const nextUser=getStorageData(STORAGE_KEYS.CURRENT_USER,null)||null;
+      setUser(nextUser);
+      const notifications=getStorageData<any[]>(STORAGE_KEYS.NOTIFICATIONS,[]);
+      const actionDrafts=getStorageData<any[]>(STORAGE_KEYS.AI_ACTION_DRAFTS,[]);
+      const role=String(nextUser?.role||"").toUpperCase();
+      const notificationCount=notifications.filter((item:any)=>{
+        if(item?.read===true)return false;
+        const target=String(item?.targetRole||"").toUpperCase();
+        return !target||target==="ALL"||!role||target===role;
+      }).length;
+      const draftCount=actionDrafts.filter((item:any)=>!(["done","completed","dismissed","closed","cancelled"].includes(String(item?.status||"").toLowerCase()))).length;
+      setProfileOpenActions(notificationCount+draftCount);
+    };
+    const storage=(e:StorageEvent)=>{if(!e.key||e.key.startsWith("hr_"))loadUser();};
     const refresh=()=>loadUser();
     const refreshPolicy=()=>setPolicyRevision(v=>v+1);
     loadUser();
     window.addEventListener("storage",storage);
     window.addEventListener("storageCleared",refresh);
     window.addEventListener("userChanged",refresh);
+    window.addEventListener("dataUpdated",refresh);
     window.addEventListener("accessPolicyUpdated",refreshPolicy);
     return()=>{
       window.removeEventListener("storage",storage);
       window.removeEventListener("storageCleared",refresh);
       window.removeEventListener("userChanged",refresh);
+      window.removeEventListener("dataUpdated",refresh);
       window.removeEventListener("accessPolicyUpdated",refreshPolicy);
     };
   },[]);
@@ -126,6 +154,15 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
   const userInitials=(user?.name||"FH").split(" ").filter(Boolean).slice(0,2).map((part:string)=>part[0]?.toUpperCase()).join("");
   const userRole=user?.position||user?.role||"Kullanıcı";
   const userDepartment=user?.dept||user?.department||"";
+  const normalizedUserRole=String(user?.role||currentUserRole||"").toUpperCase();
+  const isExecutive=normalizedUserRole==="CEO"||/genel müdür|ceo/i.test(String(userRole));
+  const isHR=["IK","HR","HR_ADMIN"].includes(normalizedUserRole);
+  const isManager=isExecutive||isHR||["MANAGER","DIRECTOR"].includes(normalizedUserRole)||/müdür|direktör|manager|lider/i.test(String(userRole));
+  const profileTone=isExecutive?"executive":isHR?"hr":isManager?"manager":"employee";
+  const profileContextTitle=isExecutive?"Genel Yönetim":isHR?"İnsan & Organizasyon":userDepartment||"FutureHR Hesabı";
+  const profileContextSubtitle=isExecutive?"Üst düzey yönetici hesabı":isHR?"İnsan ve organizasyon yönetimi":isManager?"Ekip ve karar sorumluluğu":"Kişisel çalışma alanı";
+  const profileAccessLabel=isExecutive?"CEO":isHR?"İK":isManager?"Yönetici":"Çalışan";
+  const lastLoginLabel=formatLastLogin(user?.lastLoginAt||user?.last_login_at||user?.lastLogin||user?.loginAt);
 
   return <div data-testid="app-shell" className="flex h-screen overflow-hidden bg-[#f6f6f3] dark:bg-[#0f151b]">
     <AIGovernanceCapture/>
@@ -169,17 +206,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
                 <span className="text-[9px] font-semibold uppercase leading-4 tracking-[0.18em] text-slate-500">{item.section}</span>
                 <span className="h-px flex-1 bg-gradient-to-r from-white/[0.09] to-transparent"/>
               </div>}
-              <Link
-                data-tour-route={item.href}
-                href={item.href}
-                onClick={handlePrimaryClick}
-                aria-current={isActive?"page":undefined}
-                aria-expanded={isExpandable?isExpanded:undefined}
-                data-active={isActive?"true":"false"}
-                data-expanded={isExpanded?"true":"false"}
-                data-tone={tone}
-                className={`futurehr-sidebar-primary group relative mb-1 flex min-h-[44px] items-center gap-3 overflow-hidden rounded-xl px-2.5 text-[13px] leading-5 outline-none transition-all duration-180 focus-visible:ring-2 focus-visible:ring-teal-300/35 ${isDecision?"futurehr-sidebar-ai":""}`}
-              >
+              <Link data-tour-route={item.href} href={item.href} onClick={handlePrimaryClick} aria-current={isActive?"page":undefined} aria-expanded={isExpandable?isExpanded:undefined} data-active={isActive?"true":"false"} data-expanded={isExpanded?"true":"false"} data-tone={tone} className={`futurehr-sidebar-primary group relative mb-1 flex min-h-[44px] items-center gap-3 overflow-hidden rounded-xl px-2.5 text-[13px] leading-5 outline-none transition-all duration-180 focus-visible:ring-2 focus-visible:ring-teal-300/35 ${isDecision?"futurehr-sidebar-ai":""}`}>
                 <span className="futurehr-sidebar-accent"/>
                 <span className="futurehr-sidebar-primary-icon flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] border"><Icon size={17} strokeWidth={1.65}/></span>
                 <span className="min-w-0 flex-1">
@@ -188,7 +215,6 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
                 </span>
                 <span className={`futurehr-sidebar-primary-arrow flex h-6 w-6 items-center justify-center rounded-lg transition-transform ${isExpanded?"rotate-90":""}`}><ChevronRight className="h-3.5 w-3.5"/></span>
               </Link>
-
               {showChildren&&<div className="futurehr-sidebar-children mb-2 ml-[18px] border-l border-white/[0.08] pl-[18px]">
                 {childItems.map((child,childIndex)=>{
                   const childActive=routeMatches(normalizedPathname,child.href);
@@ -204,22 +230,33 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
         </nav>
 
         <div className="futurehr-sidebar-footer flex-shrink-0 p-3">
-          {user&&<div className="futurehr-profile-card mb-2.5 overflow-hidden rounded-2xl border border-white/[0.08]">
-            <div className="futurehr-profile-main flex items-center gap-3 p-3">
-              <div className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-white/[0.10] bg-white/[0.055] text-[11px] font-semibold text-slate-100 shadow-inner">
-                {userInitials||<CircleUserRound className="h-5 w-5"/>}
-                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-[2.5px] border-[#0a1520] bg-emerald-400"/>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2"><p className="truncate text-[12.5px] font-semibold leading-4 text-slate-100">{user.name}</p><span className="rounded-full bg-emerald-400/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[.06em] text-emerald-300">Aktif</span></div>
-                <p className="mt-1 truncate text-[10.5px] leading-4 text-slate-400">{userRole}</p>
+          {user&&<div className="futurehr-profile-card futurehr-identity-zone mb-2.5 overflow-hidden rounded-[20px] border" data-profile-tone={profileTone}>
+            <div className="futurehr-profile-main relative p-3.5">
+              <div className="futurehr-profile-glow" aria-hidden="true"/>
+              <div className="relative flex items-center gap-3">
+                <div className="futurehr-profile-avatar relative flex h-[50px] w-[50px] flex-shrink-0 items-center justify-center rounded-[15px] text-[13px] font-semibold tracking-[.04em] text-white">
+                  {userInitials||<CircleUserRound className="h-5 w-5"/>}
+                  <span className="futurehr-profile-presence absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-[3px] border-[#0b1725] bg-emerald-400"/>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2"><p className="truncate text-[13.5px] font-semibold leading-5 tracking-[-.018em] text-white">{user.name}</p><span className="futurehr-profile-status rounded-full px-1.5 py-0.5 text-[7.5px] font-bold uppercase tracking-[.08em]">Aktif</span></div>
+                  <p className="mt-0.5 truncate text-[10.5px] font-medium leading-4 text-slate-400">{userRole}</p>
+                </div>
               </div>
             </div>
-            {userDepartment&&<div className="futurehr-profile-meta border-t border-white/[0.06] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.11em] text-slate-600">{userDepartment}</div>}
+            <div className="futurehr-profile-context relative flex items-center gap-2.5 border-t border-white/[0.07] px-3.5 py-2.5">
+              <span className="futurehr-profile-context-icon flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[11px] border"><Crown className="h-4 w-4" strokeWidth={1.8}/></span>
+              <div className="min-w-0 flex-1"><p className="truncate text-[9px] font-bold uppercase tracking-[.12em]">{profileContextTitle}</p><p className="mt-0.5 truncate text-[9.5px] text-slate-500">{profileContextSubtitle}</p></div>
+              <ShieldCheck className="h-3.5 w-3.5 flex-shrink-0 text-slate-600" strokeWidth={1.7}/>
+            </div>
+            <div className="futurehr-profile-stats grid grid-cols-3 gap-1.5 border-t border-white/[0.055] p-2">
+              <div className="futurehr-profile-stat rounded-xl px-2 py-2"><ShieldCheck className="h-3.5 w-3.5 text-sky-400" strokeWidth={1.8}/><span className="mt-1 block text-[7.5px] font-medium text-slate-600">Yetki</span><strong className="mt-0.5 block truncate text-[9.5px] font-semibold text-slate-200">{profileAccessLabel}</strong></div>
+              <div className="futurehr-profile-stat rounded-xl px-2 py-2"><Clock3 className="h-3.5 w-3.5 text-indigo-400" strokeWidth={1.8}/><span className="mt-1 block text-[7.5px] font-medium text-slate-600">Son giriş</span><strong className="mt-0.5 block truncate text-[9px] font-semibold text-slate-200" title={lastLoginLabel}>{lastLoginLabel}</strong></div>
+              <div className="futurehr-profile-stat rounded-xl px-2 py-2"><CircleCheckBig className="h-3.5 w-3.5 text-emerald-400" strokeWidth={1.8}/><span className="mt-1 block text-[7.5px] font-medium text-slate-600">Açık aksiyon</span><strong className="mt-0.5 block text-[9.5px] font-semibold text-slate-200">{profileOpenActions}</strong></div>
+            </div>
+            <div className="futurehr-profile-signature flex items-center justify-between border-t border-white/[0.055] px-3.5 py-2"><span className="text-[7.5px] font-semibold uppercase tracking-[.14em] text-slate-600">FutureHR çalışma kimliği</span><span className="flex items-center gap-1 text-[7.5px] font-semibold text-emerald-400/80"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/>Güvenli oturum</span></div>
           </div>}
-          <button type="button" onClick={handleLogout} className="futurehr-sidebar-logout flex h-9 w-full items-center gap-3 rounded-xl px-3 text-[11.5px] font-medium text-slate-500 transition-colors hover:bg-red-500/[0.08] hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30">
-            <LogOut size={15} strokeWidth={1.7}/><span>Çıkış yap</span>
-          </button>
+          <button type="button" onClick={handleLogout} className="futurehr-sidebar-logout flex h-9 w-full items-center gap-3 rounded-xl px-3 text-[11.5px] font-medium text-slate-500 transition-colors hover:bg-red-500/[0.08] hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30"><LogOut size={15} strokeWidth={1.7}/><span>Çıkış yap</span></button>
         </div>
       </div>
     </aside>
