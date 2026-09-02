@@ -18,6 +18,7 @@ import "./sidebar-premium.css";
 import "./profile-identity-premium.css";
 import "./premium-enterprise-system.css";
 import "./futurehr-agent-layer.css";
+import "./mobile-enterprise.css";
 import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { DataProvider } from "../context/DataContext";
@@ -28,6 +29,7 @@ import DemoSalaryCoverageBridge from "../components/DemoSalaryCoverageBridge";
 import SidebarRailController from "../components/SidebarRailController";
 import PremiumEmptyStateRuntime from "../components/PremiumEmptyStateRuntime";
 import PremiumMotionRuntime from "../components/PremiumMotionRuntime";
+import MobileManagerDock from "../components/MobileManagerDock";
 import { Toaster } from "sonner";
 import ToastInterceptor from "../components/ToastInterceptor";
 
@@ -56,6 +58,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <PremiumEmptyStateRuntime />
                 <PremiumMotionRuntime />
                 {children}
+                <MobileManagerDock />
               </DataProvider>
             </NotificationProvider>
           </AuthProvider>
