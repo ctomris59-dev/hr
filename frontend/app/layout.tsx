@@ -24,6 +24,8 @@ import { DataProvider } from "../context/DataContext";
 import { ThemeProvider } from "../components/ThemeProvider";
 import DemoCompany50Bridge from "../components/DemoCompany50Bridge";
 import DemoCompany50PerformanceNormalizer from "../components/DemoCompany50PerformanceNormalizer";
+import SidebarRailController from "../components/SidebarRailController";
+import PremiumEmptyStateRuntime from "../components/PremiumEmptyStateRuntime";
 import { Toaster } from "sonner";
 import ToastInterceptor from "../components/ToastInterceptor";
 
@@ -47,6 +49,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <DataProvider>
                 <DemoCompany50Bridge />
                 <DemoCompany50PerformanceNormalizer />
+                <SidebarRailController />
+                <PremiumEmptyStateRuntime />
                 {children}
               </DataProvider>
             </NotificationProvider>
