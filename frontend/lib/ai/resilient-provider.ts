@@ -84,8 +84,15 @@ function retryDelay(response?: Response, attempt = 0) {
   return Math.min(2500, 450 * 2 ** attempt + Math.floor(Math.random() * 180));
 }
 
-function groqBody(model: string, prompt: string, schema: Record<string, any>, schemaName: string, maxTokens: number) {
-  const strict = STRICT_GROQ_MODELS.has(model);
+function groqBody(
+  model: string,
+  prompt: string,
+  schema: Record<string, any>,
+  schemaName: string,
+  maxTokens: number,
+  forceRelaxed = false,
+) {
+  const strict = STRICT_GROQ_MODELS.has(model) && !forceRelaxed;
   const body: Record<string, any> = {
     model,
     messages: [{ role: "user", content: prompt }],
@@ -127,6 +134,76 @@ function extractOpenAIText(payload: any) {
   return chunks.join("\n").trim();
 }
 
+function shouldTryRelaxed(status: number, detail: string) {
+  if (status !== 400) return false;
+  return /json|schema|failed_generation|json_validate_failed|does not match/i.test(detail);
+}
+
+function parseJsonObject(text: string) {
+  const clean = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const first = clean.indexOf("{");
+  const last = clean.lastIndexOf("}");
+  for (const candidate of [clean, first >= 0 && last > first ? clean.slice(first, last + 1) : ""]) {
+    if (!candidate) continue;
+    try { return JSON.parse(candidate); } catch {}
+  }
+  return null;
+}
+
+function mapStrings(value: unknown, fn: (text: string) => string): unknown {
+  if (typeof value === "string") return fn(value);
+  if (Array.isArray(value)) return value.map((item) => mapStrings(item, fn));
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value as Record<string, unknown>)) out[key] = mapStrings(child, fn);
+    return out;
+  }
+  return value;
+}
+
+function repairFutureHRSemantics(text: string, request: StructuredAIRequest) {
+  if (request.schemaName !== "futurehr_intelligence_agent") return text;
+  const parsed = parseJsonObject(text);
+  if (!parsed) return text;
+  const promptText = request.prompt;
+  const hasLearningMetrics = /positiveRate|averageDelta/i.test(promptText);
+  const hasLowWorkloadSignal = /İş Yükü|Is Yuku|workload/i.test(promptText) && /lowestDriver|driver|2[.,][0-9]/i.test(promptText);
+
+  const repaired = mapStrings(parsed, (input) => {
+    let value = input;
+    if (hasLearningMetrics) {
+      const causal = /(?:eğitim|öğrenme).{0,120}(?:performans).{0,80}(?:%\s*\d+|\d+\s*%).{0,80}(?:artır|arttır|yükselt)|(?:performans).{0,100}(?:%\s*\d+|\d+\s*%).{0,80}(?:artır|arttır|yükselt)/i;
+      if (causal.test(value)) {
+        value = "Öğrenme verilerinde pozitif transfer/değişim sinyali gözleniyor; positiveRate ve averageDelta nedensellik kanıtı değildir. Performans etkisi için yeniden ölçüm ve karşılaştırmalı kanıt gerekir.";
+      }
+    }
+    if (hasLowWorkloadSignal) {
+      value = value
+        .replace(/iş yükünün\s+(?:artırılması|arttırılması|yükseltilmesi)/gi, "aşırı iş yükünün azaltılması ve iş yükünün dengelenmesi")
+        .replace(/iş yükünü\s+(?:artır|arttır|yükselt)/gi, "iş yükünü dengele ve aşırı yükü azalt");
+    }
+    return value;
+  });
+  return JSON.stringify(repaired);
+}
+
+async function requestGroqOnce(model: string, request: StructuredAIRequest, forceRelaxed: boolean) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+  const response = await fetchWithTimeout(GROQ_BASE, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(groqBody(model, request.prompt, request.schema, request.schemaName, request.maxTokens || 900, forceRelaxed)),
+  }, request.timeoutMs || DEFAULT_TIMEOUT);
+  const raw = await response.text();
+  if (!response.ok) return { ok: false as const, response, detail: raw.slice(0, 420) };
+  let payload: any = null;
+  try { payload = JSON.parse(raw); } catch {}
+  const text = extractGroqText(payload);
+  if (!text) throw new Error("Groq boş yanıt verdi");
+  return { ok: true as const, response, text: repairFutureHRSemantics(text, request) };
+}
+
 async function runGroq(model: string, request: StructuredAIRequest) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
@@ -136,21 +213,26 @@ async function runGroq(model: string, request: StructuredAIRequest) {
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetchWithTimeout(GROQ_BASE, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify(groqBody(model, request.prompt, request.schema, request.schemaName, request.maxTokens || 900)),
-      }, request.timeoutMs || DEFAULT_TIMEOUT);
-      lastResponse = response;
-      if (response.ok) {
-        const text = extractGroqText(await response.json());
-        if (!text) throw new Error("Groq boş yanıt verdi");
-        return { text, status: response.status, latencyMs: Date.now() - started };
+      const strictResult = await requestGroqOnce(model, request, false);
+      if (!strictResult) return null;
+      lastResponse = strictResult.response;
+      if (strictResult.ok) {
+        return { text: strictResult.text, status: strictResult.response.status, latencyMs: Date.now() - started, relaxed: false };
       }
-      const detail = (await response.text()).slice(0, 420);
-      lastError = `HTTP ${response.status}${detail ? `: ${detail}` : ""}`;
-      if (!RETRYABLE.has(response.status) || attempt === 1) break;
-      await sleep(retryDelay(response, attempt));
+      lastError = `HTTP ${strictResult.response.status}${strictResult.detail ? `: ${strictResult.detail}` : ""}`;
+
+      if (STRICT_GROQ_MODELS.has(model) && shouldTryRelaxed(strictResult.response.status, strictResult.detail)) {
+        const relaxedResult = await requestGroqOnce(model, request, true);
+        if (!relaxedResult) return null;
+        lastResponse = relaxedResult.response;
+        if (relaxedResult.ok) {
+          return { text: relaxedResult.text, status: relaxedResult.response.status, latencyMs: Date.now() - started, relaxed: true };
+        }
+        lastError = `HTTP ${relaxedResult.response.status}${relaxedResult.detail ? `: ${relaxedResult.detail}` : ""}`;
+      }
+
+      if (!RETRYABLE.has(lastResponse.status) || attempt === 1) break;
+      await sleep(retryDelay(lastResponse, attempt));
     } catch (error) {
       lastError = sanitizeError(error);
       if (attempt === 1) break;
@@ -186,7 +268,7 @@ async function runOpenAI(request: StructuredAIRequest) {
       if (response.ok) {
         const text = extractOpenAIText(await response.json());
         if (!text) throw new Error("OpenAI boş yanıt verdi");
-        return { text, model, status: response.status, latencyMs: Date.now() - started };
+        return { text: repairFutureHRSemantics(text, request), model, status: response.status, latencyMs: Date.now() - started };
       }
       const detail = (await response.text()).slice(0, 420);
       lastError = `HTTP ${response.status}${detail ? `: ${detail}` : ""}`;
@@ -211,7 +293,14 @@ export async function runStructuredAI(request: StructuredAIRequest): Promise<Str
       try {
         const result = await runGroq(model, request);
         if (result) {
-          attempts.push({ provider: "groq", model, ok: true, status: result.status, latencyMs: result.latencyMs });
+          attempts.push({
+            provider: "groq",
+            model,
+            ok: true,
+            status: result.status,
+            latencyMs: result.latencyMs,
+            error: result.relaxed ? "strict schema failed; recovered with json_object" : undefined,
+          });
           return { provider: "groq", model, text: result.text, latencyMs: result.latencyMs, attempts };
         }
       } catch (error: any) {
