@@ -2,7 +2,6 @@ services:
   - type: web
     name: hr-system-backend
     runtime: docker
-    region: frankfurt
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /health
