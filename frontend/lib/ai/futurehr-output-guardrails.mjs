@@ -78,90 +78,148 @@ function safeHighImpact(text) {
     : text;
 }
 
+function finite(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+function fold(value) {
+  return String(value || '').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function normalizeGap(item) {
+  if (!item || typeof item !== 'object') return null;
+  const label = String(item.label || item.competency || item.competencyLabel || item.yetkinlik || item.competency_name || '').trim();
+  const actual = finite(item.actual ?? item.current ?? item.currentScore ?? item.mevcut ?? item.score);
+  const target = finite(item.target ?? item.expected ?? item.targetScore ?? item.hedef ?? item.required);
+  const declaredGap = finite(item.gap);
+  const gap = declaredGap ?? (actual !== null && target !== null ? target - actual : null);
+  if (!label || fold(label) === 'yetkinlik' || actual === null || target === null) return null;
+  return { label, actual, target, gap };
+}
+function trainingTitleFromAction(action) {
+  if (!action || typeof action !== 'object') return '';
+  const kind = String(action.kind || action.actionKind || '');
+  if (kind !== 'prepare_training_assignment') return '';
+  const direct = String(action.trainingName || action.title || '').trim();
+  if (direct && !/eğitim atama taslağı/i.test(direct)) return direct;
+  const description = String(action.description || '').trim();
+  const match = description.match(/^(.+?)\s+için\s+atama\s+taslağ/i);
+  return match ? match[1].trim() : '';
+}
+
 function trainingRecommendation(out, q, ctx) {
   const asksTraining = /(hangi.*eğitim|hangi.*egitim|eğitim(?:leri)?\s+(?:almalı|almali|öner|oner)|ne.*eğitim|ne.*egitim|gelişim.*(?:öner|oner)|gelisim.*(?:öner|oner)|yetkinlik.*geliştir|yetkinlik.*gelistir)/i.test(q);
   if (!asksTraining) return false;
 
-  const interventions = [
+  const catalogInterventions = [
     ...arrays(ctx, 'recommendedInterventions').flat(),
     ...arrays(ctx, 'trainingAdvice').flat(),
   ]
-    .filter((item) => item && typeof item === 'object' && String(item.name || '').trim() && item.alreadyCompleted !== true)
-    .filter((item, index, rows) => {
-      const key = String(item.id || item.interventionId || item.name || '');
-      return rows.findIndex((row) => String(row.id || row.interventionId || row.name || '') === key) === index;
-    })
+    .filter((item) => item && typeof item === 'object' && item.alreadyCompleted !== true)
+    .map((item) => ({ ...item, name: String(item.name || item.trainingName || '').trim() }))
+    .filter((item) => item.name);
+
+  const preparedInterventions = arrays(ctx, 'preparedActions').flat()
+    .map((action) => ({
+      name: trainingTitleFromAction(action),
+      source: 'preparedAction',
+      route: action?.route || '/egitim',
+    }))
+    .filter((item) => item.name);
+
+  const interventions = [...catalogInterventions, ...preparedInterventions]
+    .filter((item, index, rows) => rows.findIndex((row) => fold(row.name) === fold(item.name)) === index)
     .slice(0, 3);
 
-  const gaps = arrays(ctx, 'competencyGaps').flat()
-    .filter((item) => item && typeof item === 'object')
+  const rawGaps = arrays(ctx, 'competencyGaps').flat();
+  const gaps = rawGaps.map(normalizeGap).filter(Boolean)
+    .filter((item, index, rows) => rows.findIndex((row) => fold(row.label) === fold(item.label)) === index)
+    .sort((a, b) => (b.gap ?? 0) - (a.gap ?? 0))
     .slice(0, 4);
 
   if (interventions.length) {
     const details = interventions.map((item, index) => {
       const competency = String(item.competency || item.competencyLabel || '').trim();
-      const gap = Number(item.gap);
+      const gap = finite(item.gap);
       const duration = String(item.duration || '').trim();
-      const reassessDays = Number(item.reassessDays);
+      const reassessDays = finite(item.reassessDays);
       const parts = [`${index + 1}) ${item.name}${competency ? ` — ${competency}` : ''}`];
-      if (Number.isFinite(gap) && gap > 0) parts.push(`açık ${gap}`);
+      if (gap !== null && gap > 0) parts.push(`açık ${gap}`);
       if (duration) parts.push(duration);
-      if (Number.isFinite(reassessDays) && reassessDays > 0) parts.push(`${reassessDays} gün sonra yeniden ölçüm`);
+      if (reassessDays !== null && reassessDays > 0) parts.push(`${reassessDays} gün sonra yeniden ölçüm`);
       return parts.join(' · ');
     });
+    const gapSummary = gaps.length
+      ? ` Ölçülmüş öncelikli açıklar: ${gaps.slice(0, 3).map((gap) => `${gap.label} ${gap.actual} → ${gap.target}`).join('; ')}.`
+      : ' Yetkinlik ad/skor ayrıntıları bu güvenli bağlamda eksik olduğundan skor uydurulmadı.';
 
     setAnswer(
       out,
-      `Kayıtlı rol-yetkinlik kanıtına göre öncelikli gelişim önerileri: ${details.join('; ')}. Tamamlanmış eğitimler gerekçesiz tekrar önerilmedi.`,
+      `FutureHR kayıtlarına göre önerilen gelişim müdahaleleri: ${details.join('; ')}.${gapSummary} Tamamlanmış eğitimler gerekçesiz tekrar önerilmedi.`,
       gaps.length ? 'yüksek' : 'orta',
-      'Öneriler FutureHR gelişim danışmanındaki ölçülmüş yetkinlik açıkları ve gelişim kütüphanesi eşleşmelerinden oluşturuldu.',
+      gaps.length
+        ? 'Eğitim adları kayıtlı gelişim danışmanı veya hazırlanmış eğitim atama kanıtından; açıklar ölçülmüş rol-yetkinlik verisinden alındı.'
+        : 'Eğitim adları hazırlanmış FutureHR eğitim atama kanıtından güvenli biçimde kurtarıldı; yetkinlik skorları eksik olduğu için tahmin edilmedi.',
     );
 
-    out.recommendations = interventions.map((item) => ({
-      title: String(item.name),
-      why: `${String(item.competency || item.competencyLabel || 'Rol yetkinliği')} açığını kapatmaya yönelik.`,
-      evidence: `${Number(item.gap) > 0 ? `Yetkinlik açığı ${item.gap}` : 'FutureHR gelişim danışmanı eşleşmesi'}${item.transferTask ? ` · İşe transfer: ${item.transferTask}` : ''}`,
+    out.recommendations = interventions.map((item, index) => ({
+      title: item.name,
+      why: String(item.competency || item.competencyLabel || gaps[index]?.label || 'Kayıtlı gelişim ihtiyacı') + ' için gelişim müdahalesi.',
+      evidence: gaps[index]
+        ? `${gaps[index].label}: ${gaps[index].actual} → ${gaps[index].target}`
+        : 'FutureHR hazırlanmış eğitim atama/gelişim danışmanı kaydı',
       route: '/egitim',
     }));
     out.nextActions = [
       { label: 'Eğitim atama taslağı hazırla', route: '/egitim', actionKind: 'prepare_training_assignment' },
       { label: 'Gelişim planını aç', route: '/gelisim', actionKind: 'open_development' },
     ];
-    const gapDetail = gaps.slice(0, 3).map((gap) => `${gap.label || gap.competency || 'Yetkinlik'}: ${gap.actual ?? '—'} → ${gap.target ?? gap.expected ?? '—'}`).join(' · ');
     const existingEvidence = Array.isArray(out.evidenceSources) ? out.evidenceSources : [];
-    out.evidenceSources = [
-      ...existingEvidence,
-      {
-        label: 'Rol & Yetkinlik Açıkları',
-        detail: gapDetail || 'FutureHR rol-yetkinlik eşleşmesi',
-        route: '/rol-mimarisi',
-        domain: 'development',
-        confidence: gaps.length ? 'yüksek' : 'orta',
-        value: `${gaps.length} açık`,
-      },
-      {
-        label: 'FutureHR Gelişim Danışmanı',
-        detail: `${interventions.length} tamamlanmamış gelişim müdahalesi eşleşmesi`,
-        route: '/egitim',
-        domain: 'development',
-        confidence: 'yüksek',
-        value: interventions.map((item) => item.name).join(', '),
-      },
-    ].slice(0, 6);
-    out.evidenceGaps = Array.isArray(out.evidenceGaps) ? out.evidenceGaps.slice(0, 4) : [];
-    out.guardrail = 'Eğitim önerileri yalnız ölçülmüş rol-yetkinlik açıkları ve kayıtlı FutureHR gelişim kütüphanesinden üretildi; tamamlanmış eğitimler otomatik tekrar önerilmedi.';
+    const evidence = [];
+    if (gaps.length) evidence.push({
+      label: 'Rol & Yetkinlik Açıkları',
+      detail: gaps.slice(0, 3).map((gap) => `${gap.label}: ${gap.actual} → ${gap.target}`).join(' · '),
+      route: '/rol-mimarisi',
+      domain: 'development',
+      confidence: 'yüksek',
+      value: `${gaps.length} doğrulanmış açık`,
+    });
+    evidence.push({
+      label: 'FutureHR Eğitim Önerisi',
+      detail: `${interventions.length} kayıtlı/ hazırlanmış gelişim müdahalesi`,
+      route: '/egitim',
+      domain: 'development',
+      confidence: gaps.length ? 'yüksek' : 'orta',
+      value: interventions.map((item) => item.name).join(', '),
+    });
+    out.evidenceSources = [...existingEvidence, ...evidence].slice(0, 6);
+    out.evidenceGaps = gaps.length ? [] : ['Yetkinlik adı ve mevcut/hedef skor alanları güvenli bağlamda eksik.'];
+    out.guardrail = 'Eğitim adı yalnız FutureHR gelişim danışmanı veya hazırlanmış eğitim atama kaydından alınır; eksik yetkinlik adı/skoru tahmin edilmez.';
     return true;
   }
 
   if (gaps.length) {
-    const top = gaps.slice(0, 3).map((gap) => `${gap.label || gap.competency || 'Yetkinlik'} (${gap.actual ?? '—'} → ${gap.target ?? gap.expected ?? '—'})`).join(', ');
     setAnswer(
       out,
-      `Ölçülebilir gelişim açıkları var: ${top}. Ancak bu açıklarla eşleşen tamamlanmamış eğitim müdahalesi bağlamda bulunamadığı için eğitim adı uydurmayacağım; Eğitim/Gelişim kütüphanesi eşleştirmesi kontrol edilmeli.`,
+      `Ölçülmüş gelişim açıkları: ${gaps.slice(0, 3).map((gap) => `${gap.label} (${gap.actual} → ${gap.target})`).join(', ')}. Bu açıklarla eşleşen kayıtlı veya hazırlanmış eğitim müdahalesi bulunamadı; eğitim adı uydurulmadı.`,
       'orta',
-      'Yetkinlik açığı mevcut, ancak doğrulanmış katalog müdahalesi bağlamda yok.',
+      'Yetkinlik açıkları doğrulanabilir; ancak FutureHR eğitim kütüphanesi/atama kaydında eşleşen müdahale görünmüyor.',
     );
     out.nextActions = [{ label: 'Eğitim kütüphanesini aç', route: '/egitim', actionKind: 'open_training' }];
+    return true;
+  }
+
+  if (rawGaps.length) {
+    setAnswer(
+      out,
+      'FutureHR gelişim açığı sinyali taşıyor; ancak yetkinlik adı ile mevcut/hedef skor alanları bu bağlamda eksik. “Yetkinlik (— → —)” şeklinde sahte ayrıntı gösterilmeyecek. Rol Mimarisi ve son değerlendirme veri eşleşmesi kontrol edilmeli.',
+      'düşük',
+      'Eksik yetkinlik alanları nedeniyle doğrulanabilir açık ayrıntısı üretilemedi.',
+    );
+    out.nextActions = [
+      { label: 'Rol mimarisini aç', route: '/rol-mimarisi', actionKind: 'open_development' },
+      { label: 'Gelişim planını aç', route: '/gelisim', actionKind: 'open_development' },
+    ];
     return true;
   }
 
