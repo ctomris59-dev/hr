@@ -35,6 +35,20 @@ function objects(root, key) {
   visit(root);
   return found;
 }
+function findObject(root, key) {
+  let match = null;
+  const visit = (v) => {
+    if (match || !v || typeof v !== 'object') return;
+    if (Array.isArray(v)) { for (const item of v) visit(item); return; }
+    for (const [k, child] of Object.entries(v)) {
+      if (k === key && child && typeof child === 'object' && !Array.isArray(child)) { match = child; return; }
+      visit(child);
+      if (match) return;
+    }
+  };
+  visit(root);
+  return match;
+}
 function firstNumber(root, key) { return nums(root, key)[0]; }
 function hasDenied(context, domain) { return Array.isArray(context?.accessDeniedDomains) && context.accessDeniedDomains.includes(domain); }
 function setAnswer(out, answer, confidence = 'orta', reason = '') {
@@ -130,8 +144,8 @@ export function applyFutureHROutputGuardrails(question, context, analysis) {
     setAnswer(out, `Yönetici başına ${span} kişi, şirket medyanı ${medianSpan}. Bu seviye medyanın belirgin üzerinde; yönetim kapasitesi ve kontrol genişliği riski olarak incelenmelidir.`, 'yüksek', 'Span-of-control şirket medyanının belirgin üzerinde.');
   }
 
-  const latest = objects(ctx, 'latest')[0];
-  const previous = objects(ctx, 'previous')[0];
+  const latest = findObject(ctx, 'latest');
+  const previous = findObject(ctx, 'previous');
   if (latest && previous && /(pulse|katılım|iyi gidiyor)/i.test(q)) {
     const lp = Number(latest.participation), pp = Number(previous.participation);
     if (Number.isFinite(lp) && Number.isFinite(pp) && lp < pp - 20) {
@@ -139,9 +153,11 @@ export function applyFutureHROutputGuardrails(question, context, analysis) {
     }
   }
 
-  const lowest = objects(ctx, 'lowestDriver')[0];
-  if (lowest && /iş yükü/i.test(String(lowest.label || '')) && Number(lowest.average) < 3 && /(iş yükü|öncelik|deneyim)/i.test(q)) {
-    setAnswer(out, `İş Yükü sürücüsü ${lowest.average} ile düşük. Öncelik iş yükünü artırmak değil; aşırı yükü azaltmak, kapasiteyi dengelemek ve yeniden pulse ölçümü yapmaktır.`, 'yüksek', 'En düşük deneyim sürücüsü iş yükü.');
+  const lowest = findObject(ctx, 'lowestDriver');
+  const lowestLabel = String(lowest?.label || '').toLocaleLowerCase('tr-TR');
+  const lowestAverage = Number(lowest?.average);
+  if (lowest && lowestLabel.includes('iş yükü') && Number.isFinite(lowestAverage) && lowestAverage < 3 && (q.includes('iş yükü') || q.includes('öncelik') || q.includes('deneyim'))) {
+    setAnswer(out, `İş Yükü sürücüsü ${lowestAverage} ile düşük. Öncelik iş yükünü artırmak değil; aşırı yükü azaltmak, kapasiteyi dengelemek ve yeniden pulse ölçümü yapmaktır.`, 'yüksek', 'En düşük deneyim sürücüsü iş yükü.');
   }
 
   const equityFlags = firstNumber(ctx, 'internalEquityFlags');
