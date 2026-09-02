@@ -24,6 +24,7 @@ const OPENAI_BASE = "https://api.openai.com/v1/responses";
 const DEFAULT_TIMEOUT = 12_000;
 const RETRYABLE = new Set([408, 429, 500, 502, 503, 504]);
 const STRICT_GROQ_MODELS = new Set(["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"]);
+const CJK_RE = /[\u3400-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]/g;
 
 const unique = <T,>(items: T[]) => Array.from(new Set(items));
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -84,30 +85,16 @@ function retryDelay(response?: Response, attempt = 0) {
   return Math.min(2500, 450 * 2 ** attempt + Math.floor(Math.random() * 180));
 }
 
-function groqBody(
-  model: string,
-  prompt: string,
-  schema: Record<string, any>,
-  schemaName: string,
-  maxTokens: number,
-  forceRelaxed = false,
-) {
+function groqBody(model: string, prompt: string, schema: Record<string, any>, schemaName: string, maxTokens: number, forceRelaxed = false) {
   const strict = STRICT_GROQ_MODELS.has(model) && !forceRelaxed;
   const body: Record<string, any> = {
     model,
     messages: [{ role: "user", content: prompt }],
     max_completion_tokens: maxTokens,
   };
-
-  if (strict) {
-    body.response_format = {
-      type: "json_schema",
-      json_schema: { name: schemaName, strict: true, schema },
-    };
-  } else {
-    body.response_format = { type: "json_object" };
-  }
-
+  body.response_format = strict
+    ? { type: "json_schema", json_schema: { name: schemaName, strict: true, schema } }
+    : { type: "json_object" };
   if (model.startsWith("openai/gpt-oss-")) {
     body.reasoning_effort = "low";
     body.include_reasoning = false;
@@ -135,8 +122,7 @@ function extractOpenAIText(payload: any) {
 }
 
 function shouldTryRelaxed(status: number, detail: string) {
-  if (status !== 400) return false;
-  return /json|schema|failed_generation|json_validate_failed|does not match/i.test(detail);
+  return status === 400 && /json|schema|failed_generation|json_validate_failed|does not match/i.test(detail);
 }
 
 function parseJsonObject(text: string) {
@@ -161,6 +147,12 @@ function mapStrings(value: unknown, fn: (text: string) => string): unknown {
   return value;
 }
 
+function highImpactSafeText(input: string) {
+  const directDecision = /(?:terfi\s+ettiril(?:mesi|sin|melidir)|terfi\s+edil(?:mesi|sin|melidir)|işe\s+alın(?:ması|sın|malıdır)|işten\s+çıkarıl(?:ması|sın|malıdır)|maaş(?:ı|ını|ının)?\s+(?:artırıl|arttırıl|yükseltil)(?:ması|sin|melidir)|ücret(?:i|ini|inin)?\s+(?:artırıl|arttırıl|yükseltil)(?:ması|sin|melidir)|halef\s+(?:olarak\s+)?atan(?:ması|sın|malıdır)|aday(?:ı|ın)?\s+reddedil(?:mesi|sin|melidir)).{0,80}(?:öner|uygun|gerek)|(?:öner|uygun|gerek).{0,80}(?:terfi|işe\s+al|işten\s+çıkar|maaş|ücret|halef\s+ata|aday\s+reddet)/i;
+  if (!directDecision.test(input)) return input;
+  return "Bu yüksek etkili İK kararı için doğrudan karar veya kişi bazlı nihai öneri verilmemelidir. FutureHR mevcut kanıtları, riskleri ve veri boşluklarını sunar; terfi, işe alım, işten çıkarma, ücret veya halef atama kararı yetkili insan değerlendirmesiyle verilmelidir.";
+}
+
 function repairFutureHRSemantics(text: string, request: StructuredAIRequest) {
   if (request.schemaName !== "futurehr_intelligence_agent") return text;
   const parsed = parseJsonObject(text);
@@ -169,8 +161,8 @@ function repairFutureHRSemantics(text: string, request: StructuredAIRequest) {
   const hasLearningMetrics = /positiveRate|averageDelta/i.test(promptText);
   const hasLowWorkloadSignal = /İş Yükü|Is Yuku|workload/i.test(promptText) && /lowestDriver|driver|2[.,][0-9]/i.test(promptText);
 
-  const repaired = mapStrings(parsed, (input) => {
-    let value = input;
+  let repaired = mapStrings(parsed, (input) => {
+    let value = input.replace(CJK_RE, "").replace(/\s{2,}/g, " ").trim();
     if (hasLearningMetrics) {
       const causal = /(?:eğitim|öğrenme).{0,120}(?:performans).{0,80}(?:%\s*\d+|\d+\s*%).{0,80}(?:artır|arttır|yükselt)|(?:performans).{0,100}(?:%\s*\d+|\d+\s*%).{0,80}(?:artır|arttır|yükselt)/i;
       if (causal.test(value)) {
@@ -182,8 +174,15 @@ function repairFutureHRSemantics(text: string, request: StructuredAIRequest) {
         .replace(/iş yükünün\s+(?:artırılması|arttırılması|yükseltilmesi)/gi, "aşırı iş yükünün azaltılması ve iş yükünün dengelenmesi")
         .replace(/iş yükünü\s+(?:artır|arttır|yükselt)/gi, "iş yükünü dengele ve aşırı yükü azalt");
     }
-    return value;
-  });
+    return highImpactSafeText(value);
+  }) as Record<string, unknown>;
+
+  if (!String(repaired?.answer || "").trim()) {
+    repaired = {
+      ...repaired,
+      answer: "FutureHR kanıtları mevcut; ancak güvenli ve doğrulanabilir bir Türkçe sonuç üretilemedi. İlgili kanıtların yetkili insan değerlendirmesiyle incelenmesi gerekir.",
+    };
+  }
   return JSON.stringify(repaired);
 }
 
@@ -210,27 +209,20 @@ async function runGroq(model: string, request: StructuredAIRequest) {
   const started = Date.now();
   let lastResponse: Response | undefined;
   let lastError = "";
-
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const strictResult = await requestGroqOnce(model, request, false);
       if (!strictResult) return null;
       lastResponse = strictResult.response;
-      if (strictResult.ok) {
-        return { text: strictResult.text, status: strictResult.response.status, latencyMs: Date.now() - started, relaxed: false };
-      }
+      if (strictResult.ok) return { text: strictResult.text, status: strictResult.response.status, latencyMs: Date.now() - started, relaxed: false };
       lastError = `HTTP ${strictResult.response.status}${strictResult.detail ? `: ${strictResult.detail}` : ""}`;
-
       if (STRICT_GROQ_MODELS.has(model) && shouldTryRelaxed(strictResult.response.status, strictResult.detail)) {
         const relaxedResult = await requestGroqOnce(model, request, true);
         if (!relaxedResult) return null;
         lastResponse = relaxedResult.response;
-        if (relaxedResult.ok) {
-          return { text: relaxedResult.text, status: relaxedResult.response.status, latencyMs: Date.now() - started, relaxed: true };
-        }
+        if (relaxedResult.ok) return { text: relaxedResult.text, status: relaxedResult.response.status, latencyMs: Date.now() - started, relaxed: true };
         lastError = `HTTP ${relaxedResult.response.status}${relaxedResult.detail ? `: ${relaxedResult.detail}` : ""}`;
       }
-
       if (!RETRYABLE.has(lastResponse.status) || attempt === 1) break;
       await sleep(retryDelay(lastResponse, attempt));
     } catch (error) {
@@ -249,7 +241,6 @@ async function runOpenAI(request: StructuredAIRequest) {
   const started = Date.now();
   let lastResponse: Response | undefined;
   let lastError = "";
-
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const response = await fetchWithTimeout(OPENAI_BASE, {
@@ -286,21 +277,13 @@ async function runOpenAI(request: StructuredAIRequest) {
 export async function runStructuredAI(request: StructuredAIRequest): Promise<StructuredAIResult> {
   await ensureAuthorizedInSaasMode();
   const attempts: StructuredAIResult["attempts"] = [];
-
   if (process.env.GROQ_API_KEY) {
     for (const model of preferredGroqModels()) {
       const started = Date.now();
       try {
         const result = await runGroq(model, request);
         if (result) {
-          attempts.push({
-            provider: "groq",
-            model,
-            ok: true,
-            status: result.status,
-            latencyMs: result.latencyMs,
-            error: result.relaxed ? "strict schema failed; recovered with json_object" : undefined,
-          });
+          attempts.push({ provider: "groq", model, ok: true, status: result.status, latencyMs: result.latencyMs, error: result.relaxed ? "strict schema failed; recovered with json_object" : undefined });
           return { provider: "groq", model, text: result.text, latencyMs: result.latencyMs, attempts };
         }
       } catch (error: any) {
@@ -308,7 +291,6 @@ export async function runStructuredAI(request: StructuredAIRequest): Promise<Str
       }
     }
   }
-
   if (process.env.OPENAI_API_KEY) {
     const model = defaultOpenAIModel();
     const started = Date.now();
@@ -322,7 +304,6 @@ export async function runStructuredAI(request: StructuredAIRequest): Promise<Str
       attempts.push({ provider: "openai", model, ok: false, status: error?.status, latencyMs: error?.latencyMs || Date.now() - started, error: sanitizeError(error) });
     }
   }
-
   const error = new Error("Tüm AI sağlayıcıları başarısız oldu");
   (error as any).attempts = attempts;
   throw error;
