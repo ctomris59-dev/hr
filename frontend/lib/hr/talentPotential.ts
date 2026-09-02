@@ -181,6 +181,10 @@ export function calculatePotentialIndex(person: any): PotentialResult {
   };
 }
 
+/**
+ * FutureHR'ın kanonik 9-Box sınıflandırması.
+ * Tüm özet ve detay ekranları aynı Türkçe hücre adlarını kullanmalıdır.
+ */
 export function getNineBox(performance: number, potential: number): string {
   if (!(performance > 0) || !(potential > 0)) return "Veri Eksik";
   const perfBand = performance >= 4 ? "high" : performance >= 3 ? "mid" : "low";
@@ -188,13 +192,13 @@ export function getNineBox(performance: number, potential: number): string {
   const labels: Record<string, string> = {
     "high-high": "Yıldız Oyuncu",
     "high-mid": "Güçlü Performans",
-    "high-low": "Uzman / Güvenilir",
+    "high-low": "Uzman Katkı",
     "mid-high": "Yüksek Potansiyel",
-    "mid-mid": "Kilit Oyuncu",
+    "mid-mid": "Çekirdek Yetenek",
     "mid-low": "İstikrarlı Katkı",
     "low-high": "Potansiyel Yatırımı",
-    "low-mid": "Gelişim Gerekli",
-    "low-low": "Kritik Risk",
+    "low-mid": "Gelişim Odağı",
+    "low-low": "Kritik Gelişim",
   };
   return labels[`${perfBand}-${potBand}`];
 }
