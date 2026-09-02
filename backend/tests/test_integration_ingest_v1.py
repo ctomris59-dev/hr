@@ -67,6 +67,21 @@ def auth(token: str):
     return {"Authorization": f"Bearer {token}"}
 
 
+def test_ingest_readiness_requires_admin_and_reports_schema(integration_client):
+    client, token, _ = integration_client
+    admin_headers = auth(token("u-hr-1", "tenant-1", "HR_ADMIN"))
+    manager_headers = auth(token("u-mgr-1", "tenant-1", "MANAGER"))
+
+    ready = client.get("/api/v1/integrations/readiness", headers=admin_headers)
+    assert ready.status_code == 200
+    assert ready.json() == {
+        "ready": True,
+        "schema_revision": "20260902_0006",
+        "domains": ["employees", "payroll", "attendance"],
+    }
+    assert client.get("/api/v1/integrations/readiness", headers=manager_headers).status_code == 403
+
+
 def test_hr_admin_can_ingest_employee_payroll_and_attendance(integration_client):
     client, token, TestingSession = integration_client
     headers = auth(token("u-hr-1", "tenant-1", "HR_ADMIN"))
