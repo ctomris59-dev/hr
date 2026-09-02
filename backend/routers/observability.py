@@ -10,6 +10,7 @@ import os
 
 from core.metrics.collector import get_metrics_collector
 from core.config import get_settings
+from core.database import check_database_connection, database_configured
 from core.logging_config import get_logger
 from routers.dependencies import get_current_user_role, require_role_ceo
 from core.response import success_response, error_response
@@ -19,12 +20,9 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
-@router.get("/health")
-async def health_check():
-    """
-    Basic health check endpoint.
-    Returns 200 if service is healthy.
-    """
+@router.get("/health/basic")
+async def basic_health_check():
+    """Lightweight diagnostic endpoint; /health is the canonical readiness-aware probe."""
     return {
         "status": "healthy",
         "timestamp": time.time(),
@@ -35,50 +33,43 @@ async def health_check():
 
 @router.get("/health/live")
 async def liveness_check():
-    """
-    Kubernetes liveness probe.
-    Returns 200 if service is alive (can be restarted if fails).
-    """
+    """Process liveness probe. It intentionally does not test dependencies."""
     return {"status": "alive"}
 
 
 @router.get("/health/ready")
 async def readiness_check():
-    """
-    Kubernetes readiness probe.
-    Returns 200 if service is ready to accept traffic.
-    """
-    # Check critical dependencies
-    checks = {
-        "database": _check_database(),
-        "disk_space": _check_disk_space(),
+    """Dependency-aware readiness probe for orchestrators and diagnostics."""
+    database_ok = check_database_connection() if settings.SAAS_AUTH_ENABLED else None
+    issues = settings.production_issues
+    ready = not issues and database_ok is not False
+    payload = {
+        "status": "ready" if ready else "not_ready",
+        "ready": ready,
+        "checks": {
+            "database_configured": database_configured(),
+            "database": database_ok,
+            "secure_auth": settings.SAAS_AUTH_ENABLED,
+            "production_configuration": not issues,
+            "disk_space": _check_disk_space(),
+        },
+        "readiness_issue_count": len(issues),
     }
-    
-    all_healthy = all(checks.values())
-    
-    if all_healthy:
-        return {
-            "status": "ready",
-            "checks": checks
-        }
-    else:
-        return error_response(
-            error="Service not ready",
-            error_code="NOT_READY",
-            status_code=503,
-            details={"checks": checks}
-        )
+    if ready:
+        return payload
+    return error_response(
+        error="Service not ready",
+        error_code="NOT_READY",
+        status_code=503,
+        details=payload,
+    )
 
 
 @router.get("/metrics")
 async def get_metrics(
-    time_window: int = 5,  # minutes
-    role: str = Depends(require_role_ceo),  # Only CEO can access
+    time_window: int = 5,
+    role: str = Depends(require_role_ceo),
 ):
-    """
-    Get application metrics.
-    Returns JSON metrics (MVP).
-    """
     try:
         metrics_collector = get_metrics_collector()
         metrics = metrics_collector.get_metrics(time_window_minutes=time_window)
@@ -94,12 +85,8 @@ async def get_metrics(
 
 @router.get("/metrics/prometheus")
 async def get_prometheus_metrics(
-    role: str = Depends(require_role_ceo),  # Only CEO can access
+    role: str = Depends(require_role_ceo),
 ):
-    """
-    Get metrics in Prometheus format.
-    Returns Prometheus text format.
-    """
     try:
         from fastapi.responses import Response
         metrics_collector = get_metrics_collector()
@@ -119,31 +106,17 @@ async def get_prometheus_metrics(
 
 @router.get("/metrics/system")
 async def get_system_metrics(
-    role: str = Depends(require_role_ceo),  # Only CEO can access
+    role: str = Depends(require_role_ceo),
 ):
-    """
-    Get system-level metrics (CPU, memory, disk).
-    """
     try:
-        # CPU
         cpu_percent = psutil.cpu_percent(interval=1)
         cpu_count = psutil.cpu_count()
-        
-        # Memory
         memory = psutil.virtual_memory()
-        
-        # Disk
         disk = psutil.disk_usage('/')
-        
-        # Process info
         process = psutil.Process(os.getpid())
         process_memory = process.memory_info()
-        
         return success_response(data={
-            "cpu": {
-                "percent": cpu_percent,
-                "count": cpu_count,
-            },
+            "cpu": {"percent": cpu_percent, "count": cpu_count},
             "memory": {
                 "total_mb": round(memory.total / (1024 * 1024), 2),
                 "available_mb": round(memory.available / (1024 * 1024), 2),
@@ -170,23 +143,9 @@ async def get_system_metrics(
         )
 
 
-def _check_database() -> bool:
-    """Check if database is accessible."""
-    try:
-        # Try to read a file (JSON store check)
-        from config import DB_ORG_FILE
-        import os
-        return os.path.exists(DB_ORG_FILE) or True  # For MVP, just check if path exists
-    except Exception:
-        return False
-
-
 def _check_disk_space() -> bool:
-    """Check if disk has enough space."""
     try:
         disk = psutil.disk_usage('/')
-        # Consider unhealthy if disk usage > 90%
         return disk.percent < 90
     except Exception:
-        return True  # Assume healthy if check fails
-
+        return True
