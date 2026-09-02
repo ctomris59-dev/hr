@@ -1,269 +1,67 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { CalendarDays, Check, Clock3, Gift, Plane, X } from "lucide-react";
+import { AlertTriangle, CalendarDays, Check, Clock3, Gift, Plane, Scale, X } from "lucide-react";
 import { getManageableEmployees } from "../../utils/hierarchy";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
-import { calculateLeaveDays, LEAVE_TYPE_LABELS, LeaveType, normalizeLeaveType } from "../../../lib/hr/leavePolicy";
+import { annualLeaveEntitlement, calculateLeaveDays, LEAVE_TYPE_LABELS, LeaveType, normalizeLeaveType, validateAnnualLeaveRequest } from "../../../lib/hr/leavePolicy";
 import { useNotifications } from "../../../context/NotificationContext";
-import {
-  createSaasLeaveRequest,
-  decideSaasLeaveRequest,
-  fetchSaasLeaveWorkspace,
-  grantSaasRewardLeave,
-  SAAS_DATA_MODE,
-} from "../../../lib/hr/saasWorkforceClient";
+import { createSaasLeaveRequest, decideSaasLeaveRequest, fetchSaasLeaveWorkspace, grantSaasRewardLeave, SAAS_DATA_MODE } from "../../../lib/hr/saasWorkforceClient";
 
-interface LeaveRequest {
-  id: string | number;
-  employee_id?: string;
-  employee: string;
-  department?: string;
-  type: LeaveType | string;
-  start: string;
-  end: string;
-  days: number;
-  status: "Bekliyor" | "Onaylandı" | "Reddedildi";
-  note?: string;
-  createdAt: string;
-  approvedBy?: string;
+interface LeaveRequest { id:string|number;employee_id?:string;employee:string;department?:string;type:LeaveType|string;start:string;end:string;days:number;status:"Bekliyor"|"Onaylandı"|"Reddedildi";note?:string;createdAt:string;approvedBy?:string; }
+interface RewardLeaveGrant { id:string|number;employee_id?:string;employee:string;days:number;reason:string;grantedBy?:string;createdAt:string; }
+const requestTypes:LeaveType[]=["annual","excuse","unpaid","reward","sick"];
+const first=(...values:any[])=>values.find(value=>value!==undefined&&value!==null&&String(value).trim()!=="");
+
+export default function IzinlerPage(){
+  const{addNotification,showToast}=useNotifications();const[user,setUser]=useState<any>(null);const[orgData,setOrgData]=useState<any[]>([]);const[requests,setRequests]=useState<LeaveRequest[]>([]);const[rewards,setRewards]=useState<RewardLeaveGrant[]>([]);const[tab,setTab]=useState<"mine"|"approval"|"calendar">("mine");const[loadError,setLoadError]=useState("");const[form,setForm]=useState({type:"annual" as LeaveType,start:"",end:"",note:""});const[rewardForm,setRewardForm]=useState({employee:"",days:1,reason:""});
+
+  const reload=async()=>{setLoadError("");try{if(SAAS_DATA_MODE){const workspace=await fetchSaasLeaveWorkspace();setUser(workspace.user?{...workspace.user,name:workspace.user.employee_name||workspace.user.username}:null);setOrgData([...(workspace.currentEmployee?[workspace.currentEmployee]:[]),...workspace.manageableEmployees]);setRequests(workspace.requests as LeaveRequest[]);setRewards(workspace.rewards as RewardLeaveGrant[]);return;}setUser(getStorageData(STORAGE_KEYS.CURRENT_USER,null));setOrgData(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART,[]));setRequests(getStorageData<LeaveRequest[]>(STORAGE_KEYS.LEAVE_REQUESTS,[]));setRewards(getStorageData<RewardLeaveGrant[]>(STORAGE_KEYS.REWARD_LEAVE,[]));}catch(error){setLoadError(error instanceof Error?error.message:"İzin verisi yüklenemedi.");setOrgData([]);setRequests([]);setRewards([]);}};
+  useEffect(()=>{void reload();const handler=()=>{void reload();};window.addEventListener("dataUpdated",handler);window.addEventListener("storageCleared",handler);return()=>{window.removeEventListener("dataUpdated",handler);window.removeEventListener("storageCleared",handler);};},[]);
+
+  const currentName=user?.name||user?.employee_name||user?.username||"";
+  const currentEmployee=useMemo(()=>orgData.find(row=>row["Ad Soyad"]===currentName||String(row.id||row.employee_id||"")===String(user?.employeeId||user?.employee_id||"")),[orgData,currentName,user]);
+  const hireDate=first(currentEmployee?.["İşe Giriş Tarihi"],currentEmployee?.hireDate,currentEmployee?.hire_date,currentEmployee?.start_date,currentEmployee?.employment_start_date);
+  const birthDate=first(currentEmployee?.["Doğum Tarihi"],currentEmployee?.birthDate,currentEmployee?.birth_date,currentEmployee?.date_of_birth);
+  const companyEntitlementRaw=Number(first(currentEmployee?.["Yıllık İzin Hakkı"],currentEmployee?.["İzin Hakkı"],currentEmployee?.annual_leave_entitlement,0));
+  const companyEntitlement=Number.isFinite(companyEntitlementRaw)&&companyEntitlementRaw>0?companyEntitlementRaw:0;
+  const legalEntitlement=useMemo(()=>hireDate?annualLeaveEntitlement(String(hireDate),birthDate?String(birthDate):null):null,[hireDate,birthDate]);
+  const entitlement=Math.max(companyEntitlement,legalEntitlement?.statutoryMinimumDays||0,companyEntitlement||legalEntitlement?.statutoryMinimumDays||14);
+
+  const usedAnnual=useMemo(()=>requests.filter(r=>r.employee===currentName&&r.status==="Onaylandı"&&normalizeLeaveType(String(r.type))==="annual").reduce((sum,r)=>sum+Number(r.days||0),0),[requests,currentName]);
+  const annualParts=useMemo(()=>requests.filter(r=>r.employee===currentName&&r.status==="Onaylandı"&&normalizeLeaveType(String(r.type))==="annual").map(r=>Number(r.days||0)).filter(v=>v>0),[requests,currentName]);
+  const grantedReward=useMemo(()=>rewards.filter(r=>r.employee===currentName).reduce((sum,r)=>sum+Number(r.days||0),0),[rewards,currentName]);
+  const usedReward=useMemo(()=>requests.filter(r=>r.employee===currentName&&r.status==="Onaylandı"&&normalizeLeaveType(String(r.type))==="reward").reduce((sum,r)=>sum+Number(r.days||0),0),[requests,currentName]);
+  const annualBalance=Math.max(0,entitlement-usedAnnual),rewardBalance=Math.max(0,grantedReward-usedReward);
+  const calculation=useMemo(()=>form.start&&form.end?calculateLeaveDays(form.start,form.end,form.type):null,[form.start,form.end,form.type]);
+  const annualValidation=useMemo(()=>{if(form.type!=="annual"||!calculation||!hireDate)return null;return validateAnnualLeaveRequest({hireDate:String(hireDate),birthDate:birthDate?String(birthDate):null,requestedDays:calculation.days,remainingDays:annualBalance,priorAnnualLeaveParts:annualParts});},[form.type,calculation,hireDate,birthDate,annualBalance,annualParts]);
+
+  const manageable=useMemo(()=>{if(!user||!orgData.length)return[];if(SAAS_DATA_MODE)return orgData.filter(employee=>employee.id!==currentEmployee?.id);try{return getManageableEmployees(user,orgData);}catch{return[];}},[user,orgData,currentEmployee]);
+  const manageableNames=useMemo(()=>new Set(manageable.map((e:any)=>e["Ad Soyad"])),[manageable]);const pending=useMemo(()=>requests.filter(request=>request.status==="Bekliyor"&&manageableNames.has(request.employee)),[requests,manageableNames]);
+  const saveRequests=(next:LeaveRequest[])=>{setRequests(next);if(!SAAS_DATA_MODE)setStorageData(STORAGE_KEYS.LEAVE_REQUESTS,next);window.dispatchEvent(new CustomEvent("dataUpdated"));};
+
+  const handleSubmit=async(event:FormEvent)=>{event.preventDefault();if(!currentName||!form.start||!form.end||!calculation||calculation.days<=0)return;if(form.type==="annual"&&calculation.days>annualBalance)return showToast(`Yıllık izin bakiyeniz ${annualBalance} gün.`,"error");if(form.type==="reward"&&calculation.days>rewardBalance)return showToast(`Ödül izni bakiyeniz ${rewardBalance} gün.`,"error");if(form.type==="annual"&&annualValidation?.errors.length){const proceed=window.confirm(`Türkiye yıllık izin kontrolü:\n\n${annualValidation.errors.join("\n")}\n\nŞirket politikası / İK doğrulaması ile talebi yine de oluşturmak istiyor musunuz?`);if(!proceed)return;}
+    try{let next:LeaveRequest;if(SAAS_DATA_MODE){next=await createSaasLeaveRequest({leave_type:form.type,start_date:form.start,end_date:form.end,note:form.note||undefined}) as LeaveRequest;}else{next={id:Date.now(),employee:currentName,department:currentEmployee?.Departman||user?.department||user?.dept||"",type:form.type,start:form.start,end:form.end,days:calculation.days,status:"Bekliyor",note:form.note,createdAt:new Date().toISOString()};}saveRequests([next,...requests]);addNotification(`${currentName} ${next.days} günlük ${LEAVE_TYPE_LABELS[normalizeLeaveType(String(next.type))]} talebi oluşturdu.`,"info",{targetRole:"MANAGER",link:"/izinler",source:"leave"});setForm({type:"annual",start:"",end:"",note:""});}catch(error){showToast(error instanceof Error?error.message:"İzin talebi kaydedilemedi.","error");}};
+
+  const updateRequest=async(id:string|number,decision:"Onaylandı"|"Reddedildi")=>{const request=requests.find(item=>item.id===id);if(!request)return;if(decision==="Onaylandı"){const conflict=requests.find(other=>other.id!==id&&other.status==="Onaylandı"&&other.department===request.department&&other.start<=request.end&&other.end>=request.start);if(conflict&&!window.confirm(`${conflict.employee} aynı dönemde izinli. Yine de onaylamak istiyor musunuz?`))return;}try{let updated:LeaveRequest;if(SAAS_DATA_MODE)updated=await decideSaasLeaveRequest(String(id),decision) as LeaveRequest;else updated={...request,status:decision,approvedBy:currentName};saveRequests(requests.map(item=>item.id===id?updated:item));addNotification(`İzin talebiniz ${decision.toLocaleLowerCase("tr-TR")}.`,decision==="Onaylandı"?"success":"warning",{targetUser:request.employee,link:"/izinler",source:"leave"});}catch(error){showToast(error instanceof Error?error.message:"İzin talebi güncellenemedi.","error");}};
+  const grantRewardLeave=async(event:FormEvent)=>{event.preventDefault();if(!rewardForm.employee||rewardForm.days<=0||!rewardForm.reason.trim())return;try{let grant:RewardLeaveGrant;if(SAAS_DATA_MODE){const employee=manageable.find(row=>row["Ad Soyad"]===rewardForm.employee);if(!employee?.id)return showToast("Çalışanın SaaS kimliği bulunamadı.","error");grant=await grantSaasRewardLeave({employee_id:String(employee.id),days:rewardForm.days,reason:rewardForm.reason.trim()}) as RewardLeaveGrant;}else grant={id:Date.now(),employee:rewardForm.employee,days:rewardForm.days,reason:rewardForm.reason.trim(),grantedBy:currentName,createdAt:new Date().toISOString()};const next=[grant,...rewards];setRewards(next);if(!SAAS_DATA_MODE)setStorageData(STORAGE_KEYS.REWARD_LEAVE,next);window.dispatchEvent(new CustomEvent("dataUpdated"));addNotification(`${grant.days} gün ödül izni tanımlandı: ${grant.reason}`,"success",{targetUser:grant.employee,link:"/izinler",source:"reward-leave"});setRewardForm({employee:"",days:1,reason:""});}catch(error){showToast(error instanceof Error?error.message:"Ödül izni tanımlanamadı.","error");}};
+
+  const mine=requests.filter(request=>request.employee===currentName);const approvedCalendar=requests.filter(request=>request.status==="Onaylandı"&&(request.employee===currentName||manageableNames.has(request.employee)));
+  const legalWarning=!hireDate?"İşe giriş tarihi bulunmadığı için yasal kıdem hakkı otomatik doğrulanamadı.":!birthDate?"Doğum tarihi bulunmadığı için 18 yaş altı / 50 yaş üstü asgari 20 gün kuralı otomatik doğrulanamadı.":null;
+
+  return <div className="space-y-5">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-600">İzin operasyonları · Türkiye</p><h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">İzin Yönetimi</h1><p className="mt-1 text-sm text-slate-500">Şirket politikası ile 4857 m.53/m.56 tabanlı asgari yıllık izin kontrollerini birlikte gösterir; hukuki/İK nihai değerlendirmesinin yerine geçmez.</p></div><div className="flex rounded-xl border border-slate-200 bg-white p-1 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900">{[["mine","İzinlerim"],["approval",`Onay Bekleyen (${pending.length})`],["calendar","Ekip Takvimi"]].map(([key,label])=><button key={key} onClick={()=>setTab(key as any)} className={`rounded-lg px-3 py-2 font-medium ${tab===key?"bg-slate-900 text-white dark:bg-white dark:text-slate-900":"text-slate-500"}`}>{label}</button>)}</div></div>
+    {SAAS_DATA_MODE&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800">SaaS modunda izin talebi ve nihai bakiye server-side yeniden doğrulanır. Bu ekrandaki Türkiye kuralları çalışan/yönetici için uyum ve veri kalitesi sinyalidir.</div>}{loadError&&<div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{loadError}</div>}
+
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><Metric label="Hesaplanan yıllık hak" value={entitlement} icon={CalendarDays}/><Metric label="Yasal asgari" value={legalEntitlement?.eligible?legalEntitlement.statutoryMinimumDays:"—"} icon={Scale}/><Metric label="Kullanılan yıllık" value={usedAnnual} icon={Plane}/><Metric label="Kalan yıllık" value={annualBalance} icon={Check}/><Metric label="Ödül izni" value={rewardBalance} icon={Gift}/></div>
+    <section className={`rounded-2xl border p-4 ${legalWarning||legalEntitlement?.eligible===false?"border-amber-200 bg-amber-50/70 text-amber-900":"border-emerald-200 bg-emerald-50/60 text-emerald-900"}`}><div className="flex items-start gap-3"><div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/80">{legalWarning||legalEntitlement?.eligible===false?<AlertTriangle className="h-4 w-4"/>:<Scale className="h-4 w-4"/>}</div><div><p className="text-xs font-bold">Türkiye yıllık izin kontrolü</p><p className="mt-1 text-[11px] leading-5">{legalWarning||legalEntitlement?.reason||"Yasal asgari hak hesaplandı."} {companyEntitlement>0&&legalEntitlement?.eligible?`Kurum kayıtlı hakkı ${companyEntitlement} gün; FutureHR düşük olanı değil daha yüksek hakkı esas gösteriyor.`:""}</p>{legalEntitlement&&<p className="mt-1 text-[10px] opacity-75">Tamamlanan kıdem: {legalEntitlement.completedYears} yıl{legalEntitlement.age!==null?` · Yaş: ${legalEntitlement.age}`:""} · Dayanak: {legalEntitlement.legalBasis}</p>}</div></div></section>
+
+    {tab==="mine"&&<div className="grid gap-5 xl:grid-cols-[380px_1fr]"><form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="text-sm font-semibold">Yeni izin talebi</h2><div className="mt-4 space-y-3"><label className="block text-xs font-medium text-slate-600">İzin türü<select value={form.type} onChange={e=>setForm({...form,type:e.target.value as LeaveType})} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">{requestTypes.map(type=><option key={type} value={type}>{LEAVE_TYPE_LABELS[type]}</option>)}</select></label><div className="grid grid-cols-2 gap-2"><label className="text-xs font-medium text-slate-600">Başlangıç<input type="date" value={form.start} onChange={e=>setForm({...form,start:e.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm"/></label><label className="text-xs font-medium text-slate-600">Bitiş<input type="date" value={form.end} onChange={e=>setForm({...form,end:e.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm"/></label></div><label className="block text-xs font-medium text-slate-600">Not<textarea value={form.note} onChange={e=>setForm({...form,note:e.target.value})} rows={3} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm"/></label>{calculation&&<div className="rounded-xl bg-sky-50 p-3 text-xs text-sky-900"><strong>{calculation.days} gün</strong><div className="mt-1 text-sky-700">{calculation.explanation}{SAAS_DATA_MODE?" · Nihai gün backend tarafından hesaplanır.":""}</div></div>}{form.type==="annual"&&annualValidation&&<div className={`rounded-xl border p-3 text-[10px] leading-5 ${annualValidation.errors.length?"border-amber-200 bg-amber-50 text-amber-800":"border-emerald-200 bg-emerald-50 text-emerald-800"}`}><strong>Talep uyum kontrolü:</strong>{annualValidation.errors.map(item=><p key={item}>• {item}</p>)}{annualValidation.warnings.map(item=><p key={item}>• {item}</p>)}</div>}<button className="w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">Talep oluştur</button></div></form><RequestTable rows={mine}/></div>}
+
+    {tab==="approval"&&<div className="grid gap-5 xl:grid-cols-[1fr_360px]"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="mb-4 text-sm font-semibold">Onay bekleyen talepler</h2>{pending.length?<div className="space-y-2">{pending.map(request=><div key={request.id} className="flex flex-col gap-3 rounded-xl border border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">{request.employee}</p><p className="text-xs text-slate-500">{LEAVE_TYPE_LABELS[normalizeLeaveType(String(request.type))]} · {request.start} → {request.end} · {request.days} gün</p></div><div className="flex gap-2"><button onClick={()=>void updateRequest(request.id,"Onaylandı")} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><Check className="mr-1 inline h-3.5 w-3.5"/>Onayla</button><button onClick={()=>void updateRequest(request.id,"Reddedildi")} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700"><X className="mr-1 inline h-3.5 w-3.5"/>Reddet</button></div></div>)}</div>:<p className="text-sm text-slate-500">Bekleyen talep yok.</p>}</div><form onSubmit={grantRewardLeave} className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5"><div className="flex items-center gap-2"><Gift className="h-4 w-4 text-amber-700"/><h2 className="text-sm font-semibold text-amber-950">Ödül izni tanımla</h2></div><p className="mt-1 text-xs text-amber-800">Yıllık izin hakkını değiştirmez; ayrı bakiyedir.</p><div className="mt-4 space-y-3"><select value={rewardForm.employee} onChange={e=>setRewardForm({...rewardForm,employee:e.target.value})} className="w-full rounded-xl border border-amber-200 bg-white p-2.5 text-sm"><option value="">Çalışan seçin</option>{manageable.map((e:any)=><option key={e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select><input type="number" min="0.5" step="0.5" value={rewardForm.days} onChange={e=>setRewardForm({...rewardForm,days:Number(e.target.value)})} className="w-full rounded-xl border border-amber-200 bg-white p-2.5 text-sm"/><textarea placeholder="Ödül gerekçesi" value={rewardForm.reason} onChange={e=>setRewardForm({...rewardForm,reason:e.target.value})} className="w-full rounded-xl border border-amber-200 bg-white p-2.5 text-sm"/><button className="w-full rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white">Ödül izni tanımla</button></div></form></div>}
+    {tab==="calendar"&&<div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="mb-4 flex items-center gap-2"><Clock3 className="h-4 w-4 text-sky-600"/><h2 className="text-sm font-semibold">Onaylı ekip izinleri</h2></div><RequestTable rows={approvedCalendar}/></div>}
+  </div>;
 }
 
-interface RewardLeaveGrant {
-  id: string | number;
-  employee_id?: string;
-  employee: string;
-  days: number;
-  reason: string;
-  grantedBy?: string;
-  createdAt: string;
-}
-
-const requestTypes: LeaveType[] = ["annual", "excuse", "unpaid", "reward", "sick"];
-
-export default function IzinlerPage() {
-  const { addNotification, showToast } = useNotifications();
-  const [user, setUser] = useState<any>(null);
-  const [orgData, setOrgData] = useState<any[]>([]);
-  const [requests, setRequests] = useState<LeaveRequest[]>([]);
-  const [rewards, setRewards] = useState<RewardLeaveGrant[]>([]);
-  const [tab, setTab] = useState<"mine" | "approval" | "calendar">("mine");
-  const [loadError, setLoadError] = useState("");
-  const [form, setForm] = useState({ type: "annual" as LeaveType, start: "", end: "", note: "" });
-  const [rewardForm, setRewardForm] = useState({ employee: "", days: 1, reason: "" });
-
-  const reload = async () => {
-    setLoadError("");
-    try {
-      if (SAAS_DATA_MODE) {
-        const workspace = await fetchSaasLeaveWorkspace();
-        setUser(workspace.user ? { ...workspace.user, name: workspace.user.employee_name || workspace.user.username } : null);
-        setOrgData([...(workspace.currentEmployee ? [workspace.currentEmployee] : []), ...workspace.manageableEmployees]);
-        setRequests(workspace.requests as LeaveRequest[]);
-        setRewards(workspace.rewards as RewardLeaveGrant[]);
-        return;
-      }
-      setUser(getStorageData(STORAGE_KEYS.CURRENT_USER, null));
-      setOrgData(getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []));
-      setRequests(getStorageData<LeaveRequest[]>(STORAGE_KEYS.LEAVE_REQUESTS, []));
-      setRewards(getStorageData<RewardLeaveGrant[]>(STORAGE_KEYS.REWARD_LEAVE, []));
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "İzin verisi yüklenemedi.");
-      setOrgData([]); setRequests([]); setRewards([]);
-    }
-  };
-
-  useEffect(() => {
-    void reload();
-    const handler = () => { void reload(); };
-    window.addEventListener("dataUpdated", handler);
-    window.addEventListener("storageCleared", handler);
-    return () => {
-      window.removeEventListener("dataUpdated", handler);
-      window.removeEventListener("storageCleared", handler);
-    };
-  }, []);
-
-  const currentName = user?.name || user?.employee_name || user?.username || "";
-  const currentEmployee = useMemo(
-    () => orgData.find((row) => row["Ad Soyad"] === currentName),
-    [orgData, currentName]
-  );
-
-  const entitlement = Number(currentEmployee?.["Yıllık İzin Hakkı"] ?? currentEmployee?.["İzin Hakkı"] ?? 14);
-  const usedAnnual = useMemo(
-    () => requests.filter((r) => r.employee === currentName && r.status === "Onaylandı" && normalizeLeaveType(String(r.type)) === "annual").reduce((sum, r) => sum + Number(r.days || 0), 0),
-    [requests, currentName]
-  );
-  const grantedReward = useMemo(
-    () => rewards.filter((r) => r.employee === currentName).reduce((sum, r) => sum + Number(r.days || 0), 0),
-    [rewards, currentName]
-  );
-  const usedReward = useMemo(
-    () => requests.filter((r) => r.employee === currentName && r.status === "Onaylandı" && normalizeLeaveType(String(r.type)) === "reward").reduce((sum, r) => sum + Number(r.days || 0), 0),
-    [requests, currentName]
-  );
-  const annualBalance = Math.max(0, entitlement - usedAnnual);
-  const rewardBalance = Math.max(0, grantedReward - usedReward);
-
-  const calculation = useMemo(() => {
-    if (!form.start || !form.end) return null;
-    return calculateLeaveDays(form.start, form.end, form.type);
-  }, [form.start, form.end, form.type]);
-
-  const manageable = useMemo(() => {
-    if (!user || !orgData.length) return [];
-    if (SAAS_DATA_MODE) return orgData.filter((employee) => employee.id !== currentEmployee?.id);
-    try {
-      return getManageableEmployees(user, orgData);
-    } catch {
-      return [];
-    }
-  }, [user, orgData, currentEmployee]);
-  const manageableNames = useMemo(() => new Set(manageable.map((e: any) => e["Ad Soyad"])), [manageable]);
-  const pending = useMemo(
-    () => requests.filter((request) => request.status === "Bekliyor" && manageableNames.has(request.employee)),
-    [requests, manageableNames]
-  );
-
-  const saveRequests = (next: LeaveRequest[]) => {
-    setRequests(next);
-    if (!SAAS_DATA_MODE) setStorageData(STORAGE_KEYS.LEAVE_REQUESTS, next);
-    window.dispatchEvent(new CustomEvent("dataUpdated"));
-  };
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!currentName || !form.start || !form.end || !calculation || calculation.days <= 0) return;
-    if (form.type === "annual" && calculation.days > annualBalance) return showToast(`Yıllık izin bakiyeniz ${annualBalance} gün.`, "error");
-    if (form.type === "reward" && calculation.days > rewardBalance) return showToast(`Ödül izni bakiyeniz ${rewardBalance} gün.`, "error");
-
-    try {
-      let next: LeaveRequest;
-      if (SAAS_DATA_MODE) {
-        next = await createSaasLeaveRequest({
-          leave_type: form.type,
-          start_date: form.start,
-          end_date: form.end,
-          note: form.note || undefined,
-        }) as LeaveRequest;
-      } else {
-        next = {
-          id: Date.now(),
-          employee: currentName,
-          department: currentEmployee?.Departman || user?.department || user?.dept || "",
-          type: form.type,
-          start: form.start,
-          end: form.end,
-          days: calculation.days,
-          status: "Bekliyor",
-          note: form.note,
-          createdAt: new Date().toISOString(),
-        };
-      }
-      saveRequests([next, ...requests]);
-      addNotification(`${currentName} ${next.days} günlük ${LEAVE_TYPE_LABELS[normalizeLeaveType(String(next.type))]} talebi oluşturdu.`, "info", { targetRole: "MANAGER", link: "/izinler", source: "leave" });
-      setForm({ type: "annual", start: "", end: "", note: "" });
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "İzin talebi kaydedilemedi.", "error");
-    }
-  };
-
-  const updateRequest = async (id: string | number, decision: "Onaylandı" | "Reddedildi") => {
-    const request = requests.find((item) => item.id === id);
-    if (!request) return;
-    if (decision === "Onaylandı") {
-      const conflict = requests.find(
-        (other) => other.id !== id && other.status === "Onaylandı" && other.department === request.department && other.start <= request.end && other.end >= request.start
-      );
-      if (conflict && !window.confirm(`${conflict.employee} aynı dönemde izinli. Yine de onaylamak istiyor musunuz?`)) return;
-    }
-    try {
-      let updated: LeaveRequest;
-      if (SAAS_DATA_MODE) {
-        updated = await decideSaasLeaveRequest(String(id), decision) as LeaveRequest;
-      } else {
-        updated = { ...request, status: decision, approvedBy: currentName };
-      }
-      saveRequests(requests.map((item) => item.id === id ? updated : item));
-      addNotification(`İzin talebiniz ${decision.toLocaleLowerCase("tr-TR")}.`, decision === "Onaylandı" ? "success" : "warning", { targetUser: request.employee, link: "/izinler", source: "leave" });
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "İzin talebi güncellenemedi.", "error");
-    }
-  };
-
-  const grantRewardLeave = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!rewardForm.employee || rewardForm.days <= 0 || !rewardForm.reason.trim()) return;
-    try {
-      let grant: RewardLeaveGrant;
-      if (SAAS_DATA_MODE) {
-        const employee = manageable.find((row) => row["Ad Soyad"] === rewardForm.employee);
-        if (!employee?.id) return showToast("Çalışanın SaaS kimliği bulunamadı.", "error");
-        grant = await grantSaasRewardLeave({ employee_id: String(employee.id), days: rewardForm.days, reason: rewardForm.reason.trim() }) as RewardLeaveGrant;
-      } else {
-        grant = { id: Date.now(), employee: rewardForm.employee, days: rewardForm.days, reason: rewardForm.reason.trim(), grantedBy: currentName, createdAt: new Date().toISOString() };
-      }
-      const next = [grant, ...rewards];
-      setRewards(next);
-      if (!SAAS_DATA_MODE) setStorageData(STORAGE_KEYS.REWARD_LEAVE, next);
-      window.dispatchEvent(new CustomEvent("dataUpdated"));
-      addNotification(`${grant.days} gün ödül izni tanımlandı: ${grant.reason}`, "success", { targetUser: grant.employee, link: "/izinler", source: "reward-leave" });
-      setRewardForm({ employee: "", days: 1, reason: "" });
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "Ödül izni tanımlanamadı.", "error");
-    }
-  };
-
-  const mine = requests.filter((request) => request.employee === currentName);
-  const approvedCalendar = requests.filter((request) => request.status === "Onaylandı" && (request.employee === currentName || manageableNames.has(request.employee)));
-
-  return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-600">İzin operasyonları</p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">İzin Yönetimi</h1>
-          <p className="mt-1 text-sm text-slate-500">Yıllık izin yasal/politika hakkıdır. Performansa bağlı otomatik artış kaldırıldı; ödül izni ayrı ve yönetici tarafından tanımlanır.</p>
-        </div>
-        <div className="flex rounded-xl border border-slate-200 bg-white p-1 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          {[["mine","İzinlerim"],["approval",`Onay Bekleyen (${pending.length})`],["calendar","Ekip Takvimi"]].map(([key,label]) => (
-            <button key={key} onClick={() => setTab(key as any)} className={`rounded-lg px-3 py-2 font-medium ${tab === key ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "text-slate-500"}`}>{label}</button>
-          ))}
-        </div>
-      </div>
-
-      {SAAS_DATA_MODE&&<div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800">İzin talepleri, ödül izinleri, bakiye kontrolleri ve yönetici onayları tenant-scoped SaaS veritabanında yürütülüyor. Gün hesabı ve bakiye server-side yeniden doğrulanır.</div>}
-      {loadError&&<div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{loadError}</div>}
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[{label:"Yıllık hak",value:entitlement,icon:CalendarDays},{label:"Kullanılan yıllık",value:usedAnnual,icon:Plane},{label:"Kalan yıllık",value:annualBalance,icon:Check},{label:"Ödül izni bakiyesi",value:rewardBalance,icon:Gift}].map((item) => <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center justify-between"><p className="text-xs font-medium text-slate-500">{item.label}</p><item.icon className="h-4 w-4 text-sky-600" /></div><p className="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{item.value} <span className="text-xs font-normal text-slate-400">gün</span></p></div>)}
-      </div>
-
-      {tab === "mine" && <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Yeni izin talebi</h2>
-          <div className="mt-4 space-y-3">
-            <label className="block text-xs font-medium text-slate-600">İzin türü<select value={form.type} onChange={(e) => setForm({...form,type:e.target.value as LeaveType})} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">{requestTypes.map((type) => <option key={type} value={type}>{LEAVE_TYPE_LABELS[type]}</option>)}</select></label>
-            <div className="grid grid-cols-2 gap-2"><label className="text-xs font-medium text-slate-600">Başlangıç<input type="date" value={form.start} onChange={(e) => setForm({...form,start:e.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></label><label className="text-xs font-medium text-slate-600">Bitiş<input type="date" value={form.end} onChange={(e) => setForm({...form,end:e.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></label></div>
-            <label className="block text-xs font-medium text-slate-600">Not<textarea value={form.note} onChange={(e) => setForm({...form,note:e.target.value})} rows={3} className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></label>
-            {calculation && <div className="rounded-xl bg-sky-50 p-3 text-xs text-sky-900"><strong>{calculation.days} gün</strong><div className="mt-1 text-sky-700">{calculation.explanation}{SAAS_DATA_MODE?" · Nihai gün backend tarafından hesaplanır.":""}</div></div>}
-            <button className="w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">Talep oluştur</button>
-          </div>
-        </form>
-        <RequestTable rows={mine} />
-      </div>}
-
-      {tab === "approval" && <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="mb-4 text-sm font-semibold">Onay bekleyen talepler</h2>{pending.length ? <div className="space-y-2">{pending.map((request) => <div key={request.id} className="flex flex-col gap-3 rounded-xl border border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold text-slate-900">{request.employee}</p><p className="text-xs text-slate-500">{LEAVE_TYPE_LABELS[normalizeLeaveType(String(request.type))]} · {request.start} → {request.end} · {request.days} gün</p></div><div className="flex gap-2"><button onClick={() => { void updateRequest(request.id,"Onaylandı"); }} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><Check className="mr-1 inline h-3.5 w-3.5"/>Onayla</button><button onClick={() => { void updateRequest(request.id,"Reddedildi"); }} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700"><X className="mr-1 inline h-3.5 w-3.5"/>Reddet</button></div></div>)}</div> : <p className="text-sm text-slate-500">Bekleyen talep yok.</p>}</div>
-        <form onSubmit={grantRewardLeave} className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5"><div className="flex items-center gap-2"><Gift className="h-4 w-4 text-amber-700"/><h2 className="text-sm font-semibold text-amber-950">Ödül izni tanımla</h2></div><p className="mt-1 text-xs text-amber-800">Yıllık izin hakkını değiştirmez; ayrı bakiyedir.</p><div className="mt-4 space-y-3"><select value={rewardForm.employee} onChange={(e) => setRewardForm({...rewardForm,employee:e.target.value})} className="w-full rounded-xl border border-amber-200 bg-white p-2.5 text-sm"><option value="">Çalışan seçin</option>{manageable.map((e:any) => <option key={e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select><input type="number" min="0.5" step="0.5" value={rewardForm.days} onChange={(e) => setRewardForm({...rewardForm,days:Number(e.target.value)})} className="w-full rounded-xl border border-amber-200 bg-white p-2.5 text-sm"/><textarea placeholder="Ödül gerekçesi" value={rewardForm.reason} onChange={(e) => setRewardForm({...rewardForm,reason:e.target.value})} className="w-full rounded-xl border border-amber-200 bg-white p-2.5 text-sm"/><button className="w-full rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white">Ödül izni tanımla</button></div></form>
-      </div>}
-
-      {tab === "calendar" && <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="mb-4 flex items-center gap-2"><Clock3 className="h-4 w-4 text-sky-600"/><h2 className="text-sm font-semibold">Onaylı ekip izinleri</h2></div><RequestTable rows={approvedCalendar} /></div>}
-    </div>
-  );
-}
-
-function RequestTable({ rows }: { rows: LeaveRequest[] }) {
-  return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="overflow-x-auto"><table className="w-full"><thead><tr><th>Çalışan</th><th>Tür</th><th>Tarih</th><th className="text-right">Gün</th><th>Durum</th></tr></thead><tbody>{rows.length ? rows.map((request) => <tr key={request.id}><td>{request.employee}</td><td>{LEAVE_TYPE_LABELS[normalizeLeaveType(String(request.type))]}</td><td className="whitespace-nowrap text-xs">{request.start} → {request.end}</td><td className="text-right font-mono">{request.days}</td><td><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${request.status === "Onaylandı" ? "bg-emerald-50 text-emerald-700" : request.status === "Reddedildi" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>{request.status}</span></td></tr>) : <tr><td colSpan={5} className="py-8 text-center text-sm text-slate-500">Kayıt bulunmuyor.</td></tr>}</tbody></table></div></div>;
-}
+function Metric({label,value,icon:Icon}:{label:string;value:number|string;icon:any}){return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center justify-between"><p className="text-xs font-medium text-slate-500">{label}</p><Icon className="h-4 w-4 text-sky-600"/></div><p className="mt-3 text-2xl font-semibold">{value} {typeof value==="number"&&<span className="text-xs font-normal text-slate-400">gün</span>}</p></div>}
+function RequestTable({rows}:{rows:LeaveRequest[]}){return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="overflow-x-auto"><table className="w-full"><thead><tr><th>Çalışan</th><th>Tür</th><th>Tarih</th><th className="text-right">Gün</th><th>Durum</th></tr></thead><tbody>{rows.length?rows.map(request=><tr key={request.id}><td>{request.employee}</td><td>{LEAVE_TYPE_LABELS[normalizeLeaveType(String(request.type))]}</td><td className="whitespace-nowrap text-xs">{request.start} → {request.end}</td><td className="text-right font-mono">{request.days}</td><td><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${request.status==="Onaylandı"?"bg-emerald-50 text-emerald-700":request.status==="Reddedildi"?"bg-red-50 text-red-700":"bg-amber-50 text-amber-700"}`}>{request.status}</span></td></tr>):<tr><td colSpan={5} className="py-8 text-center text-sm text-slate-500">Kayıt bulunmuyor.</td></tr>}</tbody></table></div></div>}
