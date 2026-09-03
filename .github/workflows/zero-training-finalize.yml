@@ -56,6 +56,13 @@ jobs:
           if n2 + n3 < 2: raise SystemExit(f'CoreAnalyticsBoard readable badge replacements={n2+n3}')
           core.write_text(ct, encoding='utf-8')
 
+          # 9-box badge colors were attractive but too weak at 9px. Preserve surfaces, standardize ink.
+          talent = Path('frontend/app/(dashboard)/yetenek-matrisi/page.tsx')
+          tt = talent.read_text(encoding='utf-8')
+          tt, talent_badges = re.subn(r'(badge:\s*"bg-[^" ]+)\s+text-(?:sky|cyan|emerald|amber|slate|teal|rose|stone|violet)-800"', r'\1 text-slate-800"', tt)
+          if talent_badges < 9: raise SystemExit(f'expected >=9 9-box badge replacements, found {talent_badges}')
+          talent.write_text(tt, encoding='utf-8')
+
           visual = Path('frontend/app/visual-decision-system.css')
           vt = visual.read_text(encoding='utf-8')
           old = '  color: var(--module-accent,#2f6f6b);\n  font-size: 10px;'
@@ -65,7 +72,6 @@ jobs:
 
           salary = Path('frontend/app/(dashboard)/yonetici/maas-talep/page.tsx')
           sat = salary.read_text(encoding='utf-8')
-          sat = sat.replace('<table className="w-full"><thead>', '<table className="w-full"><thead>', 1)
           sat = sat.replace('className="text-[10px] uppercase tracking-wide text-slate-400"', 'className="text-[10px] uppercase tracking-wide text-slate-600"', 1)
           salary.write_text(sat, encoding='utf-8')
 
@@ -75,8 +81,8 @@ jobs:
           table_marker = '/* Zero-training readable table headings */'
           if table_marker not in gt:
               gt += '''\n\n/* Zero-training readable table headings */
-          table th{color:#475569!important;}
-          .dark table th{color:#cbd5e1!important;}
+          table th{color:#334155!important;}
+          .dark table th{color:#e2e8f0!important;}
           '''
               globals_css.write_text(gt, encoding='utf-8')
 
@@ -158,7 +164,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add frontend/futurehr-v1.spec.ts frontend/visual-decision-system.spec.ts frontend/app/globals.css frontend/app/executive-dashboard-unification.css frontend/app/futurehr-family-nav-premium.css frontend/app/visual-decision-system.css frontend/components/UniversalAnalyticsBoard.tsx frontend/components/CoreAnalyticsBoard.tsx 'frontend/app/(dashboard)/yonetici/maas-talep/page.tsx'
+          git add frontend/futurehr-v1.spec.ts frontend/visual-decision-system.spec.ts frontend/app/globals.css frontend/app/executive-dashboard-unification.css frontend/app/futurehr-family-nav-premium.css frontend/app/visual-decision-system.css frontend/components/UniversalAnalyticsBoard.tsx frontend/components/CoreAnalyticsBoard.tsx 'frontend/app/(dashboard)/yonetici/maas-talep/page.tsx' 'frontend/app/(dashboard)/yetenek-matrisi/page.tsx'
           git diff --cached --quiet && exit 0
           git commit -m 'fix(ux): finish zero-training readability and E2E alignment'
           git push origin HEAD:feature/zero-training-ux
