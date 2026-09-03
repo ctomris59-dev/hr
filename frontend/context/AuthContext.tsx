@@ -11,6 +11,7 @@ interface AuthContextType {
   internalRole: string | null;
   userName: string | null;
   authMode: "demo" | "secure" | null;
+  authReady: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,9 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [internalRole, setInternalRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<"demo" | "secure" | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+
+    const finish = () => {
+      if (!cancelled) setAuthReady(true);
+    };
 
     const clearUser = () => {
       if (cancelled) return;
@@ -64,6 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         else clearUser();
       } catch {
         clearUser();
+      } finally {
+        finish();
       }
     };
 
@@ -76,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserName((currentUser as any).name || null);
         setAuthMode((currentUser as any).authMode === "secure" ? "secure" : "demo");
       } else clearUser();
+      finish();
     };
 
     const load = () => {
@@ -113,11 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setInternalRole(persona.role);
     setUserName(persona.name);
     setAuthMode("demo");
+    setAuthReady(true);
     window.dispatchEvent(new CustomEvent("userChanged", { detail: persona }));
   };
 
   return (
-    <AuthContext.Provider value={{ currentUserRole, switchRole, internalRole, userName, authMode }}>
+    <AuthContext.Provider value={{ currentUserRole, switchRole, internalRole, userName, authMode, authReady }}>
       {children}
     </AuthContext.Provider>
   );
