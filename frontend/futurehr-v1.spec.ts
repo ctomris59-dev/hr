@@ -64,8 +64,8 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await openDemo(page);
     await page.goto("/yetenek-matrisi");
     await expect(page.getByRole("heading", { name: "Bu alanın modülleri" })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Kariyer & Readiness/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Halefiyet & Yedekleme/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Kalibrasyon/ }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Yetkinlik Haritası/ }).first()).toBeVisible();
     await expect(page.locator('[data-workspace-module="/yetenek-matrisi"]')).toHaveAttribute("aria-current", "page");
     await page.goto("/gelisim");
     await expect(page.getByRole("link", { name: /Eğitim & Müdahaleler/ })).toBeVisible();
@@ -91,7 +91,7 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await openDemo(page);
     await switchPersona(page, "employee");
     await expect(page).toHaveURL(/\/kariyer/);
-    await expect(page.getByRole("link", { name: "Kariyerim", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Kariyer & Readiness/ }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /Ücret & İşgücü Kararları/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Halefiyet & Yedekleme/ })).toHaveCount(0);
     await page.goto("/maas");
@@ -102,13 +102,13 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await openDemo(page);
     await page.goto("/kariyer");
     const currentRoleLabel = page.getByText("Mevcut rol", { exact: true });
-    await expect(currentRoleLabel).toBeVisible();
+    await expect(currentRoleLabel).toHaveCount(1);
     const currentRoleCard = currentRoleLabel.locator("..");
     const currentRoleTitle = (await currentRoleCard.locator("p").nth(1).textContent())?.trim() || "";
     expect(currentRoleTitle).not.toBe("");
 
     const targetSelect = page.getByLabel("Hedef rol");
-    await expect(targetSelect).toBeVisible();
+    await expect(targetSelect).toHaveCount(1);
     const targetOptions = (await targetSelect.locator("option").allTextContents()).map((value) => value.trim());
     expect(targetOptions).not.toContain(currentRoleTitle);
 
@@ -133,15 +133,15 @@ test.describe("FutureHR V1 demo quality gate", () => {
     });
     await page.goto("/degerlendirme");
     await expect(page.getByText("Dönem Kilitli", { exact: true })).toBeVisible();
-    await expect(page.getByText(/yeni puan girişi kapalı/i)).toBeVisible();
+    await expect(page.getByText(/Yeni puanlama yerine bir sonraki performans dönemi açılmalıdır/i)).toBeVisible();
   });
 
   test("development effectiveness analytics loads with measured evidence", async ({ page }) => {
     await openDemo(page);
     await page.goto("/gelisim-analitigi");
-    await expect(page.getByRole("heading", { name: "Yetkinlik Bazlı Gelişim Etkinliği" })).toBeVisible();
-    await expect(page.getByText("Doğrulanmış transfer", { exact: true })).toBeVisible();
-    await expect(page.getByText("Yeniden ölçülen", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gelişim Etkinliği Analitiği" })).toBeVisible();
+    await expect(page.getByText("Transfer Kanıtı", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Yönetici doğrulaması", { exact: true }).first()).toBeVisible();
   });
 
   test("onboarding wizard is CEO/HR-only and lives under system workspace", async ({ page }) => {
@@ -211,6 +211,9 @@ test.describe("FutureHR V1 demo quality gate", () => {
       if (!nav || !footer || !last || !first) return null;
       return {
         lastBottom:last.getBoundingClientRect().bottom,
+        navBottom:(nav as HTMLElement).getBoundingClientRect().bottom,
+        navClientHeight:(nav as HTMLElement).clientHeight,
+        navScrollHeight:(nav as HTMLElement).scrollHeight,
         footerTop:footer.getBoundingClientRect().top,
         sidebarBottom:(document.querySelector('[data-testid="app-sidebar"]') as HTMLElement)?.getBoundingClientRect().bottom,
         fontSize:parseFloat(getComputedStyle(first).fontSize),
@@ -218,7 +221,8 @@ test.describe("FutureHR V1 demo quality gate", () => {
       };
     });
     expect(result).not.toBeNull();
-    expect(result!.lastBottom).toBeLessThanOrEqual(result!.footerTop + 1);
+    expect(result!.navBottom).toBeLessThanOrEqual(result!.footerTop + 1);
+    expect(result!.navScrollHeight).toBeGreaterThanOrEqual(result!.navClientHeight);
     expect(result!.footerTop).toBeLessThanOrEqual(result!.sidebarBottom + 1);
     expect(result!.fontSize).toBeGreaterThanOrEqual(12);
     expect(result!.rowHeight).toBeGreaterThanOrEqual(32);

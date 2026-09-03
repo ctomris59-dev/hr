@@ -66,7 +66,7 @@ test("demo lifecycle clears to an empty company and recreates a fully populated 
   expect(emptySnapshot).toEqual({ org: 0, history: 0, leave: 0, development: 0, training: 0, candidates: 0, cycles: 0, cleared: "true" });
 
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "V1 Demo Verisini Oluştur" }).click();
+  await page.getByRole("button", { name: "50 Kişilik Demo Şirketi Oluştur" }).click();
   await page.waitForLoadState("domcontentloaded");
   await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem("hr_org_chart") || "[]").length)).toBeGreaterThan(25);
 

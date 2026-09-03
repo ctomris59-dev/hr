@@ -5,3 +5,9 @@
 @media (display-mode:standalone){
   header[data-tour="topbar"]{padding-top:env(safe-area-inset-top);height:calc(4rem + env(safe-area-inset-top));}
 }
+
+/* Keep the mobile navigation control above the compact topbar stacking context. */
+@media (max-width: 1023px){
+  button[aria-controls="futurehr-sidebar"]{z-index:100!important;}
+  header[data-tour="topbar"]{padding-left:3.75rem;}
+}

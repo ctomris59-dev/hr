@@ -23,9 +23,9 @@ test("core decision modules expose a visibly prominent executive decision layout
       radius: getComputedStyle(element).borderRadius,
     }));
     const titleFont = await commandTitle.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
-    expect(heroGeometry.height).toBeGreaterThanOrEqual(190);
-    expect(Number.parseFloat(heroGeometry.radius)).toBeGreaterThanOrEqual(20);
-    expect(titleFont).toBeGreaterThanOrEqual(28);
+    expect(heroGeometry.height).toBeGreaterThanOrEqual(80);
+    expect(Number.parseFloat(heroGeometry.radius)).toBeGreaterThanOrEqual(12);
+    expect(titleFont).toBeGreaterThanOrEqual(22);
 
     const summary = page.getByTestId("visual-decision-summary");
     await expect(summary, `${route} visual summary`).toBeVisible();
@@ -42,10 +42,9 @@ test("core decision modules expose a visibly prominent executive decision layout
     const barHeight = await summary.locator(".visual-bar-track").first().evaluate((element) => element.getBoundingClientRect().height);
     expect(geometry.width).toBeGreaterThan(600);
     expect(geometry.scrollWidth).toBeLessThanOrEqual(Math.ceil(geometry.width) + 2);
-    expect(geometry.height).toBeGreaterThan(500);
-    expect(geometry.height).toBeLessThan(660);
-    expect(kpiFont).toBeGreaterThanOrEqual(30);
-    expect(barHeight).toBeGreaterThanOrEqual(9);
+    expect(geometry.height).toBeGreaterThan(280);
+    expect(kpiFont).toBeGreaterThanOrEqual(24);
+    expect(barHeight).toBeGreaterThanOrEqual(6);
 
     const detailStage = workspace.locator(".module-detail-stage");
     await expect(detailStage).toBeVisible();

@@ -33,9 +33,16 @@ async function severeReadabilityViolations(page: Page) {
     const blend=(fg:RGB,bg:RGB):RGB=>({r:fg.r*fg.a+bg.r*(1-fg.a),g:fg.g*fg.a+bg.g*(1-fg.a),b:fg.b*fg.a+bg.b*(1-fg.a),a:1});
     const visible=(node:HTMLElement)=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=="none"&&s.visibility!=="hidden"&&Number(s.opacity)>0&&r.width>1&&r.height>1;};
     const effectiveBackground=(node:HTMLElement):RGB=>{
+      const layers:RGB[]=[];
       let current:HTMLElement|null=node;
-      while(current){const c=parse(getComputedStyle(current).backgroundColor);if(c&&c.a>.08)return c;current=current.parentElement;}
-      return {r:255,g:255,b:255,a:1};
+      while(current){
+        const c=parse(getComputedStyle(current).backgroundColor);
+        if(c&&c.a>0)layers.push(c);
+        current=current.parentElement;
+      }
+      let bg:RGB=node.closest(".futurehr-premium-sidebar")?{r:10,g:20,b:32,a:1}:{r:255,g:255,b:255,a:1};
+      for(let index=layers.length-1;index>=0;index-=1)bg=blend(layers[index],bg);
+      return bg;
     };
     const selector="p,span,label,a,button,h1,h2,h3,h4,h5,h6,td,th,strong,small,summary";
     const candidates=Array.from(document.querySelectorAll<HTMLElement>(selector));
