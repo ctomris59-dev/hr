@@ -8,9 +8,6 @@ const DEFAULT_ROUTE_BY_ROLE = {
 } as const;
 
 async function openDemo(page: Page) {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("fhr_demo_tour_seen_v1", "1");
-  });
   await page.goto("/");
   await page.getByRole("button", { name: "V1 Demo'yu Aç" }).click();
   await page.waitForURL(/\/dashboard/);
@@ -50,29 +47,65 @@ async function visibleInteractionViolations(page: Page) {
   });
 }
 
-test.describe("FutureHR V1 demo quality gate", () => {
-  test("CEO demo opens with simplified decision workspaces", async ({ page }) => {
+test.describe("FutureHR V1 zero-training quality gate", () => {
+  test("CEO demo opens with a simple task-oriented navigation", async ({ page }) => {
     await openDemo(page);
-    await expect(page.getByText("Yönetici Özeti", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ana Sayfa", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Performans & Yetenek", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Gelişim & Kariyer", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Ücret & İşgücü Kararları", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Yönetim & Ayarlar", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ücret", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sistem Yönetimi", exact: true })).toBeVisible();
   });
 
-  test("consolidated workspaces expose sibling modules prominently", async ({ page }) => {
+  test("home page tells the user what to do before showing advanced analytics", async ({ page }) => {
+    await openDemo(page);
+    await expect(page.getByTestId("zero-training-dashboard")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bekleyen işler" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Hızlı işlemler" })).toBeVisible();
+    const advanced = page.getByRole("button", { name: /Detaylı şirket göstergeleri/ });
+    await expect(advanced).toBeVisible();
+    await expect(advanced).toHaveAttribute("aria-expanded", "false");
+    await advanced.click();
+    await expect(advanced).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("consolidated workspaces expose sibling modules in plain language", async ({ page }) => {
     await openDemo(page);
     await page.goto("/yetenek-matrisi");
     await expect(page.getByRole("heading", { name: "Bu alanın modülleri" })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Kalibrasyon/ }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /Yetkinlik Haritası/ }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Değerlendirmeleri Karşılaştır/ }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Yetkinlikler/ }).first()).toBeVisible();
     await expect(page.locator('[data-workspace-module="/yetenek-matrisi"]')).toHaveAttribute("aria-current", "page");
     await page.goto("/gelisim");
-    await expect(page.getByRole("link", { name: /Eğitim & Müdahaleler/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Gelişim Etkinliği/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Eğitimler/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Gelişim Sonuçları/ })).toBeVisible();
     await page.goto("/admin");
     await expect(page.getByRole("link", { name: /Şirket Kurulumu/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Güven & KVKK/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Gizlilik & KVKK/ })).toBeVisible();
+  });
+
+  test("search finds nested tasks without requiring menu knowledge", async ({ page }) => {
+    await openDemo(page);
+    await page.keyboard.press("Control+K");
+    const search = page.getByPlaceholder(/Ne yapmak istiyorsunuz/);
+    await expect(search).toBeVisible();
+    await search.fill("izin");
+    await expect(page.getByText("İzinler", { exact: true }).first()).toBeVisible();
+    await search.fill("kariyer");
+    await expect(page.getByText("Kariyer Hazırlığı", { exact: true }).first()).toBeVisible();
+    await search.fill("gizlilik");
+    await expect(page.getByText("Gizlilik & KVKK", { exact: true }).first()).toBeVisible();
+  });
+
+  test("Türkiye setup status uses user language instead of developer jargon", async ({ page }) => {
+    await openDemo(page);
+    await page.goto("/turkiye-uyum");
+    await expect(page.getByRole("heading", { name: "Türkiye Ayarları & Hazırlık" })).toBeVisible();
+    await expect(page.getByText(/Kullanıma hazır|Kurulum gerekiyor/).first()).toBeVisible();
+    const visibleText = await page.locator("body").innerText();
+    expect(visibleText).not.toContain("Credential bekliyor");
+    expect(visibleText).not.toContain("Kodda aktif");
+    expect(visibleText).not.toMatch(/\bKRİTİK\b/);
   });
 
   test("decision priority row opens explainable demo profile and Escape closes it", async ({ page }) => {
@@ -91,9 +124,9 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await openDemo(page);
     await switchPersona(page, "employee");
     await expect(page).toHaveURL(/\/kariyer/);
-    await expect(page.getByRole("link", { name: /Kariyer & Readiness/ }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /Ücret & İşgücü Kararları/ })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /Halefiyet & Yedekleme/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Kariyer Hazırlığı/ }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ücret", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Kritik Roller & Yedekler/ })).toHaveCount(0);
     await page.goto("/maas");
     await expect(page).not.toHaveURL(/\/maas$/);
   });
@@ -122,7 +155,7 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await page.goto("/degerlendirme");
     await expect(page.getByText(/Performans Dönemi/).first()).toBeVisible();
     await expect(page.getByText(/Değerlendirme Açık|Hedef Planlama|Kalibrasyon|Dönem Kilitli/).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /Kalibrasyon/ }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Değerlendirmeleri Karşılaştır/ }).first()).toBeVisible();
   });
 
   test("locked performance cycle is visible and closes new scoring", async ({ page }) => {
@@ -144,22 +177,25 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page.getByText("Yönetici doğrulaması", { exact: true }).first()).toBeVisible();
   });
 
-  test("onboarding wizard is CEO/HR-only and lives under system workspace", async ({ page }) => {
+  test("setup wizard is CEO/HR-only and keeps first setup to four clear steps", async ({ page }) => {
     await openDemo(page);
     await page.goto("/kurulum");
-    await expect(page.getByRole("heading", { name: "FutureHR V1 Kurulum" })).toBeVisible();
-    await expect(page.getByText("Yönetim & Ayarlar çalışma alanı", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "FutureHR'ı kullanıma hazırlayın" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /1\. Şirket bilgileri/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /4\. Yetkiler & gizlilik/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /5\./ })).toHaveCount(0);
     await switchPersona(page, "employee");
     await page.goto("/kurulum");
     await expect(page).not.toHaveURL(/\/kurulum$/);
   });
 
-  test("command palette hides restricted compensation workspace from employee", async ({ page }) => {
+  test("command palette hides restricted compensation pages from employee", async ({ page }) => {
     await openDemo(page);
     await switchPersona(page, "employee");
     await page.keyboard.press("Control+K");
-    await expect(page.getByPlaceholder(/Çalışma alanı veya personel ara/)).toBeVisible();
-    await expect(page.getByText("Ücret & İşgücü Kararları", { exact: true })).toHaveCount(0);
+    await expect(page.getByPlaceholder(/Ne yapmak istiyorsunuz/)).toBeVisible();
+    await expect(page.getByText("Ücret Yönetimi", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Ücret Adaleti", { exact: true })).toHaveCount(0);
   });
 
   test("business notification event is actionable", async ({ page }) => {
@@ -210,7 +246,6 @@ test.describe("FutureHR V1 demo quality gate", () => {
       const first = links[0] as HTMLElement | undefined;
       if (!nav || !footer || !last || !first) return null;
       return {
-        lastBottom:last.getBoundingClientRect().bottom,
         navBottom:(nav as HTMLElement).getBoundingClientRect().bottom,
         navClientHeight:(nav as HTMLElement).clientHeight,
         navScrollHeight:(nav as HTMLElement).scrollHeight,
