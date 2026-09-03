@@ -10,7 +10,8 @@
     "test:enterprise": "node --experimental-strip-types scripts/turkey-enterprise-stress.mjs",
     "demo:inspect": "playwright test demo-inspector.spec.ts",
     "test:e2e": "playwright test --config=playwright.v1.config.ts",
-    "quality:v1": "npm run build && npm run test:e2e"
+    "quality:v1": "npm run build && npm run test:e2e",
+    "lint:strict": "eslint lib/hr/saasWorkforceClient.ts lib/hr/decisionIntelligenceClient.ts app/api/saas app/api/integrations"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.21",

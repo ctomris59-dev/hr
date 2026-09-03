@@ -54,10 +54,9 @@ test.describe("FutureHR V1 demo quality gate", () => {
   test("CEO demo opens with simplified decision workspaces", async ({ page }) => {
     await openDemo(page);
     await expect(page.getByText("Yönetici Özeti", { exact: true }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Performans", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Yetenek & Kariyer", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Gelişim", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Ücret & Bütçe", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Performans & Yetenek", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Gelişim & Kariyer", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ücret & İşgücü Kararları", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Yönetim & Ayarlar", exact: true })).toBeVisible();
   });
 
@@ -93,7 +92,7 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await switchPersona(page, "employee");
     await expect(page).toHaveURL(/\/kariyer/);
     await expect(page.getByRole("link", { name: "Kariyerim", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Ücret & Bütçe/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Ücret & İşgücü Kararları/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Halefiyet & Yedekleme/ })).toHaveCount(0);
     await page.goto("/maas");
     await expect(page).not.toHaveURL(/\/maas$/);
@@ -160,7 +159,7 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await switchPersona(page, "employee");
     await page.keyboard.press("Control+K");
     await expect(page.getByPlaceholder(/Çalışma alanı veya personel ara/)).toBeVisible();
-    await expect(page.getByText("Ücret & Bütçe", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Ücret & İşgücü Kararları", { exact: true })).toHaveCount(0);
   });
 
   test("business notification event is actionable", async ({ page }) => {
@@ -239,11 +238,11 @@ test.describe("FutureHR V1 demo quality gate", () => {
     await expect(page.getByRole("button",{name:"Menüyü aç"})).toHaveAttribute("aria-expanded","false");
   });
 
-  test("Copilot opens as explainable decision support", async ({ page }) => {
+  test("FutureHR Intelligence opens as explainable decision support", async ({ page }) => {
     await openDemo(page);
-    await page.getByRole("button", { name: "FutureHR Copilot'u aç" }).click();
-    await expect(page.getByRole("heading", { name: "FutureHR Copilot" })).toBeVisible();
-    await expect(page.getByPlaceholder(/Pelin Yılmaz için neden/)).toBeVisible();
-    await expect(page.getByText(/Kanıtı birleştirir; kararı insana bırakır/)).toBeVisible();
+    await page.getByRole("button", { name: "FutureHR Intelligence'ı aç" }).click();
+    await expect(page.getByRole("heading", { name: "FutureHR Intelligence" })).toBeVisible();
+    await expect(page.getByLabel("FutureHR Intelligence sorusu")).toBeVisible();
+    await expect(page.getByText(/Uygulamadaki kanıtları tarar/)).toBeVisible();
   });
 });

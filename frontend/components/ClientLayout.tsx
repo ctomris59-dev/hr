@@ -168,11 +168,11 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
     <AIGovernanceCapture/>
     <DemoDataHardeningBridge/>
 
-    <button type="button" onClick={()=>setSidebarOpen(value=>!value)} className="fixed left-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" aria-label={sidebarOpen?"Menüyü kapat":"Menüyü aç"} aria-expanded={sidebarOpen} aria-controls="futurehr-sidebar">
+    <button type="button" onClick={()=>setSidebarOpen(value=>!value)} className="fixed left-3 top-3 z-[60] pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" aria-label={sidebarOpen?"Menüyü kapat":"Menüyü aç"} aria-expanded={sidebarOpen} aria-controls="futurehr-sidebar">
       {sidebarOpen?<X size={18} aria-hidden="true"/>:<Menu size={18} aria-hidden="true"/>}
     </button>
 
-    <aside id="futurehr-sidebar" data-testid="app-sidebar" data-tour="sidebar" className={`${sidebarOpen?"translate-x-0":"-translate-x-full"} futurehr-premium-sidebar fixed inset-y-0 left-0 z-40 w-[286px] flex-shrink-0 border-r border-white/[0.07] text-slate-300 transition-transform duration-200 ease-out lg:static lg:translate-x-0`}>
+    <aside id="futurehr-sidebar" data-testid="app-sidebar" data-tour="sidebar" className={`${sidebarOpen?"translate-x-0 pointer-events-auto":"-translate-x-full pointer-events-none"} futurehr-premium-sidebar fixed inset-y-0 left-0 z-40 w-[286px] flex-shrink-0 border-r border-white/[0.07] text-slate-300 transition-transform duration-200 ease-out lg:pointer-events-auto lg:static lg:translate-x-0`}>
       <div className="flex h-[100dvh] flex-col overflow-hidden">
         <div className="futurehr-sidebar-brand flex h-[88px] flex-shrink-0 items-center px-5">
           <div className="min-w-0">
@@ -261,7 +261,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
       </div>
     </aside>
 
-    {sidebarOpen&&<button type="button" className="fixed inset-0 z-30 bg-slate-950/45 backdrop-blur-[1px] lg:hidden" onClick={()=>setSidebarOpen(false)} aria-label="Menüyü kapat"/>}
+    {sidebarOpen&&<button type="button" className="fixed inset-0 z-30 pointer-events-auto bg-slate-950/45 backdrop-blur-[1px] lg:hidden" onClick={()=>setSidebarOpen(false)} aria-label="Menüyü kapat"/>}
 
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <header data-tour="topbar" className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[#dfe3e1] bg-[#fbfbf8] px-4 sm:px-5 lg:px-6 dark:border-slate-800 dark:bg-[#141b22]">
