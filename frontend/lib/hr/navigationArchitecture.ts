@@ -13,44 +13,45 @@ export type NavigationFamilyItem = { href: string; label: string; description: s
 export type NavigationFamily = { id: NavigationFamilyId; label: string; section: "Çalışma Alanları" | "Sistem"; description: string; items: NavigationFamilyItem[]; };
 
 export const NAVIGATION_FAMILIES: NavigationFamily[] = [
-  { id:"organization", label:"İnsan & Organizasyon", section:"Çalışma Alanları", description:"Kim nerede, kime bağlı, ekip deneyimi nasıl ve günlük insan operasyonlarında ne oluyor?", items:[
-    { href:"/organizasyon", label:"Çalışanlar & Organizasyon", description:"Çalışan, yönetici, departman ve organizasyon ana verisi." },
-    { href:"/calisan-deneyimi", label:"Çalışan Deneyimi & Nabız", description:"Anonim check-in, driver analizi ve aksiyon görünümü." },
-    { href:"/ekip-yonetimi", label:"Ekip Yönetimi", description:"Günlük ekip görünümü ve yönetici aksiyonları." },
-    { href:"/izinler", label:"İzin Yönetimi", description:"Bakiye, talep, onay ve Türkiye izin kuralları." },
+  { id:"organization", label:"Çalışanlar", section:"Çalışma Alanları", description:"Çalışan bilgileri, organizasyon, ekip ve izin işlemleri.", items:[
+    { href:"/organizasyon", label:"Çalışanlar & Organizasyon", description:"Çalışanları, departmanları, pozisyonları ve yöneticileri yönetin." },
+    { href:"/calisan-deneyimi", label:"Çalışan Deneyimi", description:"Çalışan geri bildirimlerini ve ekip nabzını takip edin." },
+    { href:"/ekip-yonetimi", label:"Ekibim", description:"Ekibinizi ve açık yönetici işlemlerini görün." },
+    { href:"/izinler", label:"İzinler", description:"İzin bakiyesi, talep, onay ve takvim işlemlerini yönetin." },
   ]},
-  { id:"performance", label:"Performans & Yetenek", section:"Çalışma Alanları", description:"Kim nasıl performans gösteriyor, hangi karar kanıta dayanıyor ve kim kritik yetenek segmentinde?", items:[
-    { href:"/rol-mimarisi", label:"Rol & Yetkinlik Mimarisi", description:"Job family, seviye ve hedef yetkinlik profilleri." },
-    { href:"/degerlendirme", label:"Performans", description:"KPI, yönetici gözlemi, yetkinlik ve dönem sonuçları." },
-    { href:"/kalibrasyon", label:"Kalibrasyon", description:"Skor farkları, kanıt kalitesi ve nihai insan değerlendirmesi." },
-    { href:"/yetenek-matrisi", label:"Yetenek & 9-Box", description:"Performans, potansiyel ve Evidence Score ile yetenek görünümü." },
-    { href:"/yetkinlik-haritasi", label:"Yetkinlik Haritası", description:"Çalışan, rol ve yetkinlik bağlarını Skills Graph üzerinde görün." },
+  { id:"performance", label:"Performans & Yetenek", section:"Çalışma Alanları", description:"Performans değerlendirmeleri, yetenek görünümü ve karar desteği.", items:[
+    { href:"/degerlendirme", label:"Performans", description:"Hedefleri ve dönem değerlendirmelerini yönetin." },
+    { href:"/kalibrasyon", label:"Değerlendirmeleri Karşılaştır", description:"Puan farklarını ve değerlendirme kanıtlarını karşılaştırın." },
+    { href:"/yetenek-matrisi", label:"Yetenek Değerlendirmesi", description:"Performans ve potansiyeli 9-Box görünümünde değerlendirin." },
+    { href:"/yetkinlik-haritasi", label:"Yetkinlikler", description:"Rol ve çalışan yetkinliklerini karşılaştırın." },
+    { href:"/rol-mimarisi", label:"Roller & Yetkinlikler", description:"Pozisyon, seviye ve hedef yetkinlikleri tanımlayın." },
+    { href:"/karar-merkezi", label:"Karar Desteği", description:"Önemli insan kararlarını açıklanabilir sinyallerle inceleyin." },
   ]},
-  { id:"talentCareer", label:"Gelişim & Kariyer", section:"Çalışma Alanları", description:"Kimi nasıl geliştirmeli, bir sonraki role ne kadar hazır ve kritik rollerde kim yedek olabilir?", items:[
-    { href:"/gelisim", label:"Gelişim Planı", description:"Yetkinlik gap'lerini hedef ve gelişim aksiyonlarına dönüştürün." },
-    { href:"/egitim", label:"Eğitim & Müdahaleler", description:"Kanıta dayalı gelişim müdahalelerini atayın ve takip edin." },
-    { href:"/gelisim-analitigi", label:"Gelişim Etkinliği", description:"Transfer, doğrulama, yeniden ölçüm ve değişim sinyallerini analiz edin." },
-    { href:"/kariyer", label:"Kariyer & Readiness", description:"Mevcut rol, hedef rol, gap ve hazır bulunuşluk görünümü." },
-    { href:"/yedekleme", label:"Halefiyet & Yedekleme", description:"Kritik roller, aday havuzu, bench depth ve hazırlık durumu." },
+  { id:"talentCareer", label:"Gelişim & Kariyer", section:"Çalışma Alanları", description:"Gelişim planları, eğitimler, kariyer hazırlığı ve yedekleme.", items:[
+    { href:"/gelisim", label:"Gelişim Planları", description:"Gelişim hedeflerini ve aksiyonlarını yönetin." },
+    { href:"/egitim", label:"Eğitimler", description:"Eğitim atamalarını ve tamamlanma durumlarını takip edin." },
+    { href:"/gelisim-analitigi", label:"Gelişim Sonuçları", description:"Gelişim faaliyetlerinin işe yansıyıp yansımadığını görün." },
+    { href:"/kariyer", label:"Kariyer Hazırlığı", description:"Mevcut rol, hedef rol ve hazırlık durumunu görün." },
+    { href:"/yedekleme", label:"Kritik Roller & Yedekler", description:"Kritik roller için hazır adayları takip edin." },
   ]},
-  { id:"compensation", label:"Ücret & İşgücü Kararları", section:"Çalışma Alanları", description:"Kime ne kadar ve neden? Piyasa, iç adalet, bütçe ve yönetici önerilerini aynı karar alanında yönetin.", items:[
-    { href:"/maas", label:"Ücret Karar Merkezi", description:"Ücret analizi, benchmark, bütçe ve karar görünümü." },
-    { href:"/ucret-adaleti", label:"Ücret Adaleti & Sıkışma", description:"Compa-ratio, piyasa farkı, iç emsal ve sıkışma sinyalleri." },
-    { href:"/yonetici/maas-talep", label:"Yönetici Önerileri", description:"Yönetici ücret önerilerini kontrollü onay akışına gönderin." },
+  { id:"compensation", label:"Ücret", section:"Çalışma Alanları", description:"Ücret kararları, adalet kontrolleri ve yönetici önerileri.", items:[
+    { href:"/maas", label:"Ücret Yönetimi", description:"Ücret, piyasa karşılaştırması ve bütçe senaryolarını yönetin." },
+    { href:"/ucret-adaleti", label:"Ücret Adaleti", description:"Benzer roller arasındaki ücret farklarını kontrol edin." },
+    { href:"/yonetici/maas-talep", label:"Ücret Önerileri", description:"Yönetici ücret önerilerini onay sürecine gönderin." },
   ]},
-  { id:"recruitment", label:"İşe Alım", section:"Çalışma Alanları", description:"Doğru adayı seçmek için başvuru, test, mülakat, iş örneği ve teklif kanıtlarını tek akışta yönetin.", items:[
-    { href:"/ise-alim", label:"İşe Alım Süreci", description:"Başvuru, kanıt, mülakat ve teklif akışı." },
-    { href:"/aday-testi", label:"Yetkinlik Testleri", description:"Testleri nihai karar değil, yapılandırılmış değerlendirme kanıtı olarak kullanın." },
+  { id:"recruitment", label:"İşe Alım", section:"Çalışma Alanları", description:"Adayları başvurudan teklife kadar tek akışta yönetin.", items:[
+    { href:"/ise-alim", label:"Adaylar & İşe Alım", description:"Adayları, görüşmeleri ve teklif sürecini takip edin." },
+    { href:"/aday-testi", label:"Aday Değerlendirmeleri", description:"Yetkinlik testlerini ve değerlendirme sonuçlarını görün." },
   ]},
-  { id:"system", label:"Yönetim & Ayarlar", section:"Sistem", description:"Kurulum, kullanıcı, Türkiye uyumu, entegrasyon, veri aktarımı, güven ve erişim politikalarını tek sistem alanında yönetin.", items:[
-    { href:"/admin", label:"Kullanıcı & Yetki", description:"Kullanıcılar, roller ve erişim yönetimi." },
-    { href:"/kurulum", label:"Şirket Kurulumu", description:"Organizasyon, dönem, ücret ve güven adımlarını yapılandırın." },
-    { href:"/turkiye-uyum", label:"Türkiye Uyum", description:"KVKK, İş Kanunu, SSO ve entegrasyon readiness görünümü." },
-    { href:"/admin/entegrasyonlar", label:"Entegrasyon Merkezi", description:"Logo, Netsis, Mikro, SAP, PDKS ve bordro connector yönetimi." },
-    { href:"/admin/veri-aktarimi", label:"Veri Aktarımı", description:"Excel/CSV onboarding, alan eşleme ve kalite kontrolü." },
-    { href:"/yonetici-raporlari", label:"Yönetici Raporları", description:"Türkçe yönetim özeti, riskler ve karar aksiyonları." },
-    { href:"/admin/guven-kvkk", label:"Güven & KVKK", description:"AI audit, veri minimizasyonu, anonimlik ve saklama kontrolleri." },
-    { href:"/ayarlar/yetki-mimarisi", label:"Yetki Mimarisi", description:"Rol, modül ve kapsam politikalarını yönetin." },
+  { id:"system", label:"Sistem Yönetimi", section:"Sistem", description:"Kurulum, kullanıcılar, veri, entegrasyonlar ve güvenlik ayarları.", items:[
+    { href:"/admin", label:"Kullanıcılar & Yetkiler", description:"Kullanıcı hesaplarını ve temel erişimleri yönetin." },
+    { href:"/kurulum", label:"Şirket Kurulumu", description:"FutureHR'ı şirketiniz için adım adım hazırlayın." },
+    { href:"/turkiye-uyum", label:"Türkiye Kuralları", description:"İzin, İş Kanunu ve yerel uyum kontrollerini görün." },
+    { href:"/admin/entegrasyonlar", label:"Entegrasyonlar", description:"ERP, bordro, PDKS ve diğer sistem bağlantılarını yönetin." },
+    { href:"/admin/veri-aktarimi", label:"Excel / CSV Veri Aktarımı", description:"Çalışan ve diğer verileri kontrollü şekilde içe aktarın." },
+    { href:"/yonetici-raporlari", label:"Yönetim Raporları", description:"Yönetim özetlerini ve raporları oluşturun." },
+    { href:"/admin/guven-kvkk", label:"Gizlilik & KVKK", description:"Veri gizliliği, saklama ve AI kullanım kontrollerini yönetin." },
+    { href:"/ayarlar/yetki-mimarisi", label:"Gelişmiş Yetki Ayarları", description:"Rol ve modül bazlı gelişmiş erişim kurallarını yönetin." },
   ]},
 ];
 
