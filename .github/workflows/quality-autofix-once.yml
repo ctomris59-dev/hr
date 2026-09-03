@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply-quality-fixes:
-    if: ${{ startsWith(github.event.head_commit.message, 'chore(quality): bootstrap final quality fixes') }}
+    if: "${{ startsWith(github.event.head_commit.message, 'chore(quality): bootstrap final quality fixes') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
