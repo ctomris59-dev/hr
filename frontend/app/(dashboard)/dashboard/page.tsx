@@ -1,7 +1,7 @@
 "use client";
 
-import PremiumExecutiveDashboard from "../../../components/premium/PremiumExecutiveDashboard";
+import ZeroTrainingDashboard from "../../../components/ZeroTrainingDashboard";
 
 export default function DashboardPage() {
-  return <PremiumExecutiveDashboard />;
+  return <ZeroTrainingDashboard />;
 }
