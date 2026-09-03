@@ -127,6 +127,11 @@ jobs:
               '<p className="text-[9px] font-bold uppercase tracking-[.14em]" style={{ color: board.accent }}>{board.eyebrow}</p>',
               '<p className="text-[9px] font-bold uppercase tracking-[.14em] text-slate-600 dark:text-slate-300">{board.eyebrow}</p>',
           )
+          replace_once(
+              "frontend/components/VisualModuleBoard.tsx",
+              '<p className="text-[9px] font-bold leading-3" style={{ color: palette.text }}>{item.label}</p>',
+              '<p className="text-[9px] font-bold leading-3" style={{ color: "#425466" }}>{item.label}</p>',
+          )
 
           replace_once(
               "frontend/components/UniversalAnalyticsBoard.tsx",
