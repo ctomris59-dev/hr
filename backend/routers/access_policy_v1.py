@@ -2,7 +2,8 @@
 
 The access policy is stored inside TenantModel.settings_json so companies can
 customize permissions without a schema migration. Reads are available to every
-authenticated company user; writes are restricted to CEO.
+authenticated company user; writes are restricted to CEO and validated against
+server-side role ceilings.
 """
 from __future__ import annotations
 
@@ -16,9 +17,9 @@ from sqlalchemy.orm import Session
 from core.auth import Principal, require_roles
 from core.database import get_db
 from db.models import TenantModel
+from services.access_policy_service import POLICY_SETTINGS_KEY, validate_company_policy
 
 router = APIRouter(prefix="/api/v1/access", tags=["SaaS Access Policy"])
-POLICY_SETTINGS_KEY = "access_policy_v3"
 ALL_ROLES = ("CEO", "IK", "HR_ADMIN", "DIRECTOR", "MANAGER", "PERSONEL", "EMPLOYEE")
 
 DataScope = Literal["NONE", "SELF", "DIRECT_REPORTS", "DEPARTMENT", "COMPANY", "ASSIGNED", "AGGREGATE"]
@@ -73,10 +74,12 @@ def save_access_policy(
     db: Session = Depends(get_db),
 ):
     tenant = _tenant(db, principal.tenant_id)
+    policy = payload.model_dump(mode="json")
+    validate_company_policy(policy)
     settings = dict(tenant.settings_json or {})
-    settings[POLICY_SETTINGS_KEY] = payload.model_dump(mode="json")
+    settings[POLICY_SETTINGS_KEY] = policy
     tenant.settings_json = settings
     db.add(tenant)
     db.commit()
     db.refresh(tenant)
-    return {"policy": settings[POLICY_SETTINGS_KEY], "saved": True}
+    return {"policy": policy, "saved": True}
