@@ -32,59 +32,72 @@ jobs:
                   raise SystemExit(f'{path}: expected 1 match, found {n}: {old!r}')
               p.write_text(s.replace(old, new, 1), encoding='utf-8')
 
-          # Scope duplicate links to the visible workspace navigation.
-          replace_once(
-              'frontend/futurehr-v1.spec.ts',
-              '    await expect(page.getByRole("link", { name: /Gelişim Sonuçları/ })).toBeVisible();',
-              '    await expect(page.locator(\'[data-workspace-module="/gelisim-analitigi"]\')).toBeVisible();'
-          )
-          replace_once(
-              'frontend/futurehr-v1.spec.ts',
-              '    await expect(page.getByRole("link", { name: /Gizlilik & KVKK/ })).toBeVisible();',
-              '    await expect(page.locator(\'[data-workspace-module="/admin/guven-kvkk"]\')).toBeVisible();'
-          )
+          replace_once('frontend/futurehr-v1.spec.ts', '    await expect(page.getByRole("link", { name: /Gelişim Sonuçları/ })).toBeVisible();', '    await expect(page.locator(\'[data-workspace-module="/gelisim-analitigi"]\')).toBeVisible();')
+          replace_once('frontend/futurehr-v1.spec.ts', '    await expect(page.getByRole("link", { name: /Gizlilik & KVKK/ })).toBeVisible();', '    await expect(page.locator(\'[data-workspace-module="/admin/guven-kvkk"]\')).toBeVisible();')
 
-          # Family step numbers are navigation aids, so readability beats decorative accent ink.
           family = Path('frontend/app/futurehr-family-nav-premium.css')
           ft = family.read_text(encoding='utf-8')
           old = '  background:var(--family-soft)!important;\n  color:var(--family-accent)!important;\n  font-size:10px!important;'
-          new = '  background:var(--family-soft)!important;\n  color:#425466!important;\n  font-size:10px!important;'
-          if ft.count(old) != 1:
-              raise SystemExit(f'family index replacement count={ft.count(old)}')
+          new = '  background:var(--family-soft)!important;\n  color:#334155!important;\n  font-size:10px!important;'
+          if ft.count(old) != 1: raise SystemExit(f'family index replacement count={ft.count(old)}')
           family.write_text(ft.replace(old, new, 1), encoding='utf-8')
 
-          # Tiny analytics value badges use neutral readable ink; tone remains in their background.
           universal = Path('frontend/components/UniversalAnalyticsBoard.tsx')
           ut = universal.read_text(encoding='utf-8')
           old = 'style={{ background: p.soft, color: p.text }}>{row.value}</span>'
-          new = 'style={{ background: p.soft, color: "#425466" }}>{row.value}</span>'
-          if ut.count(old) != 1:
-              raise SystemExit(f'universal quick badge replacement count={ut.count(old)}')
+          new = 'style={{ background: p.soft, color: "#334155" }}>{row.value}</span>'
+          if ut.count(old) != 1: raise SystemExit(f'universal quick badge replacement count={ut.count(old)}')
           universal.write_text(ut.replace(old, new, 1), encoding='utf-8')
 
-          # General compact helper labels remain readable in the final loaded dashboard layer.
+          core = Path('frontend/components/CoreAnalyticsBoard.tsx')
+          ct = core.read_text(encoding='utf-8')
+          old = 'style={{ background: palette.soft, color: palette.text }}>{kpi.delta}</span>'
+          new = 'style={{ background: palette.soft, color: "#334155" }}>{kpi.delta}</span>'
+          if ct.count(old) != 1: raise SystemExit(f'core KPI badge replacement count={ct.count(old)}')
+          ct = ct.replace(old, new, 1)
+          old = 'style={{background:palette.soft,color:palette.text}}>{row.value}</span>'
+          new = 'style={{background:palette.soft,color:"#334155"}}>{row.value}</span>'
+          if ct.count(old) != 1: raise SystemExit(f'core quick badge replacement count={ct.count(old)}')
+          core.write_text(ct.replace(old, new, 1), encoding='utf-8')
+
+          visual = Path('frontend/app/visual-decision-system.css')
+          vt = visual.read_text(encoding='utf-8')
+          old = '  color: var(--module-accent,#2f6f6b);\n  font-size: 10px;'
+          new = '  color: #0f6f63;\n  font-size: 10px;'
+          if vt.count(old) != 1: raise SystemExit(f'visual badge replacement count={vt.count(old)}')
+          visual.write_text(vt.replace(old, new, 1), encoding='utf-8')
+
+          salary = Path('frontend/app/(dashboard)/yonetici/maas-talep/page.tsx')
+          sat = salary.read_text(encoding='utf-8')
+          old = '<table className="w-full"><thead>'
+          new = '<table className="w-full [&_th]:!text-slate-700"><thead>'
+          if sat.count(old) != 1: raise SystemExit(f'salary table replacement count={sat.count(old)}')
+          sat = sat.replace(old, new, 1)
+          old = 'className="text-[10px] uppercase tracking-wide text-slate-400"'
+          new = 'className="text-[10px] uppercase tracking-wide text-slate-600"'
+          if sat.count(old) != 1: raise SystemExit(f'salary mini label replacement count={sat.count(old)}')
+          salary.write_text(sat.replace(old, new, 1), encoding='utf-8')
+
           css = Path('frontend/app/executive-dashboard-unification.css')
           text = css.read_text(encoding='utf-8')
           marker = '/* Zero-training accessibility pass: compact helper labels. */'
           if marker not in text:
               text += '''\n\n/* Zero-training accessibility pass: compact helper labels. */
-          :root{--fh-exec-copy:#5f6b7c;}
-          .module-workspace-v2 .module-command-flow-label{color:#64748b!important;}
-          .module-workspace-v2 .module-command-flow-step span{color:#425466!important;}
-          .module-workspace-v2 .futurehr-family-description{color:#64748b!important;opacity:1!important;}
+          :root{--fh-exec-copy:#536174;}
+          .module-workspace-v2 .module-command-flow-label{color:#59687a!important;}
+          .module-workspace-v2 .module-command-flow-step span{color:#334155!important;}
+          .module-workspace-v2 .futurehr-family-description{color:#59687a!important;opacity:1!important;}
           .module-workspace-v2 .module-detail-stage-header span,
-          .module-workspace-v2 .vf-summary-copy span{color:#425466!important;}
-          .module-workspace-v2 .module-detail-stage-header p{color:#5f6b7c!important;}
+          .module-workspace-v2 .vf-summary-copy span{color:#334155!important;}
+          .module-workspace-v2 .module-detail-stage-header p{color:#536174!important;}
           .module-workspace-v2 .futurehr-analytics-head p:first-child,
-          .module-workspace-v2 > section.mb-5:not(.module-hero):not(.futurehr-analytics-board) > div:first-child p:first-child{color:#475569!important;}
+          .module-workspace-v2 > section.mb-5:not(.module-hero):not(.futurehr-analytics-board) > div:first-child p:first-child{color:#425466!important;}
           .dark .module-workspace-v2 .module-command-flow-step span,
           .dark .module-workspace-v2 .module-detail-stage-header span,
           .dark .module-workspace-v2 .vf-summary-copy span{color:#cbd5e1!important;}
           '''
               css.write_text(text, encoding='utf-8')
 
-          # The compact Zero-Training UI intentionally hides the old duplicate decision summary.
-          # Validate the live analytics board instead of forcing obsolete UI back onto the user.
           spec = Path('frontend/visual-decision-system.spec.ts')
           st = spec.read_text(encoding='utf-8')
           pattern = re.compile(r'test\("core decision modules expose a visibly prominent executive decision layout".*?\n\}\);\n\ntest\("visual decision system remains empty-first', re.S)
@@ -97,28 +110,17 @@ jobs:
               const commandHero = workspace.locator(".module-command-hero");
               const commandTitle = commandHero.locator("h1");
               await expect(commandHero, `${route} command hero`).toBeVisible();
-              const heroGeometry = await commandHero.evaluate((element) => ({
-                height: element.getBoundingClientRect().height,
-                radius: getComputedStyle(element).borderRadius,
-              }));
+              const heroGeometry = await commandHero.evaluate((element) => ({ height: element.getBoundingClientRect().height, radius: getComputedStyle(element).borderRadius }));
               const titleFont = await commandTitle.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
               expect(heroGeometry.height).toBeGreaterThanOrEqual(70);
               expect(Number.parseFloat(heroGeometry.radius)).toBeGreaterThanOrEqual(10);
               expect(titleFont).toBeGreaterThanOrEqual(18);
-
-              const activeBoard = route === "/degerlendirme" || route === "/gelisim"
-                ? workspace.locator(".futurehr-analytics-board").first()
-                : workspace.locator(":scope > section.mb-5").first();
+              const activeBoard = route === "/degerlendirme" || route === "/gelisim" ? workspace.locator(".futurehr-analytics-board").first() : workspace.locator(":scope > section.mb-5").first();
               await expect(activeBoard, `${route} active analytics board`).toBeVisible();
-              const geometry = await activeBoard.evaluate((element) => ({
-                width: element.getBoundingClientRect().width,
-                scrollWidth: element.scrollWidth,
-                height: element.getBoundingClientRect().height,
-              }));
+              const geometry = await activeBoard.evaluate((element) => ({ width: element.getBoundingClientRect().width, scrollWidth: element.scrollWidth, height: element.getBoundingClientRect().height }));
               expect(geometry.width).toBeGreaterThan(600);
               expect(geometry.scrollWidth).toBeLessThanOrEqual(Math.ceil(geometry.width) + 2);
               expect(geometry.height).toBeGreaterThan(200);
-
               await expect(workspace.locator(".module-decision-stage")).toBeHidden();
               const detailStage = workspace.locator(".module-detail-stage");
               await expect(detailStage).toBeVisible();
@@ -128,8 +130,7 @@ jobs:
 
           test("visual decision system remains empty-first'''
           st, count = pattern.subn(lambda _: replacement, st, count=1)
-          if count != 1:
-              raise SystemExit(f'visual decision spec replacement count={count}')
+          if count != 1: raise SystemExit(f'visual decision spec replacement count={count}')
           spec.write_text(st, encoding='utf-8')
           PY
       - name: Install frontend dependencies
@@ -155,7 +156,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add frontend/futurehr-v1.spec.ts frontend/visual-decision-system.spec.ts frontend/app/executive-dashboard-unification.css frontend/app/futurehr-family-nav-premium.css frontend/components/UniversalAnalyticsBoard.tsx
+          git add frontend/futurehr-v1.spec.ts frontend/visual-decision-system.spec.ts frontend/app/executive-dashboard-unification.css frontend/app/futurehr-family-nav-premium.css frontend/app/visual-decision-system.css frontend/components/UniversalAnalyticsBoard.tsx frontend/components/CoreAnalyticsBoard.tsx 'frontend/app/(dashboard)/yonetici/maas-talep/page.tsx'
           git diff --cached --quiet && exit 0
           git commit -m 'fix(ux): finish zero-training readability and E2E alignment'
           git push origin HEAD:feature/zero-training-ux
