@@ -67,7 +67,11 @@ jobs:
           if micro_marker not in gt:
               gt += '''\n\n/* Zero-training microcopy accessibility token */
           html:not(.dark) [class~="text-[9px]"][class~="font-bold"]{color:#0f172a!important;}
+          html:not(.dark) [class~="text-[9px]"][class~="font-bold"][class~="opacity-60"]{opacity:1!important;}
           .dark [class~="text-[9px]"][class~="font-bold"]{color:#f1f5f9!important;}
+          .dark [class~="text-[9px]"][class~="font-bold"][class~="opacity-60"]{opacity:1!important;}
+          html:not(.dark) table th{color:#0f172a!important;}
+          .dark table th{color:#f1f5f9!important;}
           '''
               globals_css.write_text(gt, encoding='utf-8')
 
