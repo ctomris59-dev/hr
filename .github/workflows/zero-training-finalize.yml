@@ -55,17 +55,16 @@ jobs:
           if n2 + n3 < 2: raise SystemExit(f'CoreAnalyticsBoard readable badge replacements={n2+n3}')
           core.write_text(ct, encoding='utf-8')
 
-          # Talent 9-box: force readable ink on the exact tiny rendered labels and share badge surfaces only for tone.
           talent = Path('frontend/app/(dashboard)/yetenek-matrisi/page.tsx')
           tt = talent.read_text(encoding='utf-8')
           tt, badge_tones = re.subn(r'(badge:\s*"bg-[^" ]+)\s+text-(?:sky|cyan|emerald|amber|slate|teal|rose|stone|violet)-800"', r'\1 text-slate-900"', tt)
           if badge_tones < 9: raise SystemExit(f'expected >=9 9-box badge replacements, found {badge_tones}')
-          tiny_label = 'className="text-[9px] font-bold leading-3"'
-          if tiny_label not in tt: raise SystemExit('talent tiny box label class not found')
-          tt = tt.replace(tiny_label, 'className="text-[9px] font-bold leading-3 !text-slate-900"')
-          share_badge = 'className="mb-1 rounded-full px-2 py-0.5 text-[9px] font-bold"'
-          if share_badge not in tt: raise SystemExit('talent share badge class not found')
-          tt = tt.replace(share_badge, 'className="mb-1 rounded-full px-2 py-0.5 text-[9px] font-bold !text-slate-900"')
+          tiny = 'text-[9px] font-bold leading-3'
+          if tiny not in tt: raise SystemExit('talent tiny label token not found')
+          tt = tt.replace(tiny, tiny + ' !text-slate-900')
+          share = 'mb-1 rounded-full px-2 py-0.5 text-[9px] font-bold'
+          if share not in tt: raise SystemExit('talent share badge token not found')
+          tt = tt.replace(share, share + ' !text-slate-900')
           talent.write_text(tt, encoding='utf-8')
 
           visual = Path('frontend/app/visual-decision-system.css')
@@ -75,7 +74,6 @@ jobs:
           if vt.count(old) != 1: raise SystemExit(f'visual badge replacement count={vt.count(old)}')
           visual.write_text(vt.replace(old, new, 1), encoding='utf-8')
 
-          # Leave request table: the heading is operational copy, so pin high-contrast ink directly on the table.
           leave = Path('frontend/app/(dashboard)/izinler/page.tsx')
           lt = leave.read_text(encoding='utf-8')
           leave_table = '<table className="w-full"><thead><tr><th>Çalışan</th><th>Tür</th><th>Tarih</th><th className="text-right">Gün</th><th>Durum</th></tr></thead>'
@@ -83,7 +81,6 @@ jobs:
           if lt.count(leave_table) != 1: raise SystemExit(f'leave table heading match={lt.count(leave_table)}')
           leave.write_text(lt.replace(leave_table, leave_table_new, 1), encoding='utf-8')
 
-          # Manager compensation request table: same rule, direct source-level contrast.
           salary = Path('frontend/app/(dashboard)/yonetici/maas-talep/page.tsx')
           sat = salary.read_text(encoding='utf-8')
           salary_table = '<table className="w-full"><thead><tr><th>Çalışan</th><th className="text-right">Mevcut Maaş</th><th className="text-right">Sistem Referansı</th><th>Yönetici Talebi %</th><th>Gerekçe</th></tr></thead>'
