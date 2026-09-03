@@ -5,6 +5,7 @@ on:
     branches: ["main", "feature/**", "fhr-di-v2-final"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,12 +28,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Strict dependency security audit
-        run: npm audit --audit-level=low
       - name: Verify hardened dependency graph
         run: npm ls axios jspdf next uuid tmp
       - name: Strict lint - SaaS server boundary and data client
-        run: npx eslint lib/hr/saasWorkforceClient.ts lib/hr/decisionIntelligenceClient.ts app/api/saas app/api/integrations
+        run: npm run lint:strict
       - name: Legacy lint debt report
         continue-on-error: true
         run: npm run lint
@@ -61,6 +60,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: FutureHR V1 E2E
         run: npm run test:e2e
+      - name: Strict dependency security audit
+        run: npm audit --audit-level=low
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v5
