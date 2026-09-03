@@ -59,13 +59,17 @@ jobs:
           tt = talent.read_text(encoding='utf-8')
           tt, badge_tones = re.subn(r'(badge:\s*"bg-[^" ]+)\s+text-(?:sky|cyan|emerald|amber|slate|teal|rose|stone|violet)-800"', r'\1 text-slate-900"', tt)
           if badge_tones < 9: raise SystemExit(f'expected >=9 9-box badge replacements, found {badge_tones}')
-          tiny = 'text-[9px] font-bold leading-3'
-          if tiny not in tt: raise SystemExit('talent tiny label token not found')
-          tt = tt.replace(tiny, tiny + ' !text-slate-900')
-          share = 'mb-1 rounded-full px-2 py-0.5 text-[9px] font-bold'
-          if share not in tt: raise SystemExit('talent share badge token not found')
-          tt = tt.replace(share, share + ' !text-slate-900')
           talent.write_text(tt, encoding='utf-8')
+
+          globals_css = Path('frontend/app/globals.css')
+          gt = globals_css.read_text(encoding='utf-8')
+          micro_marker = '/* Zero-training microcopy accessibility token */'
+          if micro_marker not in gt:
+              gt += '''\n\n/* Zero-training microcopy accessibility token */
+          html:not(.dark) [class~="text-[9px]"][class~="font-bold"]{color:#0f172a!important;}
+          .dark [class~="text-[9px]"][class~="font-bold"]{color:#f1f5f9!important;}
+          '''
+              globals_css.write_text(gt, encoding='utf-8')
 
           visual = Path('frontend/app/visual-decision-system.css')
           vt = visual.read_text(encoding='utf-8')
@@ -168,7 +172,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add frontend/futurehr-v1.spec.ts frontend/visual-decision-system.spec.ts frontend/app/executive-dashboard-unification.css frontend/app/futurehr-family-nav-premium.css frontend/app/visual-decision-system.css frontend/components/UniversalAnalyticsBoard.tsx frontend/components/CoreAnalyticsBoard.tsx 'frontend/app/(dashboard)/yonetici/maas-talep/page.tsx' 'frontend/app/(dashboard)/yetenek-matrisi/page.tsx' 'frontend/app/(dashboard)/izinler/page.tsx'
+          git add frontend/futurehr-v1.spec.ts frontend/visual-decision-system.spec.ts frontend/app/globals.css frontend/app/executive-dashboard-unification.css frontend/app/futurehr-family-nav-premium.css frontend/app/visual-decision-system.css frontend/components/UniversalAnalyticsBoard.tsx frontend/components/CoreAnalyticsBoard.tsx 'frontend/app/(dashboard)/yonetici/maas-talep/page.tsx' 'frontend/app/(dashboard)/yetenek-matrisi/page.tsx' 'frontend/app/(dashboard)/izinler/page.tsx'
           git diff --cached --quiet && exit 0
           git commit -m 'fix(ux): finish zero-training readability and E2E alignment'
           git push origin HEAD:feature/zero-training-ux
