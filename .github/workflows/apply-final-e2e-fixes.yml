@@ -33,7 +33,6 @@ jobs:
                   raise RuntimeError(f"{path}: expected one match, found {count}: {old[:120]!r}")
               p.write_text(text.replace(old, new, 1), encoding="utf-8")
 
-          # Mobile shell: the floating menu control must always win hit-testing.
           replace_once(
               "frontend/components/ClientLayout.tsx",
               '<button type="button" onClick={()=>setSidebarOpen(value=>!value)} className="fixed left-3 top-3 z-[60] pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"',
@@ -45,7 +44,6 @@ jobs:
               '<header data-tour="topbar" className="pointer-events-none flex h-16 flex-shrink-0 items-center justify-between border-b border-[#dfe3e1] bg-[#fbfbf8] px-4 sm:px-5 lg:pointer-events-auto lg:px-6 dark:border-slate-800 dark:bg-[#141b22]">\n        <div className="pointer-events-auto"><WelcomeWidget/></div>\n        <div className="pointer-events-auto flex min-w-0 items-center gap-1.5 sm:gap-2">',
           )
 
-          # Scope duplicate workspace labels to the workspace navigator.
           replace_once(
               "frontend/futurehr-v1.spec.ts",
               '    await expect(page.getByRole("link", { name: /Gelişim Etkinliği/ })).toBeVisible();',
@@ -57,15 +55,12 @@ jobs:
               '    await expect(page.locator(\'[data-workspace-module="/admin/guven-kvkk"]\')).toBeVisible();',
           )
 
-          # Preserve a clear executive title hierarchy after compact dashboard overrides.
           globals_css = Path("frontend/app/globals.css")
           css = globals_css.read_text(encoding="utf-8")
           title_rule = '\n/* E2E/product hierarchy: executive module titles remain visibly prominent. */\n.module-workspace-v2 .module-command-hero .module-command-title-row h1{font-size:22px!important}\n'
           if title_rule.strip() not in css:
               globals_css.write_text(css.rstrip() + title_rule, encoding="utf-8")
 
-          # Contrast scanner: alpha-composite solid layers and skip complex gradients
-          # rather than incorrectly treating translucent/gradient surfaces as white.
           readability = Path("frontend/readability.spec.ts")
           text = readability.read_text(encoding="utf-8")
           parse_pattern = re.compile(r'    const parse = \(value:string\):RGB\|null => \{.*?\n    \};\n    const channel=', re.S)
@@ -86,11 +81,10 @@ jobs:
               raise RuntimeError(f"readability bg-use match count: {text.count(old_bg_use)}")
           readability.write_text(text.replace(old_bg_use, new_bg_use, 1), encoding="utf-8")
 
-          # Real product readability: small helper text must remain legible in light mode.
           replace_once(
               "frontend/app/premium-enterprise-system.css",
               '  --pe-subtle:#95a2b3;',
-              '  --pe-subtle:#748196;',
+              '  --pe-subtle:#6f7d91;',
           )
           replace_once(
               "frontend/app/premium-enterprise-system.css",
@@ -112,8 +106,12 @@ jobs:
               'background:var(--module-soft)!important;color:var(--module-accent)!important;font-size:8.5px!important;',
               'background:var(--module-soft)!important;color:#425466!important;font-size:8.5px!important;',
           )
+          replace_once(
+              "frontend/app/visual-decision-system.css",
+              '  color: var(--module-accent,#2f6f6b);\n  font-size: 10px;',
+              '  color: #0f6f63;\n  font-size: 10px;',
+          )
 
-          # Tiny analytics eyebrows use readable neutral ink; accents remain in icons/charts.
           replace_once(
               "frontend/components/UniversalAnalyticsBoard.tsx",
               '<p className="text-[9px] font-bold uppercase tracking-[.13em]" style={{ color: board.accent }}>{board.eyebrow}</p>',
@@ -130,7 +128,6 @@ jobs:
               '<p className="text-[9px] font-bold uppercase tracking-[.14em] text-slate-600 dark:text-slate-300">{board.eyebrow}</p>',
           )
 
-          # Stable analytics selectors reflect the current non-duplicated dashboard architecture.
           replace_once(
               "frontend/components/UniversalAnalyticsBoard.tsx",
               '<section className="futurehr-analytics-board">',
@@ -162,12 +159,10 @@ jobs:
               '<div className="grid gap-3 lg:grid-cols-4" data-testid="analytics-kpi-grid">{board.kpis.map((kpi) => <KpiCard key={kpi.label} kpi={kpi} />)}</div>',
           )
 
-          # The compact executive architecture intentionally hides the old duplicate
-          # VisualDecisionSummary. Update the stale E2E gate to test the active board.
           decision_spec = Path("frontend/visual-decision-system.spec.ts")
           decision_text = decision_spec.read_text(encoding="utf-8")
           test_pattern = re.compile(r'test\("core decision modules expose a visibly prominent executive decision layout".*?\n\}\);\n\ntest\("visual decision system remains empty-first', re.S)
-          test_replacement = '''test("core decision modules expose a visibly prominent executive decision layout", async ({ page }) => {\n  await openDemo(page);\n  const routes = [\n    { route: "/degerlendirme", board: "universal-analytics-board" },\n    { route: "/yetenek-matrisi", board: "visual-module-board" },\n    { route: "/gelisim", board: "universal-analytics-board" },\n    { route: "/maas", board: "core-analytics-board" },\n    { route: "/ise-alim", board: "core-analytics-board" },\n  ] as const;\n  for (const { route, board } of routes) {\n    await page.goto(route);\n\n    const workspace = page.locator(".module-workspace-v2");\n    const commandHero = workspace.locator(".module-command-hero");\n    const commandTitle = commandHero.locator("h1");\n    await expect(commandHero, `${route} command hero`).toBeVisible();\n    const heroGeometry = await commandHero.evaluate((element) => ({\n      height: element.getBoundingClientRect().height,\n      radius: getComputedStyle(element).borderRadius,\n    }));\n    const titleFont = await commandTitle.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));\n    expect(heroGeometry.height).toBeGreaterThanOrEqual(80);\n    expect(Number.parseFloat(heroGeometry.radius)).toBeGreaterThanOrEqual(12);\n    expect(titleFont).toBeGreaterThanOrEqual(22);\n\n    const analyticsBoard = page.getByTestId(board);\n    await expect(analyticsBoard, `${route} active analytics board`).toBeVisible();\n    const kpiGrid = analyticsBoard.getByTestId("analytics-kpi-grid");\n    await expect(kpiGrid.locator(":scope > article")).toHaveCount(4);\n    const geometry = await analyticsBoard.evaluate((element) => ({\n      width: element.getBoundingClientRect().width,\n      scrollWidth: element.scrollWidth,\n      height: element.getBoundingClientRect().height,\n    }));\n    expect(geometry.width).toBeGreaterThan(600);\n    expect(geometry.scrollWidth).toBeLessThanOrEqual(Math.ceil(geometry.width) + 2);\n    expect(geometry.height).toBeGreaterThan(250);\n\n    // The old decision summary is intentionally suppressed to avoid duplicating the\n    // active analytics board in the compact executive workspace.\n    await expect(workspace.locator(".module-decision-stage")).toBeHidden();\n\n    const detailStage = workspace.locator(".module-detail-stage");\n    await expect(detailStage).toBeVisible();\n    await expect(detailStage.locator("h2")).toBeVisible();\n  }\n});\n\ntest("visual decision system remains empty-first'''
+          test_replacement = '''test("core decision modules expose a visibly prominent executive decision layout", async ({ page }) => {\n  await openDemo(page);\n  const routes = [\n    { route: "/degerlendirme", board: "universal-analytics-board" },\n    { route: "/yetenek-matrisi", board: "visual-module-board" },\n    { route: "/gelisim", board: "universal-analytics-board" },\n    { route: "/maas", board: "core-analytics-board" },\n    { route: "/ise-alim", board: "core-analytics-board" },\n  ] as const;\n  for (const { route, board } of routes) {\n    await page.goto(route);\n\n    const workspace = page.locator(".module-workspace-v2");\n    const commandHero = workspace.locator(".module-command-hero");\n    const commandTitle = commandHero.locator("h1");\n    await expect(commandHero, `${route} command hero`).toBeVisible();\n    const heroGeometry = await commandHero.evaluate((element) => ({\n      height: element.getBoundingClientRect().height,\n      radius: getComputedStyle(element).borderRadius,\n    }));\n    const titleFont = await commandTitle.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));\n    expect(heroGeometry.height).toBeGreaterThanOrEqual(80);\n    expect(Number.parseFloat(heroGeometry.radius)).toBeGreaterThanOrEqual(12);\n    expect(titleFont).toBeGreaterThanOrEqual(22);\n\n    const analyticsBoard = page.getByTestId(board);\n    await expect(analyticsBoard, `${route} active analytics board`).toBeVisible();\n    const kpiGrid = analyticsBoard.getByTestId("analytics-kpi-grid");\n    await expect(kpiGrid.locator(":scope > article")).toHaveCount(4);\n    const geometry = await analyticsBoard.evaluate((element) => ({\n      width: element.getBoundingClientRect().width,\n      scrollWidth: element.scrollWidth,\n      height: element.getBoundingClientRect().height,\n    }));\n    expect(geometry.width).toBeGreaterThan(600);\n    expect(geometry.scrollWidth).toBeLessThanOrEqual(Math.ceil(geometry.width) + 2);\n    expect(geometry.height).toBeGreaterThan(250);\n\n    await expect(workspace.locator(".module-decision-stage")).toBeHidden();\n\n    const detailStage = workspace.locator(".module-detail-stage");\n    await expect(detailStage).toBeVisible();\n    await expect(detailStage.locator(".module-detail-stage-header h2")).toBeVisible();\n  }\n});\n\ntest("visual decision system remains empty-first'''
           decision_text, count = test_pattern.subn(lambda _match: test_replacement, decision_text, count=1)
           if count != 1:
               raise RuntimeError(f"visual decision test replacement count: {count}")
@@ -206,6 +201,7 @@ jobs:
             frontend/app/executive-dashboard-unification.css \
             frontend/app/futurehr-family-nav-premium.css \
             frontend/app/analytics-dashboard.css \
+            frontend/app/visual-decision-system.css \
             frontend/components/UniversalAnalyticsBoard.tsx \
             frontend/components/CoreAnalyticsBoard.tsx \
             frontend/components/VisualModuleBoard.tsx
