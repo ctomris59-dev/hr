@@ -82,7 +82,7 @@ export default function IntegrationCenter() {
   return <div className="mx-auto max-w-7xl space-y-5 pb-8">
     <header className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="max-w-3xl"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-indigo-600">Sistem Yönetimi</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Entegrasyonlar</h1><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">FutureHR'ı kullandığınız ERP, bordro veya puantaj sistemiyle bağlayın. Bağlantı kurulmamış sistemlerde yalnızca gerekli kurulum adımı gösterilir.</p></div>
+        <div className="max-w-3xl"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-indigo-600">Sistem Yönetimi</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Entegrasyonlar</h1><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">FutureHR&apos;ı kullandığınız ERP, bordro veya puantaj sistemiyle bağlayın. Bağlantı kurulmamış sistemlerde yalnızca gerekli kurulum adımı gösterilir.</p></div>
         <Link href="/admin/veri-aktarimi" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold shadow-sm dark:border-slate-700 dark:bg-slate-900"><FileSpreadsheet className="h-4 w-4"/>Excel / CSV ile veri ekle<ArrowRight className="h-3.5 w-3.5"/></Link>
       </div>
     </header>
@@ -116,9 +116,9 @@ export default function IntegrationCenter() {
 
 function friendlyDescription(id:TurkeyConnectorId, fallback:string){
   if(id === "excel") return "Excel veya CSV dosyanızdaki çalışan verilerini kontrollü olarak FutureHR'a aktarın.";
-  if(id === "logo" || id === "mikro" || id === "netsis" || id === "sap") return "Kurumunuzdaki çalışan ve organizasyon verilerini FutureHR ile bağlayın.";
+  if(id === "logo" || id === "mikro" || id === "netsis" || id === "sap_successfactors") return "Kurumunuzdaki çalışan ve organizasyon verilerini FutureHR ile bağlayın.";
   if(id === "pdks") return "Puantaj ve devam bilgilerini FutureHR ile güncel tutun.";
-  if(id === "bordro") return "Bordro ve ücret bilgilerini yetkili kullanıcılar için güvenli şekilde aktarın.";
+  if(id === "payroll") return "Bordro ve ücret bilgilerini yetkili kullanıcılar için güvenli şekilde aktarın.";
   return fallback;
 }
 
