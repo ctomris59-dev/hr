@@ -74,6 +74,7 @@ def test_development_is_manager_scoped_and_cross_tenant_safe(client_with_data):
     workspace = client.get("/api/v1/development/workspace", headers=manager_headers)
     assert workspace.status_code == 200
     assert [row["id"] for row in workspace.json()["employees"]] == ["e1"]
+    assert workspace.json()["employees"][0]["salary_amount"] is None
 
     payload = {
         "employee_id": "e1",
@@ -165,6 +166,7 @@ def test_compensation_cycle_requires_server_stage_and_tenant_employee_ids(client
     ids = {row["id"] for row in workspace.json()["employees"]}
     assert "e3" not in ids
     assert {"m1", "e1", "e2", "h1", "c1"}.issubset(ids)
+    assert next(row for row in workspace.json()["employees"] if row["id"] == "e1")["salary_amount"] == 10000
 
     cycle = client.post("/api/v1/compensation/cycles", headers=hr_headers, json={"name": "2026 Ücret Dönemi"})
     assert cycle.status_code == 201

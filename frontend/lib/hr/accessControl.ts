@@ -160,7 +160,7 @@ export const DEFAULT_DOCUMENT_ACCESS: Record<DocumentKey, Record<UserRole, Resou
 
 const MODULE_RESOURCE_MAP: Partial<Record<ModuleKey, ResourceKey>> = {
   leave: "leave", experience: "experience", organization: "people", jobArchitecture: "people",
-  performance: "performance", calibration: "performance", talent: "talent", skillsGraph: "talent",
+  performance: "performance", calibration: "performance", talent: "talent", skillsGraph: "development",
   training: "training", development: "development", developmentAnalytics: "development", career: "development",
   succession: "succession", salary: "salary", compensationFairness: "salary", recruitment: "recruitment",
   assessment: "recruitment", team: "people", executiveReports: "performance",
@@ -276,7 +276,7 @@ export async function hydrateCompanyAccessPolicy(): Promise<CompanyAccessPolicy>
     const response = await fetch("/api/saas/workforce/access/policy", { cache: "no-store" });
     if (!response.ok) return loadCompanyAccessPolicy();
     const payload = await response.json().catch(() => null);
-    if (!payload?.policy) return loadCompanyAccessPolicy();
+    if (!payload?.policy) { saveCompanyAccessPolicy(DEFAULT_COMPANY_ACCESS_POLICY); return DEFAULT_COMPANY_ACCESS_POLICY; }
     const policy = normalizePolicy(payload.policy);
     saveCompanyAccessPolicy(policy);
     return policy;

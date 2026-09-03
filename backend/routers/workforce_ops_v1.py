@@ -235,7 +235,7 @@ def _employee_for_tenant(db: Session, tenant_id: str, employee_id: str) -> Emplo
     return employee
 
 
-def _employee_view(employee: EmployeeModel) -> EmployeeOpsView:
+def _employee_view(employee: EmployeeModel, *, include_salary: bool = False) -> EmployeeOpsView:
     return EmployeeOpsView(
         id=employee.id,
         full_name=employee.full_name,
@@ -244,7 +244,7 @@ def _employee_view(employee: EmployeeModel) -> EmployeeOpsView:
         manager_employee_id=employee.manager_employee_id,
         second_manager_employee_id=employee.second_manager_employee_id,
         hire_date=employee.hire_date,
-        salary_amount=employee.salary_amount,
+        salary_amount=employee.salary_amount if include_salary else None,
         annual_leave_entitlement=float(employee.annual_leave_entitlement or 14),
     )
 
@@ -776,7 +776,7 @@ def compensation_workspace(
         .order_by(CompensationCycleModel.created_at.desc())
     ).all()
     return CompensationWorkspace(
-        employees=[_employee_view(employee) for employee in employees],
+        employees=[_employee_view(employee, include_salary=True) for employee in employees],
         evaluations=evaluations,
         benchmarks=[_benchmark_view(row) for row in benchmarks],
         cycles=[_cycle_view(row) for row in cycles],
