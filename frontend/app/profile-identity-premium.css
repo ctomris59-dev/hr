@@ -1,172 +1,225 @@
-/* FutureHR Identity Zone — premium ownership card */
+/* FutureHR Identity Zone — restrained enterprise identity panel */
 .futurehr-identity-zone{
   position:relative;
   isolation:isolate;
-  border-color:rgba(96,165,250,.22);
-  background:
-    radial-gradient(circle at 8% 2%,rgba(59,130,246,.13),transparent 38%),
-    radial-gradient(circle at 96% 0%,rgba(99,102,241,.08),transparent 38%),
-    linear-gradient(150deg,rgba(15,30,48,.98),rgba(8,20,33,.98));
-  box-shadow:
-    0 18px 38px rgba(2,8,23,.28),
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 0 0 1px rgba(255,255,255,.018);
-  transition:border-radius .2s ease,box-shadow .2s ease,transform .2s ease;
+  border-color:rgba(148,163,184,.16)!important;
+  background:linear-gradient(165deg,#12243a 0%,#0d1d2f 52%,#0a1827 100%);
+  box-shadow:0 14px 30px rgba(2,8,23,.24),inset 0 1px 0 rgba(255,255,255,.045);
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
 }
 .futurehr-identity-zone::before{
   content:"";
   position:absolute;
-  inset:0 auto auto 16px;
-  width:70%;
-  height:1px;
-  z-index:2;
-  background:linear-gradient(90deg,rgba(96,165,250,.72),rgba(129,140,248,.24),transparent);
-}
-.futurehr-profile-glow{
+  inset:0;
   pointer-events:none;
-  position:absolute;
-  inset:-24px auto auto -28px;
-  width:120px;
-  height:100px;
-  border-radius:999px;
-  background:rgba(59,130,246,.12);
-  filter:blur(32px);
+  border-radius:inherit;
+  background:linear-gradient(135deg,rgba(96,165,250,.055),transparent 38%);
+  z-index:-1;
 }
-.futurehr-profile-main{background:linear-gradient(180deg,rgba(255,255,255,.018),transparent);transition:padding .2s ease;}
+.futurehr-profile-glow{display:none;}
+
+.futurehr-profile-main{
+  background:transparent;
+  padding:15px 14px 13px!important;
+  transition:padding .18s ease;
+}
 .futurehr-profile-avatar{
-  border:1px solid rgba(96,165,250,.55);
-  background:linear-gradient(145deg,rgba(30,64,175,.34),rgba(15,23,42,.92));
-  box-shadow:
-    0 0 0 3px rgba(59,130,246,.055),
-    0 10px 24px rgba(2,8,23,.32),
-    0 0 22px rgba(59,130,246,.16),
-    inset 0 1px 0 rgba(255,255,255,.10);
-  transition:width .2s ease,height .2s ease,border-radius .2s ease,font-size .2s ease;
+  width:46px!important;
+  height:46px!important;
+  border-radius:999px!important;
+  border:1px solid rgba(191,219,254,.34)!important;
+  background:linear-gradient(145deg,#213b61,#132944)!important;
+  box-shadow:0 0 0 3px rgba(148,163,184,.055),inset 0 1px 0 rgba(255,255,255,.08)!important;
+  font-size:12px!important;
+  letter-spacing:.03em!important;
+  transition:width .18s ease,height .18s ease,font-size .18s ease;
 }
 .futurehr-profile-presence{
-  box-shadow:0 0 0 3px rgba(52,211,153,.08),0 0 14px rgba(52,211,153,.7);
+  width:12px!important;
+  height:12px!important;
+  border-width:2px!important;
+  border-color:#0d1d2f!important;
+  background:#34d399!important;
+  box-shadow:0 0 0 2px rgba(52,211,153,.10)!important;
 }
 .futurehr-profile-status{
-  color:#6ee7b7;
-  border:1px solid rgba(52,211,153,.14);
-  background:linear-gradient(180deg,rgba(16,185,129,.17),rgba(16,185,129,.09));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+  color:#6ee7b7!important;
+  border:1px solid rgba(52,211,153,.17)!important;
+  background:rgba(16,185,129,.10)!important;
+  box-shadow:none!important;
+  padding:2px 6px!important;
+  font-size:7px!important;
+  letter-spacing:.07em!important;
 }
+
+/* Account context: one calm, executive information band. */
 .futurehr-profile-context{
-  background:linear-gradient(90deg,rgba(255,255,255,.017),transparent);
-  transition:padding .2s ease;
+  margin:0 9px 5px;
+  padding:9px 10px!important;
+  border:1px solid rgba(148,163,184,.10)!important;
+  border-radius:12px;
+  background:rgba(255,255,255,.028)!important;
+  gap:9px!important;
+  transition:padding .18s ease,background .18s ease;
 }
 .futurehr-profile-context-icon{
-  color:#f2cc83;
-  border-color:rgba(245,194,99,.25);
-  background:linear-gradient(145deg,rgba(245,158,11,.12),rgba(59,130,246,.055));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 6px 14px rgba(2,8,23,.15);
-  transition:width .2s ease,height .2s ease,border-radius .2s ease;
+  width:29px!important;
+  height:29px!important;
+  border-radius:9px!important;
+  color:#d8b56d!important;
+  border-color:rgba(216,181,109,.20)!important;
+  background:rgba(216,181,109,.075)!important;
+  box-shadow:none!important;
 }
-.futurehr-profile-context p:first-child{color:#e6c785;}
-.futurehr-profile-stat{
-  min-width:0;
-  border:1px solid rgba(148,163,184,.09);
-  background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.015));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
-  transition:border-color .18s ease,background .18s ease,transform .18s ease,padding .2s ease;
+.futurehr-profile-context-icon svg{width:14px!important;height:14px!important;}
+.futurehr-profile-context p:first-child{
+  color:#e6eaf0!important;
+  font-size:8.5px!important;
+  font-weight:650!important;
+  letter-spacing:.105em!important;
 }
-.futurehr-profile-stat:hover{
-  transform:translateY(-1px);
-  border-color:rgba(96,165,250,.18);
-  background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+.futurehr-profile-context p:nth-child(2){
+  color:#8795a8!important;
+  font-size:9px!important;
 }
-.futurehr-profile-signature{background:rgba(2,8,23,.13);}
-.futurehr-identity-zone[data-profile-tone="hr"]{
-  border-color:rgba(45,212,191,.22);
-  background:radial-gradient(circle at 8% 2%,rgba(20,184,166,.14),transparent 38%),linear-gradient(150deg,rgba(12,35,43,.98),rgba(8,20,33,.98));
-}
-.futurehr-identity-zone[data-profile-tone="hr"]::before{background:linear-gradient(90deg,rgba(94,234,212,.68),rgba(59,130,246,.22),transparent);}
-.futurehr-identity-zone[data-profile-tone="hr"] .futurehr-profile-avatar{border-color:rgba(94,234,212,.48);box-shadow:0 0 0 3px rgba(45,212,191,.055),0 10px 24px rgba(2,8,23,.32),0 0 22px rgba(45,212,191,.15),inset 0 1px 0 rgba(255,255,255,.10);}
-.futurehr-identity-zone[data-profile-tone="hr"] .futurehr-profile-context-icon{color:#7dd3fc;border-color:rgba(125,211,252,.2);background:rgba(14,165,233,.08);}
-.futurehr-identity-zone[data-profile-tone="hr"] .futurehr-profile-context p:first-child{color:#99f6e4;}
-.futurehr-identity-zone[data-profile-tone="manager"]{border-color:rgba(129,140,248,.2);}
-.futurehr-identity-zone[data-profile-tone="manager"] .futurehr-profile-context-icon{color:#c4b5fd;border-color:rgba(167,139,250,.20);background:rgba(124,58,237,.08);}
-.futurehr-identity-zone[data-profile-tone="manager"] .futurehr-profile-context p:first-child{color:#c4b5fd;}
-.futurehr-identity-zone[data-profile-tone="employee"]{border-color:rgba(148,163,184,.15);background:radial-gradient(circle at 8% 2%,rgba(14,165,233,.075),transparent 36%),linear-gradient(150deg,rgba(15,28,42,.98),rgba(8,20,33,.98));}
-.futurehr-identity-zone[data-profile-tone="employee"] .futurehr-profile-context-icon{color:#7dd3fc;border-color:rgba(125,211,252,.16);background:rgba(14,165,233,.06);}
-.futurehr-identity-zone[data-profile-tone="employee"] .futurehr-profile-context p:first-child{color:#bae6fd;}
+.futurehr-profile-context > svg{color:#53657a!important;}
 
-/* When a sidebar family is expanded, preserve navigation space by switching
-   the ownership card into a compact executive identity strip. The full card
-   returns automatically when the family accordion is collapsed. */
+/* Three metadata values are information rows, not dashboard cards. */
+.futurehr-profile-stats{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:0!important;
+  padding:3px 14px 7px!important;
+  border-top:0!important;
+}
+.futurehr-profile-stat{
+  display:grid!important;
+  grid-template-columns:18px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-height:34px!important;
+  padding:7px 0!important;
+  border:0!important;
+  border-bottom:1px solid rgba(148,163,184,.075)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transition:none!important;
+}
+.futurehr-profile-stat:last-child{border-bottom:0!important;}
+.futurehr-profile-stat:hover{
+  transform:none!important;
+  border-color:rgba(148,163,184,.075)!important;
+  background:transparent!important;
+}
+.futurehr-profile-stat svg{
+  width:14px!important;
+  height:14px!important;
+  color:#74859a!important;
+  stroke-width:1.7;
+}
+.futurehr-profile-stat span{
+  display:block!important;
+  margin:0!important;
+  color:#8290a3!important;
+  font-size:9px!important;
+  font-weight:500!important;
+  line-height:1.2!important;
+}
+.futurehr-profile-stat strong{
+  display:block!important;
+  max-width:98px;
+  margin:0!important;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#eef2f7!important;
+  font-size:9.5px!important;
+  font-weight:650!important;
+  line-height:1.2!important;
+  text-align:right;
+}
+
+.futurehr-profile-signature{
+  min-height:32px;
+  padding:7px 14px!important;
+  border-top:1px solid rgba(148,163,184,.085)!important;
+  background:rgba(2,8,23,.10)!important;
+}
+.futurehr-profile-signature > span:first-child{
+  color:#64748b!important;
+  font-size:7.5px!important;
+  letter-spacing:.12em!important;
+}
+.futurehr-profile-signature > span:last-child{
+  color:#6ee7b7!important;
+  font-size:8px!important;
+  font-weight:600!important;
+}
+.futurehr-profile-signature > span:last-child > span{
+  width:6px!important;
+  height:6px!important;
+  background:#34d399!important;
+  box-shadow:0 0 0 2px rgba(52,211,153,.08);
+}
+
+/* Role tones stay subtle: status hierarchy, not gamification. */
+.futurehr-identity-zone[data-profile-tone="executive"]{border-color:rgba(96,165,250,.18)!important;}
+.futurehr-identity-zone[data-profile-tone="executive"] .futurehr-profile-avatar{border-color:rgba(147,197,253,.38)!important;}
+.futurehr-identity-zone[data-profile-tone="hr"]{border-color:rgba(94,234,212,.15)!important;background:linear-gradient(165deg,#102b34 0%,#0d222d 52%,#0a1827 100%);}
+.futurehr-identity-zone[data-profile-tone="hr"] .futurehr-profile-avatar{border-color:rgba(94,234,212,.30)!important;background:linear-gradient(145deg,#17434d,#12303d)!important;}
+.futurehr-identity-zone[data-profile-tone="hr"] .futurehr-profile-context-icon{color:#8bd9d1!important;border-color:rgba(94,234,212,.16)!important;background:rgba(45,212,191,.065)!important;}
+.futurehr-identity-zone[data-profile-tone="manager"]{border-color:rgba(165,180,252,.15)!important;}
+.futurehr-identity-zone[data-profile-tone="manager"] .futurehr-profile-avatar{border-color:rgba(165,180,252,.28)!important;}
+.futurehr-identity-zone[data-profile-tone="employee"]{border-color:rgba(148,163,184,.13)!important;background:linear-gradient(165deg,#132536 0%,#0d1d2b 52%,#0a1723 100%);}
+.futurehr-identity-zone[data-profile-tone="employee"] .futurehr-profile-context-icon{color:#91a5ba!important;border-color:rgba(148,163,184,.14)!important;background:rgba(148,163,184,.055)!important;}
+
+/* Expanded menu: keep the same visual language, only reduce density. */
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-sidebar-footer{
-  padding-top:.45rem;
-  padding-bottom:.45rem;
+  padding-top:.4rem;
+  padding-bottom:.4rem;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-identity-zone{
   margin-bottom:.35rem!important;
-  border-radius:16px!important;
-  box-shadow:0 10px 24px rgba(2,8,23,.22),inset 0 1px 0 rgba(255,255,255,.05);
+  border-radius:15px!important;
+  box-shadow:0 9px 22px rgba(2,8,23,.20),inset 0 1px 0 rgba(255,255,255,.04)!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-main{
   padding:.55rem .7rem!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-avatar{
-  width:38px!important;
-  height:38px!important;
-  border-radius:12px!important;
-  font-size:10.5px!important;
-  box-shadow:0 0 0 2px rgba(59,130,246,.045),0 6px 16px rgba(2,8,23,.25),0 0 14px rgba(59,130,246,.12),inset 0 1px 0 rgba(255,255,255,.08);
-}
-.futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-presence{
-  width:11px!important;
-  height:11px!important;
-  border-width:2px!important;
+  width:36px!important;
+  height:36px!important;
+  font-size:10px!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-context{
-  padding:.4rem .7rem!important;
-  gap:.5rem!important;
+  margin:0 7px 4px!important;
+  padding:.4rem .55rem!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-context-icon{
   width:25px!important;
   height:25px!important;
-  border-radius:9px!important;
 }
-.futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-context-icon svg{
-  width:13px!important;
-  height:13px!important;
-}
-.futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-context p:first-child{
-  font-size:8px!important;
-  line-height:1.1!important;
-}
-.futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-context p:nth-child(2){
-  display:none!important;
-}
+.futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-context p:nth-child(2),
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-context > svg{
   display:none!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-stats{
-  gap:4px!important;
-  padding:5px!important;
+  padding:2px 10px 5px!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-stat{
-  display:flex!important;
-  min-height:30px!important;
-  align-items:center!important;
-  gap:5px!important;
-  padding:5px 6px!important;
-  border-radius:9px!important;
+  min-height:27px!important;
+  padding:5px 0!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-stat svg{
   width:12px!important;
   height:12px!important;
-  flex:0 0 auto;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-stat span{
-  display:none!important;
+  font-size:8px!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-stat strong{
-  margin:0!important;
-  min-width:0;
   font-size:8.5px!important;
-  line-height:1!important;
 }
 .futurehr-premium-sidebar:has(.futurehr-sidebar-primary[data-expanded="true"]) .futurehr-profile-signature{
   display:none!important;
@@ -176,7 +229,8 @@
 }
 
 @media(max-height:760px){
-  .futurehr-profile-context{padding-top:.5rem!important;padding-bottom:.5rem!important;}
-  .futurehr-profile-stats{display:none!important;}
+  .futurehr-profile-context{margin-bottom:4px!important;padding-top:.45rem!important;padding-bottom:.45rem!important;}
+  .futurehr-profile-stats{padding-top:1px!important;padding-bottom:4px!important;}
+  .futurehr-profile-stat{min-height:27px!important;padding:4px 0!important;}
   .futurehr-profile-signature{display:none!important;}
 }
