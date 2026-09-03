@@ -12,7 +12,7 @@ test.describe("company access hierarchy", () => {
     await openDemo(page);
     await page.goto("/ayarlar/yetki-mimarisi");
 
-    await expect(page.getByRole("heading", { name: "Kim neyi görebilir ve ne yapabilir?" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Gelişmiş Yetki Ayarları" })).toBeVisible();
     await expect(page.getByText("Belge erişimi", { exact: true })).toBeVisible();
     await expect(page.getByText("Veri kapsamı ve işlem yetkileri", { exact: true })).toBeVisible();
 
