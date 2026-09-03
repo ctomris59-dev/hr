@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { BrainCircuit, ChevronRight, LayoutDashboard, LogOut, Menu, X, Building2, Search as SearchIcon, Heart, Target, BriefcaseBusiness, GraduationCap, WalletCards, UserPlus, Settings2, UsersRound, Sparkles, CircleUserRound, Crown, ShieldCheck, Clock3, CircleCheckBig } from "lucide-react";
+import { ChevronRight, LayoutDashboard, LogOut, Menu, X, Building2, Search as SearchIcon, Heart, Target, BriefcaseBusiness, GraduationCap, WalletCards, UserPlus, Settings2, UsersRound, Sparkles, CircleUserRound, Crown, ShieldCheck, Clock3, CircleCheckBig } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useAuth } from "../context/AuthContext";
 import { canAccessRoute } from "../lib/hr/accessControl";
@@ -127,8 +127,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
 
   const menuItems=useMemo(()=>{
     const items:Array<{key:string;href:string;label:string;section:string;icon:typeof LayoutDashboard;routes:string[];familyId?:NavigationFamilyId}>=[];
-    if(canAccessRoute(currentUserRole,"/dashboard"))items.push({key:"dashboard",href:"/dashboard",label:"Yönetici Özeti",section:"Karar Merkezi",icon:LayoutDashboard,routes:["/dashboard"]});
-    if(canAccessRoute(currentUserRole,"/karar-merkezi"))items.push({key:"decision",href:"/karar-merkezi",label:"Karar Motoru",section:"Karar Merkezi",icon:BrainCircuit,routes:["/karar-merkezi"]});
+    if(canAccessRoute(currentUserRole,"/dashboard"))items.push({key:"dashboard",href:"/dashboard",label:"Ana Sayfa",section:"Günlük İşler",icon:LayoutDashboard,routes:["/dashboard"]});
     NAVIGATION_FAMILIES.forEach((family)=>{
       const accessible=family.items.filter(item=>canAccessRoute(currentUserRole,item.href));
       if(accessible.length===0)return;
@@ -136,7 +135,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
       let label=familyMenuLabels[family.id]||family.label;
       if(accessible.length===1&&family.id==="talentCareer"&&destination==="/kariyer")label=currentUserRole==="employee"?"Kariyerim":"Kariyer";
       if(accessible.length===1&&family.id==="compensation"&&destination==="/yonetici/maas-talep")label="Ücret Önerileri";
-      if(accessible.length===1&&family.id==="organization"&&destination==="/rol-mimarisi")label="Rol & Yetkinlik";
+      if(accessible.length===1&&family.id==="organization"&&destination==="/rol-mimarisi")label="Roller & Yetkinlikler";
       if(accessible.length===1&&family.id==="employeeOps"&&destination==="/izinler")label="İzinler";
       items.push({key:family.id,href:destination,label,section:family.section,icon:familyIcons[family.id],routes:family.items.map(item=>item.href),familyId:family.id});
     });
@@ -168,7 +167,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
     <AIGovernanceCapture/>
     <DemoDataHardeningBridge/>
 
-    <button type="button" onClick={()=>setSidebarOpen(value=>!value)} className="fixed left-3 top-3 z-[60] pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" aria-label={sidebarOpen?"Menüyü kapat":"Menüyü aç"} aria-expanded={sidebarOpen} aria-controls="futurehr-sidebar">
+    <button type="button" onClick={()=>setSidebarOpen(value=>!value)} style={{zIndex:1000}} className="fixed left-3 top-3 z-[1000] pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" aria-label={sidebarOpen?"Menüyü kapat":"Menüyü aç"} aria-expanded={sidebarOpen} aria-controls="futurehr-sidebar">
       {sidebarOpen?<X size={18} aria-hidden="true"/>:<Menu size={18} aria-hidden="true"/>}
     </button>
 
@@ -177,7 +176,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
         <div className="futurehr-sidebar-brand flex h-[88px] flex-shrink-0 items-center px-5">
           <div className="min-w-0">
             <Image src="/futurehr-brand-dark.svg" alt="FutureHR" width={220} height={56} className="h-[38px] w-auto object-contain object-left" priority/>
-            <div className="mt-1 flex items-center gap-2 pl-0.5"><span className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-[0_0_0_4px_rgba(94,234,212,.07)]"/><p className="text-[9px] font-semibold uppercase tracking-[0.17em] text-slate-500">People Intelligence Platform</p></div>
+            <div className="mt-1 flex items-center gap-2 pl-0.5"><span className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-[0_0_0_4px_rgba(94,234,212,.07)]"/><p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">İnsan & İşgücü Platformu</p></div>
           </div>
         </div>
 
@@ -191,8 +190,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
             const isExpandable=childItems.length>1;
             const isExpanded=isExpandable&&expandedMenuKey===item.key;
             const showChildren=isExpanded;
-            const tone=item.familyId?familyTone[item.familyId]||"slate":item.key==="decision"?"ai":item.key==="dashboard"?"dashboard":"slate";
-            const isDecision=item.key==="decision";
+            const tone=item.familyId?familyTone[item.familyId]||"slate":item.key==="dashboard"?"dashboard":"slate";
             const handlePrimaryClick=(event:React.MouseEvent<HTMLAnchorElement>)=>{
               if(isExpandable){
                 event.preventDefault();
@@ -201,27 +199,24 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
               }
               setSidebarOpen(false);
             };
+            const sectionLabel=item.section==="Çalışma Alanları"?"İşlemler":item.section==="Sistem"?"Ayarlar":item.section;
             return <div key={item.key} className="futurehr-sidebar-group">
               {showSection&&<div className={`${index===0?"mt-0":"mt-4"} futurehr-sidebar-section mb-1.5 flex items-center gap-2 px-2.5`}>
-                <span className="text-[9px] font-semibold uppercase leading-4 tracking-[0.18em] text-slate-500">{item.section}</span>
+                <span className="text-[9px] font-semibold uppercase leading-4 tracking-[0.18em] text-slate-500">{sectionLabel}</span>
                 <span className="h-px flex-1 bg-gradient-to-r from-white/[0.09] to-transparent"/>
               </div>}
-              <Link data-tour-route={item.href} href={item.href} onClick={handlePrimaryClick} aria-current={isActive?"page":undefined} aria-expanded={isExpandable?isExpanded:undefined} data-active={isActive?"true":"false"} data-expanded={isExpanded?"true":"false"} data-tone={tone} className={`futurehr-sidebar-primary group relative mb-1 flex min-h-[44px] items-center gap-3 overflow-hidden rounded-xl px-2.5 text-[13px] leading-5 outline-none transition-all duration-180 focus-visible:ring-2 focus-visible:ring-teal-300/35 ${isDecision?"futurehr-sidebar-ai":""}`}>
+              <Link data-tour-route={item.href} href={item.href} onClick={handlePrimaryClick} aria-current={isActive?"page":undefined} aria-expanded={isExpandable?isExpanded:undefined} data-active={isActive?"true":"false"} data-expanded={isExpanded?"true":"false"} data-tone={tone} className="futurehr-sidebar-primary group relative mb-1 flex min-h-[44px] items-center gap-3 overflow-hidden rounded-xl px-2.5 text-[13px] leading-5 outline-none transition-all duration-180 focus-visible:ring-2 focus-visible:ring-teal-300/35">
                 <span className="futurehr-sidebar-accent"/>
                 <span className="futurehr-sidebar-primary-icon flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] border"><Icon size={17} strokeWidth={1.65}/></span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5"><span className="truncate font-semibold tracking-[-0.012em]">{item.label}</span>{isDecision&&<span className="futurehr-sidebar-ai-badge inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.08em]"><Sparkles className="h-2.5 w-2.5"/>AI</span>}</span>
-                  {isDecision&&<span className="mt-0.5 block truncate text-[9.5px] font-medium text-slate-500">Kanıt tabanlı karar desteği</span>}
-                </span>
-                <span className={`futurehr-sidebar-primary-arrow flex h-6 w-6 items-center justify-center rounded-lg transition-transform ${isExpanded?"rotate-90":""}`}><ChevronRight className="h-3.5 w-3.5"/></span>
+                <span className="min-w-0 flex-1"><span className="truncate font-semibold tracking-[-0.012em]">{item.label}</span></span>
+                {isExpandable&&<span className={`futurehr-sidebar-primary-arrow flex h-6 w-6 items-center justify-center rounded-lg transition-transform ${isExpanded?"rotate-90":""}`}><ChevronRight className="h-3.5 w-3.5"/></span>}
               </Link>
               {showChildren&&<div className="futurehr-sidebar-children mb-2 ml-[18px] border-l border-white/[0.08] pl-[18px]">
-                {childItems.map((child,childIndex)=>{
+                {childItems.map((child)=>{
                   const childActive=routeMatches(normalizedPathname,child.href);
-                  return <Link key={child.href} href={child.href} onClick={()=>setSidebarOpen(false)} aria-current={childActive?"page":undefined} className={`futurehr-sidebar-child group flex min-h-[34px] items-center gap-2 rounded-lg px-2.5 py-1.5 ${childActive?"is-active":""}`}>
-                    <span className="w-[18px] text-[8.5px] font-bold tabular-nums text-slate-600">{String(childIndex+1).padStart(2,"0")}</span>
+                  return <Link data-tour-route={child.href} key={child.href} href={child.href} onClick={()=>setSidebarOpen(false)} aria-current={childActive?"page":undefined} title={child.description} className={`futurehr-sidebar-child group flex min-h-[36px] items-center gap-2 rounded-lg px-2.5 py-1.5 ${childActive?"is-active":""}`}>
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${childActive?"bg-teal-300":"bg-slate-700"}`}/>
                     <span className="min-w-0 flex-1 truncate text-[11px] font-medium">{child.label}</span>
-                    {childActive&&<span className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-[0_0_0_3px_rgba(94,234,212,.08)]"/>}
                   </Link>;
                 })}
               </div>}
@@ -252,9 +247,9 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
             <div className="futurehr-profile-stats grid grid-cols-3 gap-1.5 border-t border-white/[0.055] p-2">
               <div className="futurehr-profile-stat rounded-xl px-2 py-2"><ShieldCheck className="h-3.5 w-3.5 text-sky-400" strokeWidth={1.8}/><span className="mt-1 block text-[7.5px] font-medium text-slate-600">Yetki</span><strong className="mt-0.5 block truncate text-[9.5px] font-semibold text-slate-200">{profileAccessLabel}</strong></div>
               <div className="futurehr-profile-stat rounded-xl px-2 py-2"><Clock3 className="h-3.5 w-3.5 text-indigo-400" strokeWidth={1.8}/><span className="mt-1 block text-[7.5px] font-medium text-slate-600">Son giriş</span><strong className="mt-0.5 block truncate text-[9px] font-semibold text-slate-200" title={lastLoginLabel}>{lastLoginLabel}</strong></div>
-              <div className="futurehr-profile-stat rounded-xl px-2 py-2"><CircleCheckBig className="h-3.5 w-3.5 text-emerald-400" strokeWidth={1.8}/><span className="mt-1 block text-[7.5px] font-medium text-slate-600">Açık aksiyon</span><strong className="mt-0.5 block text-[9.5px] font-semibold text-slate-200">{profileOpenActions}</strong></div>
+              <div className="futurehr-profile-stat rounded-xl px-2 py-2"><CircleCheckBig className="h-3.5 w-3.5 text-emerald-400" strokeWidth={1.8}/><span className="mt-1 block text-[7.5px] font-medium text-slate-600">Açık işler</span><strong className="mt-0.5 block text-[9.5px] font-semibold text-slate-200">{profileOpenActions}</strong></div>
             </div>
-            <div className="futurehr-profile-signature flex items-center justify-between border-t border-white/[0.055] px-3.5 py-2"><span className="text-[7.5px] font-semibold uppercase tracking-[.14em] text-slate-600">FutureHR çalışma kimliği</span><span className="flex items-center gap-1 text-[7.5px] font-semibold text-emerald-400/80"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/>Güvenli oturum</span></div>
+            <div className="futurehr-profile-signature flex items-center justify-between border-t border-white/[0.055] px-3.5 py-2"><span className="text-[7.5px] font-semibold uppercase tracking-[.14em] text-slate-600">Hesap durumu</span><span className="flex items-center gap-1 text-[7.5px] font-semibold text-emerald-400/80"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/>Güvenli oturum</span></div>
           </div>}
           <button type="button" onClick={handleLogout} className="futurehr-sidebar-logout flex h-9 w-full items-center gap-3 rounded-xl px-3 text-[11.5px] font-medium text-slate-500 transition-colors hover:bg-red-500/[0.08] hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30"><LogOut size={15} strokeWidth={1.7}/><span>Çıkış yap</span></button>
         </div>
@@ -264,11 +259,11 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
     {sidebarOpen&&<button type="button" className="fixed inset-0 z-30 pointer-events-auto bg-slate-950/45 backdrop-blur-[1px] lg:hidden" onClick={()=>setSidebarOpen(false)} aria-label="Menüyü kapat"/>}
 
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-      <header data-tour="topbar" className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[#dfe3e1] bg-[#fbfbf8] px-4 sm:px-5 lg:px-6 dark:border-slate-800 dark:bg-[#141b22]">
-        <WelcomeWidget/>
-        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+      <header data-tour="topbar" className="pointer-events-none flex h-16 flex-shrink-0 items-center justify-between border-b border-[#dfe3e1] bg-[#fbfbf8] px-4 sm:px-5 lg:pointer-events-auto lg:px-6 dark:border-slate-800 dark:bg-[#141b22]">
+        <div className="pointer-events-auto"><WelcomeWidget/></div>
+        <div className="pointer-events-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
           <FutureHRIntelligenceAgent pathname={normalizedPathname}/><DemoPresentationMode/><GuidedOnboarding/><DemoRoleSwitcher/>
-          <button type="button" onClick={()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"k",ctrlKey:true}))} aria-label="Komut paletini aç, Ctrl K" title="Komut paletini aç (Ctrl+K)" className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-transparent px-3 text-xs font-medium text-slate-500 hover:bg-slate-100/70 xl:flex dark:border-slate-700 dark:text-slate-400"><SearchIcon className="h-3.5 w-3.5"/><span>Ctrl + K</span></button>
+          <button data-tour="quick-search" type="button" onClick={()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"k",ctrlKey:true}))} aria-label="Menüde ve işlemlerde ara" title="Ara (Ctrl+K)" className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-transparent px-3 text-xs font-medium text-slate-500 hover:bg-slate-100/70 xl:flex dark:border-slate-700 dark:text-slate-400"><SearchIcon className="h-3.5 w-3.5"/><span>Ara</span><span className="text-[9px] text-slate-400">Ctrl K</span></button>
           <ThemeToggle/><NotificationBell/>
         </div>
       </header>
