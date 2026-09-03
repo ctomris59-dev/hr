@@ -1,0 +1,10 @@
+name: Zero Training UX Finalize
+
+on:
+  workflow_dispatch:
+
+jobs:
+  archived:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "Zero-training finalize harness archived after successful quality gate."
