@@ -11,6 +11,7 @@ const ALLOWED_ROOTS = new Set([
   "lifecycle",
   "compliance",
   "recruitment",
+  "access",
 ]);
 const MUTATION_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
