@@ -21,23 +21,34 @@ async function severeReadabilityViolations(page: Page) {
   return page.evaluate(() => {
     type RGB = { r:number; g:number; b:number; a:number };
     const parse = (value:string):RGB|null => {
-      const match=value.match(/rgba?\(([^)]+)\)/i);
-      if(!match)return null;
-      const parts=match[1].split(/[ ,/]+/).filter(Boolean).map(Number);
-      if(parts.length<3||parts.slice(0,3).some(Number.isNaN))return null;
-      return {r:parts[0],g:parts[1],b:parts[2],a:Number.isFinite(parts[3])?parts[3]:1};
+      const rgb=value.match(/rgba?\(([^)]+)\)/i);
+      if(rgb){
+        const parts=rgb[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+        if(parts.length>=3&&!parts.slice(0,3).some(Number.isNaN))return {r:parts[0],g:parts[1],b:parts[2],a:Number.isFinite(parts[3])?parts[3]:1};
+      }
+      const srgb=value.match(/color\(srgb\s+([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)(?:\s*\/\s*([\d.+-]+))?\)/i);
+      if(srgb){
+        const values=srgb.slice(1,4).map(Number);
+        if(!values.some(Number.isNaN))return {r:values[0]*255,g:values[1]*255,b:values[2]*255,a:Number.isFinite(Number(srgb[4]))?Number(srgb[4]):1};
+      }
+      return null;
     };
-    const channel=(v:number)=>{const x=v/255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4);};
+    const channel=(v:number)=>{const x=Math.max(0,Math.min(255,v))/255;return x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4);};
     const luminance=(c:RGB)=>.2126*channel(c.r)+.7152*channel(c.g)+.0722*channel(c.b);
     const contrast=(a:RGB,b:RGB)=>{const l1=luminance(a),l2=luminance(b);return (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05);};
-    const blend=(fg:RGB,bg:RGB):RGB=>({r:fg.r*fg.a+bg.r*(1-fg.a),g:fg.g*fg.a+bg.g*(1-fg.a),b:fg.b*fg.a+bg.b*(1-fg.a),a:1});
-    const visible=(node:HTMLElement)=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=="none"&&s.visibility!=="hidden"&&Number(s.opacity)>0&&r.width>1&&r.height>1;};
-    const effectiveBackground=(node:HTMLElement):RGB=>{
+    const blend=(fg:RGB,bg:RGB):RGB=>{const alpha=fg.a+bg.a*(1-fg.a);if(alpha<=0)return{r:0,g:0,b:0,a:0};return{r:(fg.r*fg.a+bg.r*bg.a*(1-fg.a))/alpha,g:(fg.g*fg.a+bg.g*bg.a*(1-fg.a))/alpha,b:(fg.b*fg.a+bg.b*bg.a*(1-fg.a))/alpha,a:alpha};};
+    const visible=(node:HTMLElement)=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=="none"&&s.visibility!=="hidden"&&Number(s.opacity)>.02&&r.width>1&&r.height>1;};
+    const effectiveBackground=(node:HTMLElement):RGB|null=>{
       const layers:RGB[]=[];
       let current:HTMLElement|null=node;
       while(current){
-        const c=parse(getComputedStyle(current).backgroundColor);
-        if(c&&c.a>0)layers.push(c);
+        const style=getComputedStyle(current);
+        if(style.backgroundImage&&style.backgroundImage!=="none")return null;
+        const raw=style.backgroundColor;
+        const c=parse(raw);
+        const transparent=raw==="transparent"||/rgba?\(0(?:[ ,]+0){2}(?:[ ,/]+0(?:\.0+)?)?\)/i.test(raw);
+        if(!c&&!transparent)return null;
+        if(c&&c.a>0){layers.push(c);if(c.a>=.999)break;}
         current=current.parentElement;
       }
       let bg:RGB=node.closest(".futurehr-premium-sidebar")?{r:10,g:20,b:32,a:1}:{r:255,g:255,b:255,a:1};
@@ -56,32 +67,33 @@ async function severeReadabilityViolations(page: Page) {
       if(!text||text.length>180)continue;
       const style=getComputedStyle(node);
       const bg=effectiveBackground(node);
+      if(!bg)continue;
       const fillRaw=style.getPropertyValue("-webkit-text-fill-color");
-      const fill=fillRaw&&fillRaw!=="currentcolor"?parse(fillRaw):null;
-      const parsedFg=fill||parse(style.color); if(!parsedFg)continue;
-      const fg=parsedFg.a<1?blend(parsedFg,bg):parsedFg;
-      const ratio=contrast(fg,bg);
+      const rawColor=fillRaw&&fillRaw!=="transparent"&&fillRaw!=="currentcolor"?fillRaw:style.color;
+      const parsedColor=parse(rawColor);
+      if(!parsedColor)continue;
       const opacity=Number(style.opacity||1);
+      if(opacity<.25)continue;
+      const fg=blend({...parsedColor,a:parsedColor.a*opacity},bg);
+      const ratio=contrast(fg,bg);
       const fontSize=parseFloat(style.fontSize||"0");
       const fontWeight=parseInt(style.fontWeight||"400",10)||400;
-      const large=fontSize>=18||(fontSize>=14&&fontWeight>=700);
-      const floor=large?3:3.8;
-      if(ratio<floor||opacity<.58){
-        violations.push({text:text.slice(0,90),ratio:Number(ratio.toFixed(2)),opacity:Number(opacity.toFixed(2)),fontSize:Number(fontSize.toFixed(1)),className:String(node.className||"").slice(0,150)});
-      }
+      const large=fontSize>=24||(fontSize>=18.66&&fontWeight>=700);
+      const floor=large?3:4.5;
+      if(ratio<floor){violations.push({text:text.slice(0,90),ratio:Number(ratio.toFixed(2)),opacity:Number(opacity.toFixed(2)),fontSize:Number(fontSize.toFixed(1)),className:String(node.className||"").slice(0,150)});}
     }
-    return violations.slice(0,25);
+    return violations.slice(0,40);
   });
 }
 
 for (const [index, routes] of ROUTE_GROUPS.entries()) {
-  test(`readability group ${index + 1} has no severely washed-out visible text`, async ({ page }) => {
+  test(`readability group ${index + 1} meets visible text contrast`, async ({ page }) => {
     test.setTimeout(120_000);
     await openLightDemo(page);
     for (const route of routes) {
       await page.goto(route);
       await page.waitForLoadState("domcontentloaded");
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(400);
       const violations=await severeReadabilityViolations(page);
       expect(violations,`${route} low-contrast visible text`).toEqual([]);
     }
