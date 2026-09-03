@@ -12,7 +12,7 @@ const isPublicPath = (pathname: string) => pathname === "/" || PUBLIC_PREFIXES.s
 export default function RoleGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { currentUserRole } = useAuth();
+  const { currentUserRole, authReady } = useAuth();
   const [hasChecked, setHasChecked] = useState(false);
   const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -23,6 +23,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
       setHasChecked(true);
       return () => { cancelled = true; };
     }
+    if (!authReady) return () => { cancelled = true; };
 
     const timer = window.setTimeout(() => {
       void (async () => {
@@ -46,11 +47,11 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [pathname, currentUserRole, router, isDevelopment]);
+  }, [pathname, currentUserRole, authReady, router, isDevelopment]);
 
   if (isDevelopment || isPublicPath(pathname)) return <>{children}</>;
 
-  if (!hasChecked) {
+  if (!authReady || !hasChecked) {
     return <div className="flex h-screen items-center justify-center text-sm text-slate-500">Yetki kontrol ediliyor…</div>;
   }
 
