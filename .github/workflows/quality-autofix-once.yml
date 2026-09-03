@@ -1,0 +1,133 @@
+name: FutureHR one-time quality autofix
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  apply-quality-fixes:
+    if: startsWith(github.event.head_commit.message, 'chore(quality): bootstrap final quality fixes')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Apply source and E2E fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          def replace_exact(path: str, old: str, new: str, count: int | None = None):
+              target = Path(path)
+              text = target.read_text(encoding="utf-8")
+              found = text.count(old)
+              if found == 0:
+                  raise SystemExit(f"Expected text not found in {path}: {old}")
+              if count is not None and found != count:
+                  raise SystemExit(f"Unexpected match count in {path}: {old!r}: expected {count}, got {found}")
+              target.write_text(text.replace(old, new), encoding="utf-8")
+
+          layout = "frontend/components/ClientLayout.tsx"
+          replace_exact(layout,
+              'className="fixed left-3 top-3 z-50 flex h-9 w-9',
+              'className="fixed left-3 top-3 z-[60] pointer-events-auto flex h-9 w-9', 1)
+          replace_exact(layout,
+              'className={`${sidebarOpen?"translate-x-0":"-translate-x-full"} futurehr-premium-sidebar',
+              'className={`${sidebarOpen?"translate-x-0 pointer-events-auto":"-translate-x-full pointer-events-none"} futurehr-premium-sidebar', 1)
+          replace_exact(layout,
+              'lg:static lg:translate-x-0`}>',
+              'lg:pointer-events-auto lg:static lg:translate-x-0`}>', 1)
+          replace_exact(layout,
+              'className="fixed inset-0 z-30 bg-slate-950/45',
+              'className="fixed inset-0 z-30 pointer-events-auto bg-slate-950/45', 1)
+
+          spec = "frontend/futurehr-v1.spec.ts"
+          replace_exact(spec, 'name: "Performans", exact: true', 'name: "Performans & Yetenek", exact: true', 1)
+          replace_exact(spec, 'name: "Yetenek & Kariyer", exact: true', 'name: "Gelişim & Kariyer", exact: true', 1)
+          replace_exact(spec, '    await expect(page.getByRole("link", { name: "Gelişim", exact: true })).toBeVisible();\n', '', 1)
+          replace_exact(spec, 'Ücret & Bütçe', 'Ücret & İşgücü Kararları')
+          replace_exact(spec, 'test("Copilot opens as explainable decision support"', 'test("FutureHR Intelligence opens as explainable decision support"', 1)
+          replace_exact(spec, '"FutureHR Copilot\'u aç"', '"FutureHR Intelligence\'ı aç"', 1)
+          replace_exact(spec, 'name: "FutureHR Copilot"', 'name: "FutureHR Intelligence"', 1)
+          replace_exact(spec, 'page.getByPlaceholder(/Pelin Yılmaz için neden/)', 'page.getByLabel("FutureHR Intelligence sorusu")', 1)
+          replace_exact(spec, 'page.getByText(/Kanıtı birleştirir; kararı insana bırakır/)', 'page.getByText(/Uygulamadaki kanıtları tarar/)', 1)
+
+          package_path = Path("frontend/package.json")
+          package = json.loads(package_path.read_text(encoding="utf-8"))
+          scripts = package.setdefault("scripts", {})
+          scripts["lint:strict"] = "eslint lib/hr/saasWorkforceClient.ts lib/hr/decisionIntelligenceClient.ts app/api/saas app/api/integrations"
+          package_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          workflow = Path(".github/workflows/futurehr-v1-quality.yml")
+          text = workflow.read_text(encoding="utf-8")
+          trigger = '  pull_request:\n    branches: ["main"]\n'
+          if '  workflow_dispatch:\n' not in text:
+              if trigger not in text:
+                  raise SystemExit("Could not add workflow_dispatch trigger")
+              text = text.replace(trigger, trigger + '  workflow_dispatch:\n', 1)
+          audit = '      - name: Strict dependency security audit\n        run: npm audit --audit-level=low\n'
+          if text.count(audit) != 1:
+              raise SystemExit("Expected exactly one strict audit step")
+          text = text.replace(audit, '', 1)
+          strict_old = '      - name: Strict lint - SaaS server boundary and data client\n        run: npx eslint lib/hr/saasWorkforceClient.ts lib/hr/decisionIntelligenceClient.ts app/api/saas app/api/integrations\n'
+          strict_new = '      - name: Strict lint - SaaS server boundary and data client\n        run: npm run lint:strict\n'
+          if strict_old not in text:
+              raise SystemExit("Strict lint step not found")
+          text = text.replace(strict_old, strict_new, 1)
+          e2e = '      - name: FutureHR V1 E2E\n        run: npm run test:e2e\n'
+          if e2e not in text:
+              raise SystemExit("E2E step not found")
+          text = text.replace(e2e, e2e + audit, 1)
+          workflow.write_text(text, encoding="utf-8")
+          PY
+      - name: Upgrade vulnerable transitive lockfile dependency
+        working-directory: frontend
+        run: |
+          npm update @humanfs/node --package-lock-only --ignore-scripts
+          node - <<'NODE'
+          const lock = require('./package-lock.json');
+          const version = lock.packages?.['node_modules/@humanfs/node']?.version;
+          if (version !== '0.16.8') throw new Error(`Expected @humanfs/node 0.16.8, got ${version}`);
+          console.log(`@humanfs/node locked at ${version}`);
+          NODE
+      - name: Verify clean low-severity audit before commit
+        working-directory: frontend
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=low
+      - name: Commit final fixes
+        id: commit
+        run: |
+          rm .github/workflows/quality-autofix-once.yml
+          git config user.name "FutureHR Quality Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .github/workflows/futurehr-v1-quality.yml frontend/components/ClientLayout.tsx frontend/futurehr-v1.spec.ts frontend/package.json frontend/package-lock.json .github/workflows/quality-autofix-once.yml
+          git commit -m "fix(quality): finalize mobile E2E and dependency gate"
+          FINAL_SHA=$(git rev-parse HEAD)
+          echo "sha=$FINAL_SHA" >> "$GITHUB_OUTPUT"
+          git push origin HEAD:main
+      - name: Dispatch quality gate for final commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/futurehr-v1-quality.yml/dispatches \
+            -d '{"ref":"main"}'
+          echo "Dispatched quality gate for ${{ steps.commit.outputs.sha }}"
