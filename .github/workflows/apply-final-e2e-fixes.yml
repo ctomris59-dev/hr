@@ -79,7 +79,7 @@ jobs:
 
       - name: Full FutureHR E2E
         working-directory: frontend
-        run: npm run test:e2e:v1
+        run: npm run test:e2e
 
       - name: Strict dependency audit
         working-directory: frontend
