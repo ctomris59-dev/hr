@@ -390,7 +390,7 @@ export default function UniversalAnalyticsBoard({ pathname }: { pathname: string
             <div className="mt-4 grid grid-cols-4 gap-2">
               {board.kpis.map((item) => {
                 const p = palettes[item.tone];
-                return <div key={item.label} className="rounded-lg p-3" style={{ background: p.soft }}><p className="text-[9px] font-semibold" style={{ color: p.text }}>{item.label}</p><div className="mt-3 flex h-12 items-end gap-1">{item.bars.slice(-6).map((bar, index) => { const max = Math.max(1, ...item.bars.map(Number)); return <span key={index} className="flex-1 rounded-t-[3px]" style={{ height: `${Math.max(12, (Number(bar) / max) * 100)}%`, background: p.solid, opacity: .35 + index * .09 }} />; })}</div></div>;
+                return <div key={item.label} className="rounded-lg p-3" style={{ background: p.soft }}><p className="text-[9px] font-semibold" style={{ color: "#334155" }}>{item.label}</p><div className="mt-3 flex h-12 items-end gap-1">{item.bars.slice(-6).map((bar, index) => { const max = Math.max(1, ...item.bars.map(Number)); return <span key={index} className="flex-1 rounded-t-[3px]" style={{ height: `${Math.max(12, (Number(bar) / max) * 100)}%`, background: p.solid, opacity: .35 + index * .09 }} />; })}</div></div>;
               })}
             </div>
           </article>
@@ -405,7 +405,7 @@ export default function UniversalAnalyticsBoard({ pathname }: { pathname: string
             <p className="text-[9px] font-bold uppercase tracking-[.1em] text-slate-400">Hızlı içgörüler</p>
             <h3 className="mt-1 text-[13px] font-semibold text-slate-900 dark:text-white">{board.quick.title}</h3>
             <div className="mt-3 space-y-2">
-              {board.quick.rows.map((row) => { const p = palettes[row.tone]; return <div key={`${row.label}-${row.value}`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950/40"><div className="min-w-0"><p className="truncate text-[10.5px] font-semibold text-slate-700 dark:text-slate-200">{row.label}</p><p className="mt-0.5 truncate text-[9px] text-slate-400">{row.meta}</p></div><span className="rounded-md px-2 py-1 text-[10px] font-semibold" style={{ background: p.soft, color: p.text }}>{row.value}</span></div>; })}
+              {board.quick.rows.map((row) => { const p = palettes[row.tone]; return <div key={`${row.label}-${row.value}`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950/40"><div className="min-w-0"><p className="truncate text-[10.5px] font-semibold text-slate-700 dark:text-slate-200">{row.label}</p><p className="mt-0.5 truncate text-[9px] text-slate-400">{row.meta}</p></div><span className="rounded-md px-2 py-1 text-[10px] font-semibold" style={{ background: p.soft, color: "#334155" }}>{row.value}</span></div>; })}
             </div>
           </article>
         </div>

@@ -78,10 +78,10 @@ test.describe("FutureHR V1 zero-training quality gate", () => {
     await expect(page.locator('[data-workspace-module="/yetenek-matrisi"]')).toHaveAttribute("aria-current", "page");
     await page.goto("/gelisim");
     await expect(page.getByRole("link", { name: /^Eğitimler/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Gelişim Sonuçları/ })).toBeVisible();
+    await expect(page.locator('[data-workspace-module="/gelisim-analitigi"]')).toBeVisible();
     await page.goto("/admin");
     await expect(page.getByRole("link", { name: /Şirket Kurulumu/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Gizlilik & KVKK/ })).toBeVisible();
+    await expect(page.locator('[data-workspace-module="/admin/guven-kvkk"]')).toBeVisible();
   });
 
   test("search finds nested tasks without requiring menu knowledge", async ({ page }) => {

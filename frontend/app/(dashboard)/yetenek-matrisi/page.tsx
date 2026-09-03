@@ -48,15 +48,15 @@ const BOX_LABELS = [
 const ALL_BOXES = BOX_LABELS.flat();
 
 const BOX_TONES: Record<string, { surface: string; accent: string; badge: string }> = {
-  "Potansiyel Yatırımı": { surface: "bg-sky-50/70", accent: "bg-sky-500", badge: "bg-sky-100 text-sky-800" },
-  "Yüksek Potansiyel": { surface: "bg-cyan-50/70", accent: "bg-cyan-500", badge: "bg-cyan-100 text-cyan-800" },
-  "Yıldız Oyuncu": { surface: "bg-emerald-50/75", accent: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-800" },
-  "Gelişim Odağı": { surface: "bg-amber-50/65", accent: "bg-amber-500", badge: "bg-amber-100 text-amber-800" },
-  "Çekirdek Yetenek": { surface: "bg-slate-50/80", accent: "bg-slate-500", badge: "bg-slate-200 text-slate-800" },
-  "Güçlü Performans": { surface: "bg-teal-50/70", accent: "bg-teal-500", badge: "bg-teal-100 text-teal-800" },
-  "Kritik Gelişim": { surface: "bg-rose-50/65", accent: "bg-rose-500", badge: "bg-rose-100 text-rose-800" },
-  "İstikrarlı Katkı": { surface: "bg-stone-50/80", accent: "bg-stone-500", badge: "bg-stone-200 text-stone-800" },
-  "Uzman Katkı": { surface: "bg-violet-50/65", accent: "bg-violet-500", badge: "bg-violet-100 text-violet-800" },
+  "Potansiyel Yatırımı": { surface: "bg-sky-50/70", accent: "bg-sky-500", badge: "bg-sky-100 text-slate-900" },
+  "Yüksek Potansiyel": { surface: "bg-cyan-50/70", accent: "bg-cyan-500", badge: "bg-cyan-100 text-slate-900" },
+  "Yıldız Oyuncu": { surface: "bg-emerald-50/75", accent: "bg-emerald-500", badge: "bg-emerald-100 text-slate-900" },
+  "Gelişim Odağı": { surface: "bg-amber-50/65", accent: "bg-amber-500", badge: "bg-amber-100 text-slate-900" },
+  "Çekirdek Yetenek": { surface: "bg-slate-50/80", accent: "bg-slate-500", badge: "bg-slate-200 text-slate-900" },
+  "Güçlü Performans": { surface: "bg-teal-50/70", accent: "bg-teal-500", badge: "bg-teal-100 text-slate-900" },
+  "Kritik Gelişim": { surface: "bg-rose-50/65", accent: "bg-rose-500", badge: "bg-rose-100 text-slate-900" },
+  "İstikrarlı Katkı": { surface: "bg-stone-50/80", accent: "bg-stone-500", badge: "bg-stone-200 text-slate-900" },
+  "Uzman Katkı": { surface: "bg-violet-50/65", accent: "bg-violet-500", badge: "bg-violet-100 text-slate-900" },
 };
 
 type TalentPerson = EmployeeRow & {

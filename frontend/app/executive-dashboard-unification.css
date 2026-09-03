@@ -256,3 +256,18 @@
 @media(max-width:520px){
   .module-workspace-v2 .futurehr-analytics-kpis{grid-template-columns:1fr!important;}
 }
+
+
+/* Zero-training accessibility pass: compact helper labels. */
+:root{--fh-exec-copy:#536174;}
+.module-workspace-v2 .module-command-flow-label{color:#59687a!important;}
+.module-workspace-v2 .module-command-flow-step span{color:#334155!important;}
+.module-workspace-v2 .futurehr-family-description{color:#59687a!important;opacity:1!important;}
+.module-workspace-v2 .module-detail-stage-header span,
+.module-workspace-v2 .vf-summary-copy span{color:#334155!important;}
+.module-workspace-v2 .module-detail-stage-header p{color:#536174!important;}
+.module-workspace-v2 .futurehr-analytics-head p:first-child,
+.module-workspace-v2 > section.mb-5:not(.module-hero):not(.futurehr-analytics-board) > div:first-child p:first-child{color:#425466!important;}
+.dark .module-workspace-v2 .module-command-flow-step span,
+.dark .module-workspace-v2 .module-detail-stage-header span,
+.dark .module-workspace-v2 .vf-summary-copy span{color:#cbd5e1!important;}
