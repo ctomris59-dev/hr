@@ -119,3 +119,15 @@ def test_policy_schema_rejects_invalid_scope_and_action(access_client):
     invalid["resourceOverrides"] = {"manager": {"people": {"scope": "EVERYTHING", "actions": ["view", "delete"]}}}
     response = client.put("/api/v1/access/policy", headers=ceo, json=invalid)
     assert response.status_code == 422
+
+
+def test_server_rejects_role_escalation_even_when_scope_is_valid_schema(access_client):
+    client, token = access_client
+    ceo = headers(token("u-ceo", "t1", "CEO"))
+    unsafe = sample_policy()
+    unsafe["resourceOverrides"] = {
+        "manager": {"salary": {"scope": "COMPANY", "actions": ["view", "export"]}}
+    }
+    response = client.put("/api/v1/access/policy", headers=ceo, json=unsafe)
+    assert response.status_code == 422
+    assert "cannot be widened" in response.json()["detail"]
