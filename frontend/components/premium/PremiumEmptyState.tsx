@@ -11,6 +11,13 @@ const ICONS: Record<"data" | "filter" | "permission" | "insight", LucideIcon> = 
   insight: Sparkles,
 };
 
+const KICKERS = {
+  data: "Buradan başlayın",
+  filter: "Sonuç bulunamadı",
+  permission: "Erişim bilgisi",
+  insight: "Önerilen sonraki adım",
+} as const;
+
 export default function PremiumEmptyState({
   title,
   description,
@@ -44,7 +51,7 @@ export default function PremiumEmptyState({
     >
       <div className="premium-empty-content">
         <span className="premium-empty-icon"><Icon className="h-5 w-5" strokeWidth={1.7} /></span>
-        <p className="premium-empty-kicker">FutureHR çalışma durumu</p>
+        <p className="premium-empty-kicker">{KICKERS[kind]}</p>
         <h3>{title}</h3>
         <p>{description}</p>
         {(actionLabel || secondaryLabel) && (
