@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Building2, ChevronLeft, ChevronRight, LoaderCircle, Pencil, Plus, Search, UserRoundCheck, Users, X } from "lucide-react";
 import { DEPARTMENTS, POSITIONS } from "../../data/jobData";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../../utils/storage";
+import EmployeeAvatar from "@/components/hr/EmployeeAvatar";
+import EmployeePhotoField from "@/components/hr/EmployeePhotoField";
 import {
   createSaasEmployee,
   EMPLOYEE_SAAS_MODE,
@@ -21,6 +23,9 @@ interface EmployeeRow {
   "Yönetici 2"?: string;
   "İşe Giriş Tarihi"?: string;
   "Kıdem (Yıl)"?: number;
+  avatarUrl?: string | null;
+  avatarDataUrl?: string | null;
+  hasAvatar?: boolean;
   [key: string]: any;
 }
 
@@ -60,6 +65,7 @@ export default function OrganizasyonPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [avatarChange, setAvatarChange] = useState<string | null | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -110,6 +116,7 @@ export default function OrganizasyonPage() {
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setAvatarChange(undefined);
     setFormOpen(true);
     setDataError("");
   };
@@ -124,6 +131,7 @@ export default function OrganizasyonPage() {
       manager2: employee["Yönetici 2"] || "",
       hireDate: employee["İşe Giriş Tarihi"] || employee.hireDate || "",
     });
+    setAvatarChange(undefined);
     setFormOpen(true);
     setDataError("");
   };
@@ -144,9 +152,14 @@ export default function OrganizasyonPage() {
           manager2Name: form.manager2,
           employees,
         });
-        if (editingId !== null) await updateSaasEmployee(String(editingId), payload);
-        else await createSaasEmployee(payload);
+        if (editingId !== null) {
+          await updateSaasEmployee(String(editingId), avatarChange === undefined ? payload : { ...payload, avatar_data_url: avatarChange });
+        } else {
+          const created = await createSaasEmployee(payload);
+          if (avatarChange) await updateSaasEmployee(String(created.id), { avatar_data_url: avatarChange });
+        }
         await reload();
+        window.dispatchEvent(new CustomEvent("dataUpdated"));
       } else {
         const existing = editingId === null ? null : employees.find((employee) => (employee.id ?? employee["Ad Soyad"]) === editingId);
         const employee: EmployeeRow = {
@@ -158,6 +171,7 @@ export default function OrganizasyonPage() {
           "Yönetici 1": form.manager1 || undefined,
           "Yönetici 2": form.manager2 || undefined,
           "İşe Giriş Tarihi": form.hireDate || undefined,
+          avatarDataUrl: avatarChange === undefined ? existing?.avatarDataUrl || null : avatarChange,
         };
         const next = existing
           ? employees.map((item) => (item.id ?? item["Ad Soyad"]) === editingId ? employee : item)
@@ -167,6 +181,7 @@ export default function OrganizasyonPage() {
         window.dispatchEvent(new CustomEvent("dataUpdated"));
       }
       setFormOpen(false);
+      setAvatarChange(undefined);
     } catch (error) {
       setDataError(error instanceof Error ? error.message : "Çalışan kaydı kaydedilemedi.");
     } finally {
@@ -176,6 +191,8 @@ export default function OrganizasyonPage() {
 
   const avgTenure = employees.length ? employees.reduce((sum, employee) => sum + tenureYears(employee), 0) / employees.length : 0;
   const availableManagers = employees.filter((employee) => editingId === null || (employee.id ?? employee["Ad Soyad"]) !== editingId);
+  const editingEmployee = editingId === null ? null : employees.find((employee) => (employee.id ?? employee["Ad Soyad"]) === editingId) || null;
+  const photoSrc = avatarChange !== undefined ? avatarChange : editingEmployee?.avatarDataUrl || editingEmployee?.avatarUrl || null;
 
   return (
     <div className="space-y-4">
@@ -186,7 +203,7 @@ export default function OrganizasyonPage() {
             {EMPLOYEE_SAAS_MODE && <span className="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700">SaaS veri kaynağı</span>}
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-slate-900 dark:text-white">Çalışan Dizini</h2>
-          <p className="mt-1 text-xs text-slate-500">Departman, pozisyon, bağlı yönetici ve kıdem bilgisinin tek doğruluk kaynağı.</p>
+          <p className="mt-1 text-xs text-slate-500">Departman, pozisyon, bağlı yönetici, fotoğraf ve kıdem bilgisinin tek doğruluk kaynağı.</p>
         </div>
         <button onClick={openNew} disabled={loading} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(37,99,235,.22)] hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
           <Plus className="h-4 w-4" /> Çalışan ekle
@@ -244,7 +261,7 @@ export default function OrganizasyonPage() {
                   <tr key={employee.id ?? employee["Ad Soyad"]} className="group bg-white transition-colors hover:bg-blue-50/35 dark:bg-slate-900 dark:hover:bg-slate-800/60">
                     <td className="border-b border-slate-100 px-5 py-3.5 dark:border-slate-800/80">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-blue-50 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200/80 group-hover:from-blue-100 group-hover:to-indigo-50 group-hover:text-blue-700 dark:from-slate-800 dark:to-slate-800 dark:text-slate-200 dark:ring-slate-700">{initials(employee["Ad Soyad"])}</div>
+                        <EmployeeAvatar name={employee["Ad Soyad"]} src={employee.avatarDataUrl || employee.avatarUrl || null} size="sm" />
                         <div className="min-w-0">
                           <p className="truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">{employee["Ad Soyad"]}</p>
                           <p className="mt-0.5 truncate text-[10px] text-slate-400">{employee.externalId ? `Personel ${employee.externalId}` : employee.id ? `ID ${String(employee.id).slice(0, 8)}` : "Aktif çalışan"}</p>
@@ -281,7 +298,37 @@ export default function OrganizasyonPage() {
         </div>
       </section>
 
-      {formOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]"><form onSubmit={save} className="w-full max-w-xl rounded-2xl border border-white/50 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-blue-600">Çalışan kaydı</p><h2 className="mt-1 text-lg font-semibold">{editingId ? "Çalışanı düzenle" : "Yeni çalışan"}</h2></div><button type="button" onClick={() => setFormOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><Field label="Ad Soyad"><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></Field><Field label="Departman"><select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Seçin</option>{DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}</select></Field><Field label="Pozisyon"><select value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Seçin</option>{POSITIONS.map((p) => <option key={p}>{p}</option>)}</select></Field><Field label="İşe giriş tarihi"><input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></Field><Field label="1. Yönetici"><select value={form.manager1} onChange={(e) => setForm({ ...form, manager1: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Yok</option>{availableManagers.map((e) => <option key={e.id ?? e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select></Field><Field label="2. Yönetici"><select value={form.manager2} onChange={(e) => setForm({ ...form, manager2: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Yok</option>{availableManagers.map((e) => <option key={e.id ?? e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select></Field></div>{dataError && <p className="mt-4 text-xs font-medium text-red-600">{dataError}</p>}<div className="mt-5 flex justify-end gap-2"><button type="button" disabled={saving} onClick={() => setFormOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 disabled:opacity-50">Vazgeç</button><button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 dark:bg-white dark:text-slate-900">{saving && <LoaderCircle className="h-4 w-4 animate-spin" />}{saving ? "Kaydediliyor" : "Kaydet"}</button></div></form></div>}
+      {formOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]">
+          <form onSubmit={save} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/50 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[.12em] text-blue-600">Çalışan kaydı</p>
+                <h2 className="mt-1 text-lg font-semibold">{editingId ? "Çalışanı düzenle" : "Yeni çalışan"}</h2>
+              </div>
+              <button type="button" onClick={() => setFormOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+            </div>
+
+            <div className="mt-5">
+              <EmployeePhotoField name={form.name || "FutureHR çalışanı"} src={photoSrc} disabled={saving} onChange={setAvatarChange} />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Ad Soyad"><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></Field>
+              <Field label="Departman"><select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Seçin</option>{DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}</select></Field>
+              <Field label="Pozisyon"><select value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Seçin</option>{POSITIONS.map((p) => <option key={p}>{p}</option>)}</select></Field>
+              <Field label="İşe giriş tarihi"><input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm" /></Field>
+              <Field label="1. Yönetici"><select value={form.manager1} onChange={(e) => setForm({ ...form, manager1: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Yok</option>{availableManagers.map((e) => <option key={e.id ?? e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select></Field>
+              <Field label="2. Yönetici"><select value={form.manager2} onChange={(e) => setForm({ ...form, manager2: e.target.value })} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"><option value="">Yok</option>{availableManagers.map((e) => <option key={e.id ?? e["Ad Soyad"]}>{e["Ad Soyad"]}</option>)}</select></Field>
+            </div>
+            {dataError && <p className="mt-4 text-xs font-medium text-red-600">{dataError}</p>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" disabled={saving} onClick={() => setFormOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 disabled:opacity-50">Vazgeç</button>
+              <button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 dark:bg-white dark:text-slate-900">{saving && <LoaderCircle className="h-4 w-4 animate-spin" />}{saving ? "Kaydediliyor" : "Kaydet"}</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
