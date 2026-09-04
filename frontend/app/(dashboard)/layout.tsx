@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import ClientLayout from "@/components/ClientLayout";
 import RoleGuard from "@/components/RoleGuard";
+import SaasStorageGate from "@/components/SaasStorageGate";
+import CustomerLanguageRuntime from "@/components/CustomerLanguageRuntime";
+import ProductCompletionLayer from "@/components/ProductCompletionLayer";
 import { hasSessionCookie, isSaasMode } from "@/lib/saasAuthServer";
 
 export default async function DashboardLayout({
@@ -16,7 +19,13 @@ export default async function DashboardLayout({
 
   return (
     <RoleGuard>
-      <ClientLayout>{children}</ClientLayout>
+      <SaasStorageGate>
+        <ClientLayout>
+          <CustomerLanguageRuntime />
+          {children}
+          <ProductCompletionLayer />
+        </ClientLayout>
+      </SaasStorageGate>
     </RoleGuard>
   );
 }

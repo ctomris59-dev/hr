@@ -1,8 +1,9 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { getStorageData, setStorageData, STORAGE_KEYS, HR_DATA_CLEARED_KEY } from "../app/utils/storage";
+import { getStorageData, STORAGE_KEYS, HR_DATA_CLEARED_KEY } from "../app/utils/storage";
 import { API_BASE_URL } from "@/lib/apiConfig";
+import { SAAS_DATA_MODE, fetchSaasDevelopmentWorkspace } from "@/lib/hr/saasWorkforceClient";
 
 interface DataContextType {
   orgData: any[];
@@ -36,16 +37,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Demo/prototip modu bilinçli olarak boş şirketle başlar. İlk açılışta backend'den
       // örnek/veri sızdırılmaz; kullanıcı Demo Oluştur veya veri içe aktarma akışını seçer.
       if (!secureMode) {
-        if (!orgKeyExists) localStorage.setItem(STORAGE_KEYS.ORG_CHART, "[]");
-        if (!historyKeyExists) localStorage.setItem(STORAGE_KEYS.HISTORY_360, "[]");
-        if (!orgKeyExists && !historyKeyExists) localStorage.setItem(HR_DATA_CLEARED_KEY, "true");
+        if (!SAAS_DATA_MODE) {
+          if (!orgKeyExists) localStorage.setItem(STORAGE_KEYS.ORG_CHART, "[]");
+          if (!historyKeyExists) localStorage.setItem(STORAGE_KEYS.HISTORY_360, "[]");
+          if (!orgKeyExists && !historyKeyExists) localStorage.setItem(HR_DATA_CLEARED_KEY, "true");
+        }
         setOrgData(storedOrg);
         setHistory360(stored360);
         setLoading(false);
         return;
       }
 
-      // Secure SaaS modunda tenant verisi yalnız sunucu katmanından okunur.
+      // Gerçek SaaS modunda eski, tenant kapsamı taşımayan /api/* yollarına hiç gidilmez.
+      // Yetkili çalışan/evaluasyon görünümü HttpOnly oturumu kullanan güvenli proxy üzerinden alınır.
+      if (SAAS_DATA_MODE) {
+        try {
+          const workspace = await fetchSaasDevelopmentWorkspace();
+          setOrgData(workspace.employees);
+          setHistory360(workspace.evaluations);
+        } catch (error) {
+          console.warn("Güvenli şirket verisi okunamadı:", error);
+          setOrgData(storedOrg);
+          setHistory360(stored360);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Geriye dönük yerel/özel kurulum desteği. Production SaaS bu dala girmez.
       setOrgData(storedOrg);
       setHistory360(stored360);
 
@@ -78,7 +97,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         window.clearTimeout(timeoutId);
-        console.warn("Secure SaaS backend fetch failed:", error);
+        console.warn("Legacy secure data fetch failed:", error);
       }
     } catch (error) {
       console.error("Data loading error:", error);
@@ -101,7 +120,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const handleDataUpdated = () => {
       const storedOrg = getStorageData<any[]>(STORAGE_KEYS.ORG_CHART, []);
       const stored360 = getStorageData<any[]>(STORAGE_KEYS.HISTORY_360, []);
-      if (storedOrg.length || stored360.length) localStorage.removeItem(HR_DATA_CLEARED_KEY);
+      if (!SAAS_DATA_MODE && (storedOrg.length || stored360.length)) localStorage.removeItem(HR_DATA_CLEARED_KEY);
       void loadData();
     };
 

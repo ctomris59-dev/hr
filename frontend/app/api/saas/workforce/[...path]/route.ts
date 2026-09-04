@@ -12,6 +12,8 @@ const ALLOWED_ROOTS = new Set([
   "compliance",
   "recruitment",
   "access",
+  "integrations",
+  "state",
 ]);
 const MUTATION_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
@@ -27,7 +29,7 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
   try {
     const { path } = await context.params;
     const target = backendPath(request, path || []);
-    if (!target) return NextResponse.json({ error: "Desteklenmeyen SaaS işgücü endpoint'i." }, { status: 404 });
+    if (!target) return NextResponse.json({ error: "Desteklenmeyen güvenli veri endpoint'i." }, { status: 404 });
 
     if (MUTATION_METHODS.has(request.method) && isSaasMode() && !isSameOriginRequest(request)) {
       return NextResponse.json({ error: "Geçersiz istek kaynağı." }, { status: 403 });
@@ -45,7 +47,7 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
       headers: { "Cache-Control": "no-store" },
     });
   } catch {
-    return NextResponse.json({ error: "SaaS karar zekâsı servisine ulaşılamadı." }, { status: 503 });
+    return NextResponse.json({ error: "Güvenli şirket veri servisine ulaşılamadı." }, { status: 503 });
   }
 }
 
