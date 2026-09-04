@@ -144,6 +144,64 @@
   height:32px!important;
 }
 
+/* Dashboard executive identity card — high-contrast readability pass. */
+aside[aria-label="Kullanıcı özeti"]{
+  border-color:rgba(147,197,253,.42)!important;
+  background:linear-gradient(145deg,#1b416d 0%,#14365d 58%,#102b4b 100%)!important;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="text-slate-300"]{
+  color:#d9e5f2!important;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="text-slate-400"]{
+  color:#c2d1e0!important;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="text-slate-100"],
+aside[aria-label="Kullanıcı özeti"] [class~="text-white"]{
+  color:#ffffff!important;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="text-emerald-300"]{
+  color:#86efac!important;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="text-sky-200"]{
+  color:#d7efff!important;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="text-[8px]"]{
+  font-size:9.5px!important;
+  line-height:1.25!important;
+  font-weight:750!important;
+  letter-spacing:.075em!important;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="text-[10px]"],
+aside[aria-label="Kullanıcı özeti"] [class~="text-[10.5px]"]{
+  font-size:11.5px!important;
+  line-height:1.35!important;
+  font-weight:650!important;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="text-[11px]"]{
+  font-size:12px!important;
+  line-height:1.35!important;
+}
+aside[aria-label="Kullanıcı özeti"] a{
+  min-height:38px!important;
+  border-color:rgba(226,232,240,.52)!important;
+  background:rgba(255,255,255,.10)!important;
+  color:#f8fafc!important;
+  font-size:11.5px!important;
+  font-weight:650!important;
+}
+aside[aria-label="Kullanıcı özeti"] a:hover{
+  border-color:rgba(255,255,255,.78)!important;
+  background:rgba(255,255,255,.15)!important;
+}
+aside[aria-label="Kullanıcı özeti"] a svg{
+  color:#dbeafe!important;
+  opacity:1!important;
+}
+aside[aria-label="Kullanıcı özeti"] > .relative.grid{
+  border-color:rgba(226,232,240,.38)!important;
+  background:rgba(255,255,255,.08)!important;
+}
+
 @media(max-height:760px){
   .futurehr-profile-main{padding:7px 9px!important;}
   .futurehr-profile-avatar{width:32px!important;height:32px!important;flex-basis:32px!important;font-size:9px!important;}
