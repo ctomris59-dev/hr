@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Command } from "cmdk";
 import { useRouter } from "next/navigation";
-import { BriefcaseBusiness, Building2, GraduationCap, Heart, LayoutDashboard, Moon, Search, Settings2, Sun, Target, UserPlus, Users, UsersRound, WalletCards, type LucideIcon } from "lucide-react";
+import { BriefcaseBusiness, Building2, CircleUserRound, GraduationCap, Heart, LayoutDashboard, Moon, Search, Settings2, Sun, Target, UserPlus, Users, UsersRound, WalletCards, type LucideIcon } from "lucide-react";
 import { getStorageData, STORAGE_KEYS } from "../app/utils/storage";
 import { useTheme } from "next-themes";
 import { useAuth } from "../context/AuthContext";
@@ -21,6 +21,7 @@ export default function CommandPalette(){
   const visiblePages=useMemo(()=>{
     const pages:Array<{label:string;description:string;href:string;icon:LucideIcon}>=[];
     if(canAccessRoute(currentUserRole,"/dashboard"))pages.push({label:"Ana Sayfa",description:"Bekleyen işler ve hızlı işlemler",href:"/dashboard",icon:LayoutDashboard});
+    if(canAccessRoute(currentUserRole,"/kullanici"))pages.push({label:"Benim Alanım",description:"Kendi iş hayatınız, gelişiminiz ve kişisel işlemleriniz",href:"/kullanici",icon:CircleUserRound});
     NAVIGATION_FAMILIES.forEach(family=>{
       const Icon=familyIcons[family.id];
       family.items.forEach(item=>{
