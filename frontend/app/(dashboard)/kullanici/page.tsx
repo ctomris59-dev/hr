@@ -23,10 +23,17 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
+import EmployeeAvatar from "@/components/hr/EmployeeAvatar";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import { getStorageData, STORAGE_KEYS } from "@/app/utils/storage";
 import { canAccessRoute, roleLabel } from "@/lib/hr/accessControl";
+import {
+  EMPLOYEE_SAAS_MODE,
+  employeeAvatarUrl,
+  fetchSaasCurrentEmployee,
+  type SaaSEmployee,
+} from "@/lib/hr/employeeClient";
 
 type JourneyEvent = {
   key: string;
@@ -46,16 +53,6 @@ type TodayItem = {
 };
 
 const normalize = (value: unknown) => String(value ?? "").trim().toLocaleLowerCase("tr-TR");
-
-function initials(value: string) {
-  return String(value || "FH")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "FH";
-}
 
 function parseDate(value: unknown): Date | null {
   if (!value) return null;
@@ -182,6 +179,7 @@ export default function KullaniciPage() {
   const { currentUserRole, userName } = useAuth();
   const { orgData, history360, loading } = useData();
   const [revision, setRevision] = useState(0);
+  const [saasEmployee, setSaasEmployee] = useState<SaaSEmployee | null>(null);
 
   useEffect(() => {
     const refresh = () => setRevision((value) => value + 1);
@@ -194,6 +192,18 @@ export default function KullaniciPage() {
       window.removeEventListener("userChanged", refresh);
     };
   }, []);
+
+  useEffect(() => {
+    if (!EMPLOYEE_SAAS_MODE) {
+      setSaasEmployee(null);
+      return;
+    }
+    let active = true;
+    void fetchSaasCurrentEmployee()
+      .then((employee) => { if (active) setSaasEmployee(employee); })
+      .catch(() => { if (active) setSaasEmployee(null); });
+    return () => { active = false; };
+  }, [revision]);
 
   const snapshot = useMemo(() => {
     void revision;
@@ -217,14 +227,17 @@ export default function KullaniciPage() {
 
   const role = currentUserRole;
   const canGo = (href: string) => Boolean(role && canAccessRoute(role, href));
-  const profileName = String(currentUser?.name || currentUser?.employee_name || userName || selfEmployee?.["Ad Soyad"] || "FutureHR Kullanıcısı");
-  const position = String(selfEmployee?.Pozisyon || currentUser?.position || currentUser?.title || (role ? roleLabel(role) : "Kullanıcı"));
-  const department = String(selfEmployee?.Departman || currentUser?.department || currentUser?.dept || "Henüz tanımlı değil");
+  const profileName = String(saasEmployee?.full_name || currentUser?.name || currentUser?.employee_name || userName || selfEmployee?.["Ad Soyad"] || "FutureHR Kullanıcısı");
+  const position = String(saasEmployee?.position || selfEmployee?.Pozisyon || currentUser?.position || currentUser?.title || (role ? roleLabel(role) : "Kullanıcı"));
+  const department = String(saasEmployee?.department || selfEmployee?.Departman || currentUser?.department || currentUser?.dept || "Henüz tanımlı değil");
   const manager = String(selfEmployee?.["Yönetici 1"] || selfEmployee?.manager || currentUser?.manager || "Henüz tanımlı değil");
-  const location = String(selfEmployee?.Lokasyon || selfEmployee?.location || currentUser?.location || "Henüz tanımlı değil");
-  const employeeCode = String(selfEmployee?.["Personel Kodu"] || selfEmployee?.employeeCode || currentUser?.employeeId || currentUser?.employee_id || "Henüz tanımlı değil");
-  const email = String(selfEmployee?.Eposta || selfEmployee?.email || currentUser?.email || currentUser?.username || "Henüz tanımlı değil");
-  const startDate = selfEmployee?.["İşe Giriş Tarihi"] || selfEmployee?.hireDate || selfEmployee?.startDate || currentUser?.hireDate;
+  const location = String(saasEmployee?.location || selfEmployee?.Lokasyon || selfEmployee?.location || currentUser?.location || "Henüz tanımlı değil");
+  const employeeCode = String(saasEmployee?.external_id || selfEmployee?.["Personel Kodu"] || selfEmployee?.employeeCode || currentUser?.employeeId || currentUser?.employee_id || "Henüz tanımlı değil");
+  const email = String(saasEmployee?.email || selfEmployee?.Eposta || selfEmployee?.email || currentUser?.email || currentUser?.username || "Henüz tanımlı değil");
+  const startDate = saasEmployee?.hire_date || selfEmployee?.["İşe Giriş Tarihi"] || selfEmployee?.hireDate || selfEmployee?.startDate || currentUser?.hireDate;
+  const avatarSrc = EMPLOYEE_SAAS_MODE
+    ? (saasEmployee?.has_avatar && saasEmployee.id ? employeeAvatarUrl(saasEmployee.id) : null)
+    : (selfEmployee?.avatarDataUrl || currentUser?.avatarDataUrl || null);
 
   const openLeave = ownLeave.filter((row) => !isDone(row)).length;
   const completedTraining = ownTraining.filter(isDone).length;
@@ -296,10 +309,7 @@ export default function KullaniciPage() {
           <div className="p-6 sm:p-8 lg:p-9">
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-teal-700 dark:text-teal-300"><ShieldCheck className="h-4 w-4"/>Benim Alanım</div>
             <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
-              <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-[24px] bg-[linear-gradient(145deg,#173d68,#102b4b)] text-2xl font-bold tracking-[-.04em] text-white shadow-[0_14px_34px_rgba(15,45,80,.2)]">
-                {initials(profileName)}
-                <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-[4px] border-white bg-emerald-400 dark:border-slate-900"/>
-              </div>
+              <EmployeeAvatar name={profileName} src={avatarSrc} size="lg" showStatus />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2"><h1 className="text-3xl font-semibold tracking-[-.04em] text-slate-950 dark:text-white">{profileName}</h1><span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.08em] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><CheckCircle2 className="h-3 w-3"/>Aktif</span></div>
                 <p className="mt-1.5 text-base font-medium text-slate-700 dark:text-slate-200">{position}</p>
@@ -369,7 +379,7 @@ export default function KullaniciPage() {
             <DetailRow icon={MapPin} label="Lokasyon" value={location}/>
             <DetailRow icon={FileText} label="Çalışan numarası" value={employeeCode}/>
           </div>
-          <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400"><strong className="font-semibold text-slate-700 dark:text-slate-200">Veri sahipliği:</strong> Kurumsal alanlar İK tarafından yönetilir. Kişisel iletişim ve tercih alanları için düzenleme akışı güvenli profil servisine bağlandığında bu ekrandan yönetilebilecek.</div>
+          <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400"><strong className="font-semibold text-slate-700 dark:text-slate-200">Veri sahipliği:</strong> Kurumsal alanlar ve profil fotoğrafı İK tarafından yönetilir. Kişisel iletişim ve tercih alanları için düzenleme akışı güvenli profil servisine bağlandığında bu ekrandan yönetilebilecek.</div>
         </section>
       </div>
     </div>
