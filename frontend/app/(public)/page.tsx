@@ -141,7 +141,7 @@ export default function LoginPage() {
             </h1>
 
             <p className="mt-6 max-w-[780px] text-[clamp(18px,1.65vw,25px)] leading-[1.38] tracking-[-0.025em] text-[#667394]">
-              Performans, yetenek, kariyer, halefiyet ve ücret kararlarını — ilk değerlendirmeden yönetim kararına kadar — tek bir kanıt zincirinde birleştirin.
+              Şirketinizdeki yeteneği görünür kılın, insan kaynağınızı adil, ölçülebilir ve veriye dayalı yönetin.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
