@@ -49,3 +49,9 @@ def test_manager_scope_returns_only_direct_reports(db: Session):
     rows = _scoped_employees(_principal("MANAGER", "mgr-1"), db)
     assert {row.id for row in rows} == {"emp-1", "emp-2"}
     assert "hr-1" not in {row.id for row in rows}
+
+
+def test_company_roles_keep_tenant_scope(db: Session):
+    for role in ("CEO", "IK", "HR_ADMIN"):
+        rows = _scoped_employees(_principal(role, "mgr-1"), db)
+        assert {row.id for row in rows} == {"mgr-1", "emp-1", "emp-2", "hr-1"}
