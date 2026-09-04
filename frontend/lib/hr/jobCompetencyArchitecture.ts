@@ -1,14 +1,15 @@
 /**
  * FutureHR Role Competency Architecture — FHR-COMP-JOB-2.1
  *
- * 178 canonical roles have explicit, individually reviewed target profiles.
- * Family models are used for weighting/evidence metadata only; they no longer generate
- * canonical target scores. Unknown/custom company titles may fall back to comparable roles.
+ * 178 canonical roles keep their individually reviewed competency shape and criticality,
+ * while L1-L5 target levels are centrally recalibrated to realistic career-stage expectations.
+ * Unknown/custom company titles may fall back to comparable roles and use the same calibration.
  */
 import { CURATED_JOB_PROFILES, CURATED_ROLE_COUNT } from "./jobCompetencyCatalogV21";
 import { resolveCanonicalPositionTitle, type PositionAliasResolution } from "./jobPositionAliases";
 
 export const JOB_COMPETENCY_MODEL_VERSION = "FHR-COMP-JOB-2.1" as const;
+export const ROLE_TARGET_CALIBRATION_VERSION = "FHR-COMP-CAL-1.0" as const;
 export const RESILIENCE_LABEL = "Dayanıklılık & Stres Yönetimi" as const;
 export const LEGACY_STRATEGY_LABEL = "Stratejik Bakış" as const;
 
@@ -30,6 +31,26 @@ export type CompetencyProfile = Record<FutureHRCompetency, number>;
 export type CompetencyWeights = Record<FutureHRCompetency, number>;
 export type EvidenceConfidence = "A" | "B" | "C";
 export type EvidenceLevel = "L1" | "L2" | "L3" | "L4" | "L5" | "L6" | "L7";
+
+export interface RoleTargetCalibrationRule {
+  averageBand: readonly [number, number];
+  targetMean: number;
+  hardMin: number;
+  hardMax: number;
+}
+
+/**
+ * Average target bands describe a realistic successful-role profile, not an "ideal person".
+ * Hard limits leave room for genuinely critical competencies while preventing junior roles
+ * from inheriting executive-level expectations. L6-L7 remain on their curated executive scale.
+ */
+export const ROLE_TARGET_CALIBRATION: Partial<Record<EvidenceLevel, RoleTargetCalibrationRule>> = {
+  L1: { averageBand: [3.0, 3.5], targetMean: 3.35, hardMin: 2.8, hardMax: 3.9 },
+  L2: { averageBand: [3.3, 3.8], targetMean: 3.55, hardMin: 3.0, hardMax: 4.1 },
+  L3: { averageBand: [3.6, 4.1], targetMean: 3.85, hardMin: 3.3, hardMax: 4.3 },
+  L4: { averageBand: [3.8, 4.3], targetMean: 4.05, hardMin: 3.5, hardMax: 4.5 },
+  L5: { averageBand: [4.0, 4.5], targetMean: 4.25, hardMin: 3.7, hardMax: 4.6 },
+};
 
 export interface JobProfileMetadata {
   modelVersion: typeof JOB_COMPETENCY_MODEL_VERSION;
@@ -115,6 +136,31 @@ function inferLevel(role:string):EvidenceLevel{
   return "L1";
 }
 
+function roundOne(value:number){return Math.round(value*10)/10;}
+
+/**
+ * Re-centers the reviewed competency shape on a realistic level mean. Relative strengths stay
+ * visible, family-critical competencies keep a modest premium, and only L1-L5 are adjusted.
+ */
+export function calibrateJobCompetencyProfile(role:string,profile:Record<string,number>):CompetencyProfile{
+  const source={} as CompetencyProfile;
+  FUTUREHR_COMPETENCIES.forEach(c=>{source[c]=Number(profile?.[c]??3.5);});
+  const level=inferLevel(role);
+  const rule=ROLE_TARGET_CALIBRATION[level];
+  if(!rule) return source;
+
+  const rawMean=FUTUREHR_COMPETENCIES.reduce((sum,c)=>sum+source[c],0)/FUTUREHR_COMPETENCIES.length;
+  const familyBase=FAMILY_EVIDENCE[inferFamilyKey(role)].baseWeights;
+  const out={} as CompetencyProfile;
+  FUTUREHR_COMPETENCIES.forEach(c=>{
+    const roleShape=(source[c]-rawMean)*0.55;
+    const familyCriticality=(Number(familyBase[c]||10)-10)*0.015;
+    const calibrated=rule.targetMean+roleShape+familyCriticality;
+    out[c]=roundOne(Math.max(rule.hardMin,Math.min(rule.hardMax,calibrated)));
+  });
+  return out;
+}
+
 function confidence(role:string,family:FamilyKey):EvidenceConfidence{
   if(family==="tso") return /muhasebe servis|bilgi işlem servis|bakım onarım|makam şoförü|makam güvenlik/.test(text(role))?"B":"C";
   if(family==="general") return "C";
@@ -131,13 +177,15 @@ function normalizeWeights(raw:CompetencyWeights):CompetencyWeights{
   return out;
 }
 
-/** Weighting uses occupational-family importance plus the explicit target's role-criticality signal. */
+/** Weighting uses occupational-family importance plus each role's relative criticality signal. */
 function buildWeights(role:string,profile:Record<string,number>):CompetencyWeights{
   const base=FAMILY_EVIDENCE[inferFamilyKey(role)].baseWeights;
+  const values=FUTUREHR_COMPETENCIES.map(c=>Number(profile[c]||4));
+  const profileMean=values.reduce((sum,value)=>sum+value,0)/values.length;
   const raw={} as CompetencyWeights;
   FUTUREHR_COMPETENCIES.forEach(c=>{
-    const target=Number(profile[c]||4);
-    const criticalityBoost=Math.max(-2,Math.min(5,(target-4.0)*5));
+    const target=Number(profile[c]||profileMean);
+    const criticalityBoost=Math.max(-2,Math.min(5,(target-profileMean)*5));
     raw[c]=Math.max(1,Number(base[c]||1)+criticalityBoost);
   });
   return normalizeWeights(raw);
@@ -150,16 +198,22 @@ export function resolveBenchmarkPosition(position:string):PositionAliasResolutio
   return resolveCanonicalPositionTitle(position,CANONICAL_JOB_TITLES);
 }
 
+export const CALIBRATED_JOB_PROFILES:Record<string,CompetencyProfile>=Object.fromEntries(
+  Object.entries(CURATED_JOB_PROFILES).map(([role,profile])=>[role,calibrateJobCompetencyProfile(role,profile)])
+);
+
 export const JOB_PROFILE_METADATA:Record<string,JobProfileMetadata>=Object.fromEntries(
   CANONICAL_JOB_TITLES.map(role=>{
     const family=inferFamilyKey(role), f=FAMILY_EVIDENCE[family];
+    const level=inferLevel(role);
+    const calibrated=Boolean(ROLE_TARGET_CALIBRATION[level]);
     return [role,{
       modelVersion:JOB_COMPETENCY_MODEL_VERSION,
       family:f.label,
-      level:inferLevel(role),
+      level,
       confidence:confidence(role,family),
       evidence:f.evidence,
-      rationale:`${f.rationale} Bu kanonik rolün 10 hedef puanı FHR-COMP-JOB-2.1 kapsamında rol bazında açıkça gözden geçirilmiş ve sabitlenmiştir.`,
+      rationale:`${f.rationale} ${calibrated?`FHR-COMP-CAL-1.0 ile ${level} kariyer seviyesine göre gerçekçi hedef banda yeniden merkezlenir; rolün yetkinlik önem sırası korunur.`:"Üst yönetim profili mevcut küratörlü hedef ölçeğini korur."}`,
       status:"curated-v2.1",
       smeValidationRecommended:true,
     } satisfies JobProfileMetadata];
@@ -167,16 +221,16 @@ export const JOB_PROFILE_METADATA:Record<string,JobProfileMetadata>=Object.fromE
 );
 
 export const JOB_PROFILE_WEIGHTS:Record<string,CompetencyWeights>=Object.fromEntries(
-  CANONICAL_JOB_TITLES.map(role=>[role,buildWeights(role,CURATED_JOB_PROFILES[role])])
+  CANONICAL_JOB_TITLES.map(role=>[role,buildWeights(role,CALIBRATED_JOB_PROFILES[role])])
 );
 
-function normalizeLegacyFallback(profile:Record<string,number>):CompetencyProfile{
-  const out={} as CompetencyProfile;
+function normalizeLegacyFallback(role:string,profile:Record<string,number>):CompetencyProfile{
+  const normalized={} as CompetencyProfile;
   FUTUREHR_COMPETENCIES.forEach(c=>{
     // Old "Stratejik Bakış" must never be interpreted as resilience evidence.
-    out[c]=c===RESILIENCE_LABEL?3.5:Number(profile?.[c]??3.5);
+    normalized[c]=c===RESILIENCE_LABEL?3.5:Number(profile?.[c]??3.5);
   });
-  return out;
+  return calibrateJobCompetencyProfile(role,normalized);
 }
 
 function addLegacyAlias(profile:Record<string,number>){
@@ -185,13 +239,13 @@ function addLegacyAlias(profile:Record<string,number>){
 }
 
 /**
- * The canonical 178 roles always use the explicit curated catalog. Legacy data exists only
- * so unknown historical/custom titles do not crash before a company-specific role is mapped.
+ * Canonical roles use their reviewed competency shape plus the central L1-L5 calibration.
+ * Legacy/custom roles use the same level calibration so fallback profiles remain comparable.
  */
 export function buildJobProfilesV2(legacyProfiles:Record<string,Record<string,number>>):Record<string,Record<string,number>>{
   const result:Record<string,Record<string,number>>={};
-  for(const [role,profile] of Object.entries(CURATED_JOB_PROFILES)) result[role]=addLegacyAlias({...profile});
-  for(const [role,profile] of Object.entries(legacyProfiles||{})) if(!result[role]) result[role]=addLegacyAlias({...normalizeLegacyFallback(profile)});
+  for(const [role,profile] of Object.entries(CALIBRATED_JOB_PROFILES)) result[role]=addLegacyAlias({...profile});
+  for(const [role,profile] of Object.entries(legacyProfiles||{})) if(!result[role]) result[role]=addLegacyAlias({...normalizeLegacyFallback(role,profile)});
   return result;
 }
 
@@ -204,7 +258,7 @@ export function getJobProfileEvidence(position:string):JobProfileMetadata{
     level:inferLevel(position),
     confidence:"C",
     evidence:[P],
-    rationale:"Kanonik FutureHR rolüyle eşleşmedi. Aile/seviye fallback yalnız geçici karar desteğidir; şirket iş analizi ve SME eşleştirmesi gerekir.",
+    rationale:"Kanonik FutureHR rolüyle eşleşmedi. Aile/seviye fallback geçici karar desteğidir ve L1-L5 için aynı gerçekçi seviye kalibrasyonu uygulanır; şirket iş analizi ve SME eşleştirmesi gerekir.",
     status:"legacy-fallback",
     smeValidationRecommended:true,
   };
