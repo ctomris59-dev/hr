@@ -189,6 +189,9 @@ aside[aria-label="Kullanıcı özeti"] a{
   font-size:11.5px!important;
   font-weight:650!important;
 }
+aside[aria-label="Kullanıcı özeti"] a > span{
+  color:#ffffff!important;
+}
 aside[aria-label="Kullanıcı özeti"] a:hover{
   border-color:rgba(255,255,255,.78)!important;
   background:rgba(255,255,255,.15)!important;
