@@ -15,6 +15,7 @@ export type SaaSEmployee = {
   employment_type?: string | null;
   location?: string | null;
   active: boolean;
+  has_avatar?: boolean;
 };
 
 export type EmployeeDirectoryRow = {
@@ -28,6 +29,9 @@ export type EmployeeDirectoryRow = {
   "İşe Giriş Tarihi"?: string;
   manager1Id?: string | null;
   manager2Id?: string | null;
+  hasAvatar?: boolean;
+  avatarUrl?: string | null;
+  avatarDataUrl?: string | null;
   [key: string]: any;
 };
 
@@ -38,6 +42,10 @@ async function jsonOrError(response: Response) {
     throw new Error(String(message));
   }
   return payload;
+}
+
+export function employeeAvatarUrl(id: string | number) {
+  return `/api/saas/employees/${encodeURIComponent(String(id))}/avatar`;
 }
 
 export async function fetchSaasEmployees(): Promise<EmployeeDirectoryRow[]> {
@@ -61,7 +69,15 @@ export async function fetchSaasEmployees(): Promise<EmployeeDirectoryRow[]> {
     location: employee.location,
     email: employee.email,
     active: employee.active,
+    hasAvatar: Boolean(employee.has_avatar),
+    avatarUrl: employee.has_avatar ? employeeAvatarUrl(employee.id) : null,
   }));
+}
+
+export async function fetchSaasCurrentEmployee(): Promise<SaaSEmployee | null> {
+  const response = await fetch("/api/saas/employees/me", { cache: "no-store", credentials: "same-origin" });
+  if (response.status === 404) return null;
+  return (await jsonOrError(response)) as SaaSEmployee;
 }
 
 export function employeeMutationPayload(input: {
@@ -106,6 +122,10 @@ export async function updateSaasEmployee(id: string, payload: Record<string, any
     body: JSON.stringify(payload),
   });
   return jsonOrError(response);
+}
+
+export async function updateSaasEmployeeAvatar(id: string, avatarDataUrl: string | null) {
+  return updateSaasEmployee(id, { avatar_data_url: avatarDataUrl });
 }
 
 export async function deactivateSaasEmployee(id: string) {
