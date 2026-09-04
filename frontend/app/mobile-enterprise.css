@@ -11,3 +11,10 @@
   button[aria-controls="futurehr-sidebar"]{z-index:100!important;}
   header[data-tour="topbar"]{padding-left:3.75rem;}
 }
+
+/* Final cascade guard for the dashboard profile CTA. This file loads last. */
+aside[aria-label="Kullanıcı özeti"] a[href="/kullanici"] > span{
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+}
