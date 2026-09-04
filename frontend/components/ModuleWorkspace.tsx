@@ -25,6 +25,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import OrganizationExcelExchange from "./hr/OrganizationExcelExchange";
 import ImportRecoveryPanel from "./hr/ImportRecoveryPanel";
 import PerformanceCycleBar from "./hr/PerformanceCycleBar";
@@ -83,6 +84,7 @@ function matches(pathname: string, paths: string[]) {
 }
 
 export default function ModuleWorkspace({ pathname, children }: { pathname: string; children: ReactNode }) {
+  const { currentUserRole } = useAuth();
   if (pathname === "/dashboard") return <>{children}</>;
   const config = findConfig(pathname);
   if (!config) return <>{children}</>;
@@ -94,9 +96,14 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
     "--module-soft": config.soft,
   } as CSSProperties;
 
-  const coreAnalytics = matches(pathname, ["/organizasyon", "/ise-alim", "/egitim", "/maas"]);
-  const visualBoard = matches(pathname, ["/kariyer", "/yetenek-matrisi"]);
-  const universalAnalytics = matches(pathname, [
+  // Company-wide visual analytics currently aggregate browser-side datasets. They are
+  // intentionally restricted to company-scoped roles. Managers, directors and employees
+  // use the native module views below, which already enforce SELF/direct-report scope.
+  // This prevents a scoped user from seeing tenant-wide totals, names or distributions.
+  const companyAnalyticsAllowed = currentUserRole === "ceo" || currentUserRole === "hr_admin";
+  const coreAnalytics = companyAnalyticsAllowed && matches(pathname, ["/organizasyon", "/ise-alim", "/egitim", "/maas"]);
+  const visualBoard = companyAnalyticsAllowed && matches(pathname, ["/kariyer", "/yetenek-matrisi"]);
+  const universalAnalytics = companyAnalyticsAllowed && matches(pathname, [
     "/degerlendirme", "/kalibrasyon", "/calisan-deneyimi", "/gelisim", "/gelisim-analitigi", "/yedekleme", "/izinler", "/rol-mimarisi", "/aday-testi", "/ekip-yonetimi",
   ]);
   const visualFirst = coreAnalytics || visualBoard || universalAnalytics;
@@ -128,7 +135,7 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
       {(pathname === "/maas" || pathname === "/yonetici/maas-talep") && <CompensationCycleBar />}
       {pathname === "/admin/veri-aktarimi" && <ImportRecoveryPanel />}
 
-      <div className="module-decision-stage"><ModuleDecisionSummary pathname={pathname} /></div>
+      {companyAnalyticsAllowed && <div className="module-decision-stage"><ModuleDecisionSummary pathname={pathname} /></div>}
       {coreAnalytics && <CoreAnalyticsBoard pathname={pathname} />}
       {visualBoard && <VisualModuleBoard pathname={pathname} />}
       {universalAnalytics && <UniversalAnalyticsBoard pathname={pathname} />}
@@ -136,10 +143,10 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
       <section className="module-detail-stage" aria-label={`${config.title} ayrıntılı işlemler`}>
         <header className="module-detail-stage-header">
           <div>
-            <span>{salaryCore ? "ÜCRET SEÇENEKLERİ" : "DAHA FAZLA AYRINTI"}</span>
-            <h2>{salaryCore ? "Ücret seçeneklerini karşılaştır" : "Kayıtlar ve işlemler"}</h2>
+            <span>{salaryCore ? "ÜCRET SEÇENEKLERİ" : companyAnalyticsAllowed ? "DAHA FAZLA AYRINTI" : "YETKİLİ KAPSAM"}</span>
+            <h2>{salaryCore ? "Ücret seçeneklerini karşılaştır" : companyAnalyticsAllowed ? "Kayıtlar ve işlemler" : "Kendi kayıtlarınız ve yetkili olduğunuz ekip"}</h2>
           </div>
-          <p>{salaryCore ? "Farklı ücret seçeneklerini ve bütçe etkisini karşılaştırın. Excel araçları aşağıdaki yardımcı bölümde bulunur." : "Günlük kullanımda önce yukarıdaki özetleri kullanın. Liste, form ve düzenleme araçlarını yalnız gerektiğinde açın."}</p>
+          <p>{salaryCore ? "Farklı ücret seçeneklerini ve bütçe etkisini karşılaştırın. Excel araçları aşağıdaki yardımcı bölümde bulunur." : companyAnalyticsAllowed ? "Günlük kullanımda önce yukarıdaki özetleri kullanın. Liste, form ve düzenleme araçlarını yalnız gerektiğinde açın." : "Bu görünüm yalnızca rolünüzün veri kapsamındaki kayıtları gösterir; şirket geneli analitikler bu rolde açılmaz."}</p>
         </header>
 
         {salaryCore ? (
