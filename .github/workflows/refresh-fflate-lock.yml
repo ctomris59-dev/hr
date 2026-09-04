@@ -41,13 +41,22 @@ jobs:
           fs.writeFileSync(path, JSON.stringify(lock, null, 2) + '\n');
           NODE
       - name: Install exact lockfile
-        run: npm ci --ignore-scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify fflate patched version
         run: |
           npm ls fflate
           node -e "const v=require('./node_modules/fflate/package.json').version; if (v !== '0.8.3') { console.error('Expected fflate 0.8.3, got '+v); process.exit(1) }"
-      - name: Verify audit
-        run: npm audit --audit-level=low
+      - name: Verify strict dependency audit
+        run: |
+          for attempt in 1 2 3 4 5; do
+            echo "npm audit attempt ${attempt}/5"
+            if timeout 90s npm audit --audit-level=low; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then sleep 15; fi
+          done
+          echo "npm audit did not complete successfully after 5 attempts"
+          exit 1
       - name: Commit verified lockfile
         working-directory: .
         run: |
