@@ -14,6 +14,8 @@ from core.security import create_access_token, hash_password
 from db.models import EmployeeModel, TenantModel, UserModel
 from main import app
 
+VALID_PNG_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z1gAAAABJRU5ErkJggg=="
+
 
 @pytest.fixture()
 def saas_client():
@@ -155,3 +157,62 @@ def test_employee_cannot_be_own_manager(saas_client):
     assert payload["success"] is False
     assert payload["error_code"] == "HTTP_400"
     assert "itself" in payload["error"]
+
+
+def test_executive_can_store_and_employee_can_read_own_avatar(saas_client):
+    client, token = saas_client
+    ceo_headers = auth(token("u-ceo-1", "tenant-1", "CEO"))
+    employee_headers = auth(token("u-emp-1", "tenant-1", "PERSONEL"))
+
+    updated = client.patch(
+        "/api/v1/employees/e-dir-1",
+        headers=ceo_headers,
+        json={"avatar_data_url": VALID_PNG_DATA_URL},
+    )
+    assert updated.status_code == 200
+    payload = updated.json()
+    assert payload["has_avatar"] is True
+    assert "avatar_data_url" not in payload
+    assert "metadata_json" not in payload
+
+    avatar = client.get("/api/v1/employees/e-dir-1/avatar", headers=employee_headers)
+    assert avatar.status_code == 200
+    assert avatar.headers["content-type"].startswith("image/png")
+    assert avatar.content.startswith(b"\x89PNG\r\n\x1a\n")
+    assert avatar.headers["x-content-type-options"] == "nosniff"
+
+    cleared = client.patch(
+        "/api/v1/employees/e-dir-1",
+        headers=ceo_headers,
+        json={"avatar_data_url": None},
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["has_avatar"] is False
+    assert client.get("/api/v1/employees/e-dir-1/avatar", headers=employee_headers).status_code == 404
+
+
+def test_manager_avatar_scope_is_limited_to_team(saas_client):
+    client, token = saas_client
+    ceo_headers = auth(token("u-ceo-1", "tenant-1", "CEO"))
+    manager_headers = auth(token("u-mgr-1", "tenant-1", "MANAGER"))
+
+    for employee_id in ("e-dir-1", "e-unr-1"):
+        response = client.patch(
+            f"/api/v1/employees/{employee_id}",
+            headers=ceo_headers,
+            json={"avatar_data_url": VALID_PNG_DATA_URL},
+        )
+        assert response.status_code == 200
+
+    assert client.get("/api/v1/employees/e-dir-1/avatar", headers=manager_headers).status_code == 200
+    assert client.get("/api/v1/employees/e-unr-1/avatar", headers=manager_headers).status_code == 403
+
+
+def test_avatar_rejects_mismatched_image_signature(saas_client):
+    client, token = saas_client
+    response = client.patch(
+        "/api/v1/employees/e-dir-1",
+        headers=auth(token("u-ceo-1", "tenant-1", "CEO")),
+        json={"avatar_data_url": "data:image/png;base64,SGVsbG8="},
+    )
+    assert response.status_code == 422
