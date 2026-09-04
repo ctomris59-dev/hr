@@ -114,8 +114,8 @@ export default function LoginPage() {
             <div className="select-none text-[clamp(42px,4vw,60px)] font-bold lowercase leading-[0.88] tracking-[-0.07em] text-[#2942d6]">
               future hr
             </div>
-            <p className="mt-2 text-[12px] font-medium tracking-[-0.01em] text-slate-500 sm:text-[13px]">
-              potansiyeli performansa dönüştürün
+            <p className="mt-2 text-[12px] font-semibold tracking-[-0.01em] text-slate-600 sm:text-[13px]">
+              People Intelligence System
             </p>
           </div>
 
@@ -127,11 +127,6 @@ export default function LoginPage() {
 
         <div className="grid h-[calc(100%-78px)] grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)] xl:grid-cols-[minmax(0,1.28fr)_minmax(390px,0.72fr)]">
           <section className="max-w-[850px] self-center pb-[2vh]">
-            <div className="mb-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              FutureHR V1 · People Decision Infrastructure
-            </div>
-
             <h1 className="text-[clamp(42px,5.1vw,76px)] font-semibold leading-[0.98] tracking-[-0.055em] text-slate-950">
               İnsan kararlarını
               <br />
