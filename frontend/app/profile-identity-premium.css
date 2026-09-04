@@ -185,11 +185,16 @@ aside[aria-label="Kullanıcı özeti"] a{
   min-height:38px!important;
   border-color:rgba(226,232,240,.52)!important;
   background:rgba(255,255,255,.10)!important;
-  color:#f8fafc!important;
+  color:#ffffff!important;
   font-size:11.5px!important;
   font-weight:650!important;
 }
-aside[aria-label="Kullanıcı özeti"] a > span{
+aside[aria-label="Kullanıcı özeti"] a,
+aside[aria-label="Kullanıcı özeti"] a:visited,
+aside[aria-label="Kullanıcı özeti"] a:hover,
+aside[aria-label="Kullanıcı özeti"] a:focus-visible,
+aside[aria-label="Kullanıcı özeti"] a span,
+aside[aria-label="Kullanıcı özeti"] a span *{
   color:#ffffff!important;
 }
 aside[aria-label="Kullanıcı özeti"] a:hover{
