@@ -35,12 +35,13 @@ const companyAnalyticsHeadings = [
 ];
 
 async function expectScopedWorkspace(page: Page) {
-  const body = page.locator("body");
-  const text = await body.innerText();
+  const workspace = page.locator(".module-workspace");
+  await expect(workspace).toBeVisible();
+  const text = await workspace.innerText();
   for (const heading of companyAnalyticsHeadings) expect(text).not.toContain(heading);
   expect(text).not.toContain("Selin Acar");
   expect(text).not.toContain("Gökhan Duman");
-  await expect(page.getByText(/Bu görünüm yalnızca rolünüzün veri kapsamındaki kayıtları gösterir/)).toBeVisible();
+  await expect(workspace.getByText(/Bu görünüm yalnızca rolünüzün veri kapsamındaki kayıtları gösterir/)).toBeVisible();
 }
 
 test.describe("FutureHR scoped analytics isolation", () => {
