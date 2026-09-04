@@ -13,6 +13,7 @@ import {
   FileText,
   Plus,
   Settings2,
+  ShieldCheck,
   Target,
   Users,
 } from "lucide-react";
@@ -51,6 +52,29 @@ function firstName(value: string | null) {
   return String(value || "").trim().split(/\s+/)[0] || "";
 }
 
+function initials(value: string) {
+  return String(value || "FH")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "FH";
+}
+
+function formatLastLogin(value?: string) {
+  if (!value) return "Bu oturum";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Bu oturum";
+  const now = new Date();
+  const time = date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+  if (date.toDateString() === now.toDateString()) return `Bugün ${time}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return `Dün ${time}`;
+  return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
+}
+
 export default function ZeroTrainingDashboard() {
   const { currentUserRole, userName } = useAuth();
   const { orgData, history360, loading } = useData();
@@ -76,6 +100,7 @@ export default function ZeroTrainingDashboard() {
       training: getStorageData<any[]>(STORAGE_KEYS.TRAINING_ASSIGNMENTS, []),
       development: getStorageData<any[]>(STORAGE_KEYS.DEVELOPMENT_PLANS, []),
       notifications: getStorageData<any[]>(STORAGE_KEYS.NOTIFICATIONS, []),
+      currentUser: getStorageData<any>(STORAGE_KEYS.CURRENT_USER, null),
     };
   }, [revision]);
 
@@ -123,12 +148,16 @@ export default function ZeroTrainingDashboard() {
 
   const needsSetup = (orgData || []).length === 0;
   const attentionCount = tasks.reduce((sum, task) => sum + task.count, 0) + unreadNotifications;
+  const profileName = String(snapshot.currentUser?.name || userName || "FutureHR Kullanıcısı").trim();
+  const profileTitle = String(snapshot.currentUser?.position || snapshot.currentUser?.title || (role ? roleLabel(role) : "Kullanıcı"));
+  const profileAccessLabel = role === "ceo" ? "CEO" : role === "hr_admin" ? "İK" : role === "director" ? "Direktör" : role === "manager" ? "Yönetici" : "Çalışan";
+  const profileLastLogin = formatLastLogin(snapshot.currentUser?.lastLoginAt || snapshot.currentUser?.last_login_at || snapshot.currentUser?.lastLogin || snapshot.currentUser?.loginAt);
 
   return (
     <main className="mx-auto max-w-[1560px] space-y-5 pb-8" data-testid="zero-training-dashboard">
       <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col gap-5 p-6 md:p-8 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-3xl">
+        <div className="grid gap-5 p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-stretch">
+          <div className="flex min-w-0 flex-col justify-center">
             <p className="text-[11px] font-bold uppercase tracking-[.14em] text-teal-700 dark:text-teal-300">Ana Sayfa</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-[-.035em] text-slate-950 dark:text-white">{firstName(userName) ? `Merhaba ${firstName(userName)}` : "Yönetici Özeti"}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -138,12 +167,41 @@ export default function ZeroTrainingDashboard() {
                   ? `Bugün ilgilenmeniz gereken ${attentionCount} açık işlem var. Önce aşağıdaki bekleyen işleri tamamlayabilirsiniz.`
                   : "Bugün bekleyen kritik bir işlem görünmüyor. Hızlı işlemlerden yeni bir çalışma başlatabilirsiniz."}
             </p>
-            {role && <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600"/>{roleLabel(role)} görünümü</div>}
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              {role && <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600"/>{roleLabel(role)} görünümü</div>}
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><Users className="h-3.5 w-3.5"/>{orgData.length} çalışan</div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><Clock3 className="h-3.5 w-3.5"/>{attentionCount} açık iş</div>
+            </div>
           </div>
-          <div className="grid min-w-[260px] grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/40"><p className="text-[10px] font-semibold text-slate-500">Açık işler</p><strong className="mt-1 block text-2xl text-slate-950 dark:text-white">{attentionCount}</strong></div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/40"><p className="text-[10px] font-semibold text-slate-500">Çalışan</p><strong className="mt-1 block text-2xl text-slate-950 dark:text-white">{orgData.length}</strong></div>
-          </div>
+
+          <aside className="relative overflow-hidden rounded-[22px] border border-[#26466b] bg-[linear-gradient(145deg,#193a63_0%,#112d4f_58%,#0d223c_100%)] p-4 text-white shadow-[0_16px_34px_rgba(15,38,68,.18)]" aria-label="Kullanıcı özeti">
+            <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-sky-300/10 blur-2xl"/>
+            <div className="relative flex items-start gap-3">
+              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-sky-100/80 bg-white/10 text-sm font-bold tracking-[.04em] text-white shadow-inner">
+                {initials(profileName)}
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#143253] bg-emerald-400"/>
+              </div>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold tracking-[-.02em] text-white">{profileName}</p>
+                    <p className="mt-0.5 truncate text-[11px] font-medium text-slate-300">{profileTitle}</p>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-400/15 px-2 py-1 text-[8px] font-bold uppercase tracking-[.08em] text-emerald-300">Aktif</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative mt-4 grid grid-cols-3 divide-x divide-white/10 rounded-xl border border-white/10 bg-white/[0.055]">
+              <div className="min-w-0 px-2.5 py-2.5"><span className="block text-[8px] font-semibold uppercase tracking-[.08em] text-slate-400">Yetki</span><strong className="mt-1 block truncate text-[10.5px] font-semibold text-white">{profileAccessLabel}</strong></div>
+              <div className="min-w-0 px-2.5 py-2.5"><span className="block text-[8px] font-semibold uppercase tracking-[.08em] text-slate-400">Son giriş</span><strong className="mt-1 block truncate text-[10px] font-semibold text-white" title={profileLastLogin}>{profileLastLogin}</strong></div>
+              <div className="min-w-0 px-2.5 py-2.5"><span className="block text-[8px] font-semibold uppercase tracking-[.08em] text-slate-400">Açık işler</span><strong className="mt-1 block text-[10.5px] font-semibold text-white">{attentionCount}</strong></div>
+            </div>
+
+            <Link href="/kullanici" className="relative mt-3 flex h-9 items-center justify-between rounded-xl border border-white/10 bg-white/[0.07] px-3 text-[10.5px] font-semibold text-slate-100 transition hover:bg-white/[0.11]">
+              <span className="flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5 text-sky-200"/>Profilimi görüntüle</span><ArrowRight className="h-3.5 w-3.5 text-slate-300"/>
+            </Link>
+          </aside>
         </div>
       </section>
 
