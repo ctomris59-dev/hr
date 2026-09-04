@@ -4,7 +4,7 @@ const DEFAULT_ROUTE_BY_ROLE = {
   ceo: "/dashboard",
   hr_admin: "/dashboard",
   manager: "/dashboard",
-  employee: "/kariyer",
+  employee: "/kullanici",
 } as const;
 
 async function openDemo(page: Page) {
@@ -123,8 +123,9 @@ test.describe("FutureHR V1 zero-training quality gate", () => {
   test("employee persona only sees self-service scope", async ({ page }) => {
     await openDemo(page);
     await switchPersona(page, "employee");
-    await expect(page).toHaveURL(/\/kariyer/);
-    await expect(page.getByRole("link", { name: /Kariyer Hazırlığı/ }).first()).toBeVisible();
+    await expect(page).toHaveURL(/\/kullanici/);
+    await expect(page.getByTestId("personal-workspace")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Benim Alanım", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Ücret", exact: true })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Kritik Roller & Yedekler/ })).toHaveCount(0);
     await page.goto("/maas");
