@@ -128,6 +128,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
   const menuItems=useMemo(()=>{
     const items:Array<{key:string;href:string;label:string;section:string;icon:typeof LayoutDashboard;routes:string[];familyId?:NavigationFamilyId}>=[];
     if(canAccessRoute(currentUserRole,"/dashboard"))items.push({key:"dashboard",href:"/dashboard",label:"Ana Sayfa",section:"Günlük İşler",icon:LayoutDashboard,routes:["/dashboard"]});
+    if(canAccessRoute(currentUserRole,"/kullanici"))items.push({key:"kullanici",href:"/kullanici",label:"Benim Alanım",section:"Kişisel",icon:CircleUserRound,routes:["/kullanici"]});
     NAVIGATION_FAMILIES.forEach((family)=>{
       const accessible=family.items.filter(item=>canAccessRoute(currentUserRole,item.href));
       if(accessible.length===0)return;
@@ -190,7 +191,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
             const isExpandable=childItems.length>1;
             const isExpanded=isExpandable&&expandedMenuKey===item.key;
             const showChildren=isExpanded;
-            const tone=item.familyId?familyTone[item.familyId]||"slate":item.key==="dashboard"?"dashboard":"slate";
+            const tone=item.familyId?familyTone[item.familyId]||"slate":item.key==="dashboard"?"dashboard":item.key==="kullanici"?"teal":"slate";
             const handlePrimaryClick=(event:React.MouseEvent<HTMLAnchorElement>)=>{
               if(isExpandable){
                 event.preventDefault();
@@ -226,7 +227,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
 
         <div className="futurehr-sidebar-footer flex-shrink-0 p-3">
           {user&&<div className="futurehr-profile-card futurehr-identity-zone mb-2.5 overflow-hidden rounded-[20px] border" data-profile-tone={profileTone}>
-            <div className="futurehr-profile-main relative p-3.5">
+            <Link href="/kullanici" className="futurehr-profile-main relative block p-3.5" aria-label="Benim Alanım sayfasını aç">
               <div className="futurehr-profile-glow" aria-hidden="true"/>
               <div className="relative flex items-center gap-3">
                 <div className="futurehr-profile-avatar relative flex h-[50px] w-[50px] flex-shrink-0 items-center justify-center rounded-[15px] text-[13px] font-semibold tracking-[.04em] text-white">
@@ -238,7 +239,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
                   <p className="mt-0.5 truncate text-[10.5px] font-medium leading-4 text-slate-400">{userRole}</p>
                 </div>
               </div>
-            </div>
+            </Link>
             <div className="futurehr-profile-context relative flex items-center gap-2.5 border-t border-white/[0.07] px-3.5 py-2.5">
               <span className="futurehr-profile-context-icon flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[11px] border"><Crown className="h-4 w-4" strokeWidth={1.8}/></span>
               <div className="min-w-0 flex-1"><p className="truncate text-[9px] font-bold uppercase tracking-[.12em]">{profileContextTitle}</p><p className="mt-0.5 truncate text-[9.5px] text-slate-500">{profileContextSubtitle}</p></div>
