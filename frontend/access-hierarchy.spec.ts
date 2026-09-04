@@ -51,4 +51,27 @@ test.describe("company access hierarchy", () => {
     await expect(page.getByLabel("Sağlık belgesi veri kapsamı")).toHaveValue("SELF");
     await expect(page.getByLabel("Disiplin / savunma belgesi veri kapsamı")).toHaveValue("NONE");
   });
+
+  test("Benim Alanım is the employee home and remains available to managers", async ({ page }) => {
+    await openDemo(page);
+
+    const persona = page.getByLabel("Demo persona seçimi");
+    await persona.selectOption("employee");
+    await page.waitForURL(/\/kullanici$/);
+    await expect(page.getByTestId("personal-workspace")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Pelin Yılmaz" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Benim Alanım" })).toBeVisible();
+    await expect(page.getByText("Burası size ait.", { exact: true })).toBeVisible();
+
+    await page.goto("/dashboard");
+    await page.waitForURL(/\/kullanici$/);
+    await expect(page.getByTestId("personal-workspace")).toBeVisible();
+
+    await page.getByLabel("Demo persona seçimi").selectOption("manager");
+    await page.waitForURL(/\/dashboard$/);
+    await page.getByRole("link", { name: "Benim Alanım" }).click();
+    await page.waitForURL(/\/kullanici$/);
+    await expect(page.getByTestId("personal-workspace")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Hakan Çetin" })).toBeVisible();
+  });
 });
