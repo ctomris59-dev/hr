@@ -83,6 +83,14 @@ function matches(pathname: string, paths: string[]) {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
+function revealOperations(targetId: string) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  const details = target.querySelector<HTMLDetailsElement>("details.visual-first-native-shell");
+  if (details) details.open = true;
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export default function ModuleWorkspace({ pathname, children }: { pathname: string; children: ReactNode }) {
   const { currentUserRole } = useAuth();
   if (pathname === "/dashboard") return <>{children}</>;
@@ -108,6 +116,8 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
   ]);
   const visualFirst = coreAnalytics || visualBoard || universalAnalytics;
   const salaryCore = pathname === "/maas";
+  const quickEntryVisible = visualFirst || salaryCore;
+  const operationsTargetId = `module-operations-${config.id}`;
   const organizationTools = pathname === "/organizasyon" ? <><ImportRecoveryPanel /><div className="mb-4"><OrganizationExcelExchange /></div></> : null;
   const salaryTools = salaryCore ? <div className="mb-4"><SalaryExcelExchange /></div> : null;
 
@@ -129,6 +139,23 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
         </div>
       </section>
 
+      {quickEntryVisible && (
+        <section className="mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900" aria-label={`${config.title} hızlı kayıt ve veri işlemleri`}>
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg" style={{ background: config.soft, color: config.accent }}><FileInput className="h-4 w-4" strokeWidth={1.8} /></span>
+            <div className="min-w-0">
+              <span className="block text-[9px] font-extrabold uppercase tracking-[0.14em]" style={{ color: config.accent }}>HIZLI İŞLEM</span>
+              <strong className="mt-0.5 block text-sm font-semibold text-slate-900 dark:text-white">{salaryCore ? "Ücret kayıtları ve veri girişi" : "Kayıt / veri girişi"}</strong>
+              <p className="mt-0.5 text-[11px] leading-4 text-slate-500 dark:text-slate-400">{salaryCore ? "Ücret kayıtlarını incelemek, veri girmek veya düzenlemek için doğrudan işlem alanına geçin." : "Yeni kayıt eklemek, mevcut veriyi düzenlemek, filtrelemek veya varsa Excel araçlarına ulaşmak için buradan başlayın."}</p>
+            </div>
+          </div>
+          <button type="button" aria-controls={operationsTargetId} onClick={() => revealOperations(operationsTargetId)} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-offset-2" style={{ background: `linear-gradient(135deg,${config.accent},${config.accent2})` }}>
+            <FileInput className="h-4 w-4" strokeWidth={1.9} />
+            {salaryCore ? "Ücret işlemlerine git" : "İşlem alanını aç"}
+          </button>
+        </section>
+      )}
+
       <div className="module-family-stage"><ModuleFamilyNavigator pathname={pathname} /></div>
       <AgentActionHandoff pathname={pathname} />
       {(pathname === "/degerlendirme" || pathname === "/kalibrasyon") && <PerformanceCycleBar />}
@@ -140,26 +167,26 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
       {visualBoard && <VisualModuleBoard pathname={pathname} />}
       {universalAnalytics && <UniversalAnalyticsBoard pathname={pathname} />}
 
-      <section className="module-detail-stage" aria-label={`${config.title} ayrıntılı işlemler`}>
+      <section id={operationsTargetId} className="module-detail-stage scroll-mt-24" aria-label={`${config.title} ayrıntılı işlemler`}>
         <header className="module-detail-stage-header">
           <div>
-            <span>{salaryCore ? "ÜCRET SEÇENEKLERİ" : companyAnalyticsAllowed ? "DAHA FAZLA AYRINTI" : "YETKİLİ KAPSAM"}</span>
-            <h2>{salaryCore ? "Ücret seçeneklerini karşılaştır" : companyAnalyticsAllowed ? "Kayıtlar ve işlemler" : "Kendi kayıtlarınız ve yetkili olduğunuz ekip"}</h2>
+            <span>{salaryCore ? "ÜCRET SEÇENEKLERİ" : companyAnalyticsAllowed ? "KAYIT & VERİ İŞLEMLERİ" : "YETKİLİ KAPSAM"}</span>
+            <h2>{salaryCore ? "Ücret seçeneklerini karşılaştır" : companyAnalyticsAllowed ? "Kayıtlar, formlar ve düzenleme" : "Kendi kayıtlarınız ve yetkili olduğunuz ekip"}</h2>
           </div>
-          <p>{salaryCore ? "Farklı ücret seçeneklerini ve bütçe etkisini karşılaştırın. Excel araçları aşağıdaki yardımcı bölümde bulunur." : companyAnalyticsAllowed ? "Günlük kullanımda önce yukarıdaki özetleri kullanın. Liste, form ve düzenleme araçlarını yalnız gerektiğinde açın." : "Bu görünüm yalnızca rolünüzün veri kapsamındaki kayıtları gösterir; şirket geneli analitikler bu rolde açılmaz."}</p>
+          <p>{salaryCore ? "Farklı ücret seçeneklerini ve bütçe etkisini karşılaştırın. Excel araçları aşağıdaki yardımcı bölümde bulunur." : companyAnalyticsAllowed ? "Yeni kayıt ekleme, mevcut kayıtları düzenleme, filtreleme ve toplu veri işlemleri bu alanda bulunur." : "Bu görünüm yalnızca rolünüzün veri kapsamındaki kayıtları gösterir; şirket geneli analitikler bu rolde açılmaz."}</p>
         </header>
 
         {salaryCore ? (
           <>
             <div className="module-native-content visualized-native-content">{children}</div>
             <details className="visual-first-native-shell mt-4">
-              <summary><div className="vf-summary-copy"><span>YARDIMCI ARAÇ</span><strong>Excel ile veri al / ver</strong><small>Yalnız toplu veri işlemi yapmanız gerektiğinde kullanın.</small></div></summary>
+              <summary><div className="vf-summary-copy"><span>YARDIMCI ARAÇ</span><strong>Excel ile veri al / ver</strong><small>Toplu veri işlemi yapmanız gerektiğinde kullanın.</small></div></summary>
               <div className="module-native-content visualized-native-content">{salaryTools}</div>
             </details>
           </>
         ) : visualFirst ? (
           <details className="visual-first-native-shell">
-            <summary><div className="vf-summary-copy"><span>AYRINTILAR</span><strong>Liste, form ve düzenleme araçlarını göster</strong><small>Filtreleme, Excel ve tek tek kayıt işlemleri burada bulunur.</small></div></summary>
+            <summary><div className="vf-summary-copy"><span>KAYIT / VERİ GİRİŞİ</span><strong>Kayıt, form ve düzenleme araçlarını aç</strong><small>Yeni kayıt, düzenleme, filtreleme ve varsa Excel işlemleri burada bulunur.</small></div></summary>
             <div className="module-native-content visualized-native-content">{organizationTools}{children}</div>
           </details>
         ) : <div className="module-native-content visualized-native-content">{children}</div>}
