@@ -177,7 +177,7 @@ export default function ClientLayout({children}:{children:React.ReactNode}){
         <div className="futurehr-sidebar-brand flex h-[88px] flex-shrink-0 items-center px-5">
           <div className="min-w-0">
             <Image src="/futurehr-brand-dark.svg" alt="FutureHR" width={220} height={56} className="h-[38px] w-auto object-contain object-left" priority/>
-            <div className="mt-1 flex items-center gap-2 pl-0.5"><span className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-[0_0_0_4px_rgba(94,234,212,.07)]"/><p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">İnsan & İşgücü Platformu</p></div>
+            <div className="mt-1 flex items-center gap-2 pl-0.5"><span className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-[0_0_0_4px_rgba(94,234,212,.07)]"/><p className="text-[10px] font-extrabold tracking-[0.06em] text-slate-300">People Intelligence System</p></div>
           </div>
         </div>
 
