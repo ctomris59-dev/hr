@@ -27,8 +27,19 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Refresh fflate lock to patched release
-        run: npm update fflate --package-lock-only --ignore-scripts
+      - name: Patch fflate lock to 0.8.3
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'package-lock.json';
+          const lock = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const entry = lock.packages?.['node_modules/fflate'];
+          if (!entry) throw new Error('node_modules/fflate lock entry not found');
+          entry.version = '0.8.3';
+          entry.resolved = 'https://registry.npmjs.org/fflate/-/fflate-0.8.3.tgz';
+          entry.integrity = 'sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==';
+          fs.writeFileSync(path, JSON.stringify(lock, null, 2) + '\n');
+          NODE
       - name: Install exact lockfile
         run: npm ci --ignore-scripts
       - name: Verify fflate patched version
