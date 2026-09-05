@@ -58,12 +58,17 @@ export default function WelcomeWidget() {
   const mappedRole = mapToUserRole(String(user?.role || ""));
   const roleLabel = user ? ROLE_LABELS[mappedRole] : "";
   const scope = mappedRole === "ceo" || mappedRole === "hr_admin" ? "Tüm şirket" : mappedRole === "employee" ? "Kendi alanım" : user?.dept || user?.department || "Ekip";
+  const fullName = String(user?.name || "").trim();
+  const firstName = fullName.split(/\s+/)[0] || "";
 
   return (
     <div className="min-w-0 flex items-center gap-3">
       <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{greeting}{user?.name ? `, ${user.name}` : ""}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="min-w-0 truncate text-[13px] font-semibold text-slate-800 sm:text-sm dark:text-slate-100">
+            <span className="sm:hidden">{greeting}{firstName ? `, ${firstName}` : ""}</span>
+            <span className="hidden sm:inline">{greeting}{fullName ? `, ${fullName}` : ""}</span>
+          </p>
           {user && <span className="hidden rounded-md bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.08em] text-slate-500 sm:inline-flex dark:bg-slate-800 dark:text-slate-300">{roleLabel}</span>}
         </div>
         <p className="mt-0.5 hidden truncate text-[10px] text-slate-400 sm:block">{scope}</p>
