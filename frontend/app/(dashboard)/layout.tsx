@@ -4,6 +4,7 @@ import RoleGuard from "@/components/RoleGuard";
 import SaasStorageGate from "@/components/SaasStorageGate";
 import CustomerLanguageRuntime from "@/components/CustomerLanguageRuntime";
 import ProductCompletionLayer from "@/components/ProductCompletionLayer";
+import OnboardingExperience from "@/components/OnboardingExperience";
 import { hasSessionCookie, isSaasMode } from "@/lib/saasAuthServer";
 
 export default async function DashboardLayout({
@@ -22,6 +23,7 @@ export default async function DashboardLayout({
       <SaasStorageGate>
         <ClientLayout>
           <CustomerLanguageRuntime />
+          <OnboardingExperience />
           {children}
           <ProductCompletionLayer />
         </ClientLayout>

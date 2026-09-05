@@ -23,7 +23,7 @@ from db.recruitment_models import RecruitmentCandidateModel
 router = APIRouter(prefix="/api/v1/state", tags=["Product State SaaS"])
 HR_ROLES = {"CEO", "IK", "HR_ADMIN"}
 MANAGEMENT_ROLES = HR_ROLES | {"DIRECTOR", "MANAGER"}
-EMPLOYEE_NAMESPACES = {"assessments", "training_assignments", "career_profiles", "decision_actions"}
+EMPLOYEE_NAMESPACES = {"assessments", "training_assignments", "career_profiles", "decision_actions", "user_onboarding"}
 COMPANY_NAMESPACES = {"role_overrides", "security_pack", "onboarding_state"}
 ALLOWED_NAMESPACES = EMPLOYEE_NAMESPACES | COMPANY_NAMESPACES
 MANAGEMENT_WRITE_NAMESPACES = {"training_assignments", "decision_actions"}
@@ -118,6 +118,11 @@ def _visible_rows(namespace: str, principal: Principal, db: Session) -> list[Ten
         TenantProductStateModel.tenant_id == principal.tenant_id,
         TenantProductStateModel.namespace == namespace,
     )
+    if namespace == "user_onboarding":
+        if not principal.employee_id:
+            return []
+        query = query.where(TenantProductStateModel.subject_employee_id == principal.employee_id)
+        return list(db.scalars(query.order_by(TenantProductStateModel.updated_at.desc())).all())
     if namespace in EMPLOYEE_NAMESPACES:
         scope = _employee_scope(principal, db)
         if scope is not None:
@@ -221,6 +226,9 @@ def replace_state(
         elif namespace == "decision_actions" and subject is None:
             if role not in HR_ROLES:
                 raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Employee identity is required for team decision actions")
+        elif namespace == "user_onboarding":
+            if not principal.employee_id or subject != principal.employee_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Personal onboarding may only be updated by the current employee")
         elif namespace in EMPLOYEE_NAMESPACES:
             if not subject:
                 raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Employee identity is required")
