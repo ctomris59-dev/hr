@@ -210,6 +210,52 @@ aside[aria-label="Kullanıcı özeti"] > .relative.grid{
   background:rgba(255,255,255,.08)!important;
 }
 
+/* Final contrast guard for the dashboard profile CTA. Some global readability rules
+   can override Tailwind text colors late in the cascade; text-fill keeps it white. */
+aside[aria-label="Kullanıcı özeti"] a,
+aside[aria-label="Kullanıcı özeti"] a *,
+aside[aria-label="Kullanıcı özeti"] a:visited,
+aside[aria-label="Kullanıcı özeti"] a:hover,
+aside[aria-label="Kullanıcı özeti"] a:focus-visible{
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  text-shadow:0 1px 1px rgba(4,15,28,.22)!important;
+}
+aside[aria-label="Kullanıcı özeti"] a svg{
+  color:#e0f2fe!important;
+  -webkit-text-fill-color:initial!important;
+  filter:drop-shadow(0 0 4px rgba(125,211,252,.28));
+}
+
+/* Active status: brighter emerald glass badge with a restrained enterprise glow. */
+aside[aria-label="Kullanıcı özeti"] [class~="bg-emerald-400/15"]{
+  position:relative!important;
+  gap:5px!important;
+  border:1px solid rgba(110,231,183,.58)!important;
+  background:linear-gradient(135deg,rgba(16,185,129,.38),rgba(52,211,153,.19))!important;
+  color:#ecfdf5!important;
+  -webkit-text-fill-color:#ecfdf5!important;
+  box-shadow:0 0 0 1px rgba(52,211,153,.08),0 0 16px rgba(52,211,153,.32),inset 0 1px 0 rgba(255,255,255,.18)!important;
+  text-shadow:0 0 8px rgba(167,243,208,.52)!important;
+  animation:futurehr-profile-status-glow 2.4s ease-in-out infinite;
+}
+aside[aria-label="Kullanıcı özeti"] [class~="bg-emerald-400/15"]::before{
+  content:"";
+  width:6px;
+  height:6px;
+  flex:0 0 6px;
+  border-radius:999px;
+  background:#6ee7b7;
+  box-shadow:0 0 0 3px rgba(52,211,153,.12),0 0 9px rgba(110,231,183,.9);
+}
+@keyframes futurehr-profile-status-glow{
+  0%,100%{box-shadow:0 0 0 1px rgba(52,211,153,.08),0 0 12px rgba(52,211,153,.24),inset 0 1px 0 rgba(255,255,255,.18);}
+  50%{box-shadow:0 0 0 1px rgba(110,231,183,.16),0 0 20px rgba(52,211,153,.42),inset 0 1px 0 rgba(255,255,255,.22);}
+}
+@media(prefers-reduced-motion:reduce){
+  aside[aria-label="Kullanıcı özeti"] [class~="bg-emerald-400/15"]{animation:none!important;}
+}
+
 @media(max-height:760px){
   .futurehr-profile-main{padding:7px 9px!important;}
   .futurehr-profile-avatar{width:32px!important;height:32px!important;flex-basis:32px!important;font-size:9px!important;}
