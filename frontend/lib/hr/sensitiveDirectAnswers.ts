@@ -1,4 +1,4 @@
-import { canAccessRoute } from "@/lib/hr/accessControl";
+import { canAccessEmployeeRecord, canAccessRoute } from "@/lib/hr/accessControl";
 import { normalizeEmployeeName } from "@/lib/hr/employeeIdentity";
 import { findEmployeeInQuestion, scopedEmployees } from "@/lib/hr/employee360Context";
 import { collectFutureHRData, localAgentFallback } from "@/lib/hr/futureHRAgent";
@@ -28,6 +28,52 @@ const EXPERIENCE_TERMS = [
   "ceo", "yönetici özeti", "yonetici ozeti", "bu hafta", "bu ay", "öncelik", "oncelik",
 ];
 const EXPERIENCE_MANAGEMENT_ROLES = new Set(["CEO", "IK", "ADMIN", "DIRECTOR", "MANAGER", "HR_ADMIN"]);
+const OUTBOUND_BLOCKED_KEYS = new Set([
+  "full_name", "fullName", "name", "displayName", "employeeName", "employee_name", "Ad Soyad", "Personel", "employee",
+  "email", "phone", "address", "tc", "tckn", "nationalId", "birthDate", "birthday", "age", "gender", "sex",
+  "religion", "ethnicity", "race", "health", "disability", "politics", "password", "token", "secret",
+  "salary", "salary_amount", "gross_salary", "current_salary", "currentSalary", "Maaş", "Maaş (TL)", "Mevcut Maaş",
+]);
+
+type PrivacyAliases = {
+  focusDisplayName: string | null;
+  focusAlias: "seçili çalışan" | "seçili aday" | null;
+  aliasMap: Record<string, string>;
+};
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function redactOutboundText(value: string, aliases: PrivacyAliases) {
+  const replacements: Array<[string, string]> = [];
+  if (aliases.focusDisplayName && aliases.focusAlias) replacements.push([aliases.focusDisplayName, aliases.focusAlias]);
+  for (const [alias, real] of Object.entries(aliases.aliasMap)) replacements.push([real, alias]);
+  replacements.sort(([a], [b]) => b.length - a.length);
+  let result = value;
+  for (const [real, alias] of replacements) {
+    if (!real) continue;
+    result = result.replace(new RegExp(escapeRegex(real), "gi"), alias);
+  }
+  if (SALARY_TERMS.test(result)) {
+    result = result
+      .replace(/\b\d{1,3}(?:[.\s]\d{3})+(?:,\d+)?\s*(?:TL|TRY)?\b/gi, "[yerel ücret gizlendi]")
+      .replace(/\b\d{4,}\s*(?:TL|TRY|₺)?\b/gi, "[yerel ücret gizlendi]");
+  }
+  return result;
+}
+
+function privacySafeOutbound(value: unknown, aliases: PrivacyAliases, depth = 0): unknown {
+  if (depth > 8 || value == null) return value;
+  if (typeof value === "string") return redactOutboundText(value, aliases);
+  if (typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map((item) => privacySafeOutbound(item, aliases, depth + 1));
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !OUTBOUND_BLOCKED_KEYS.has(key))
+      .map(([key, child]) => [key, privacySafeOutbound(child, aliases, depth + 1)]),
+  );
+}
 
 function isDirectPersonalSalaryQuestion(question: string, hasEmployee = false) {
   if (PERSONAL_SALARY_PATTERNS.some((pattern) => pattern.test(question))) return true;
@@ -108,7 +154,7 @@ function accessDeniedAnswer(displayName: string): AgentAIResponse {
     answer: `${displayName} için bireysel ücret tutarı mevcut rolünüzün erişim kapsamı dışında.`,
     executiveSummary: "Bireysel ücret verisi RBAC nedeniyle gösterilmedi.",
     confidence: "yüksek",
-    confidenceReason: "FutureHR ücret modülü erişim politikası doğrudan uygulandı.",
+    confidenceReason: "FutureHR ücret veri erişim politikası doğrudan uygulandı.",
     recommendations: [],
     evidenceSources: [],
     nextActions: [],
@@ -166,7 +212,8 @@ async function directSalaryAnswer(
   }
 
   const displayName = employeeName(employee) || focusName;
-  if (!canAccessRoute(currentUserRole, "/maas")) return accessDeniedAnswer(displayName);
+  if (!canAccessEmployeeRecord(baseData.user, employee, "salary", "view")) return accessDeniedAnswer(displayName);
+  const salaryRoute = canAccessRoute(currentUserRole, "/maas") ? "/maas" : "/kullanici";
 
   const directSalary = employeeSalary(employee);
   const cycleSalary = salaryFromCompensationCycles(compensationCycles, employee, displayName);
@@ -189,9 +236,9 @@ async function directSalaryAnswer(
       executiveSummary: "Yetki var; doğrulanabilir mevcut maaş tutarı yok.",
       confidence: "yüksek",
       confidenceReason: "FutureHR yerel ücret resolver'ı çalışan kaydını ve ücret dönemi sonuçlarını kontrol etti; pozitif mevcut ücret bulunamadı.",
-      recommendations: [{ title: "Ücret verisini doğrula", why: "Çalışanın mevcut maaş alanı veya aktif ücret dönemi girdisi eksik.", evidence: "FutureHR bireysel ücret + ücret dönemi kayıtları", route: "/maas" }],
-      evidenceSources: [{ id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · mevcut tutar eksik`, route: "/maas", domain: "compensation", confidence: "yüksek" }],
-      nextActions: [{ label: "Ücret ekranını aç", route: "/maas", actionKind: "open_compensation" }],
+      recommendations: [{ title: "Ücret verisini doğrula", why: "Çalışanın mevcut maaş alanı veya aktif ücret dönemi girdisi eksik.", evidence: "FutureHR bireysel ücret + ücret dönemi kayıtları", route: salaryRoute }],
+      evidenceSources: [{ id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · mevcut tutar eksik`, route: salaryRoute, domain: "compensation", confidence: "yüksek" }],
+      nextActions: [{ label: salaryRoute === "/maas" ? "Ücret ekranını aç" : "Kendi alanını aç", route: salaryRoute, actionKind: salaryRoute === "/maas" ? "open_compensation" : "open_employee" }],
       evidenceGaps: ["Mevcut maaş tutarı organizasyon veya aktif ücret dönemi kayıtlarında yok."],
       guardrail: "FutureHR Intelligence tutar uydurmaz; yalnız yetkili ve doğrulanabilir ücret verisini gösterir.",
     };
@@ -211,13 +258,13 @@ async function directSalaryAnswer(
       title: "Benchmark konumunu incele",
       why: `Mevcut ücret piyasa referansının %${(compaRatio! * 100).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} seviyesinde.`,
       evidence: `${formatTl(salary)} mevcut ücret · ${formatTl(market)} piyasa benchmarkı`,
-      route: "/maas",
+      route: salaryRoute,
     }] : [],
     evidenceSources: [
-      { id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · kaynak: ${salarySource}`, route: "/maas", domain: "compensation", confidence: "yüksek", value: formatTl(salary) },
-      ...(market > 0 ? [{ id: "salary-benchmark", label: "Piyasa Benchmarkı", detail: `${department || "—"} · ${position || "—"}`, route: "/maas", domain: "compensation" as const, confidence: "orta" as const, value: formatTl(market) }] : []),
+      { id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · kaynak: ${salarySource}`, route: salaryRoute, domain: "compensation", confidence: "yüksek", value: formatTl(salary) },
+      ...(market > 0 ? [{ id: "salary-benchmark", label: "Piyasa Benchmarkı", detail: `${department || "—"} · ${position || "—"}`, route: salaryRoute, domain: "compensation" as const, confidence: "orta" as const, value: formatTl(market) }] : []),
     ],
-    nextActions: [{ label: "Ücret detayını aç", route: "/maas", actionKind: "open_compensation" }],
+    nextActions: [{ label: salaryRoute === "/maas" ? "Ücret detayını aç" : "Kendi alanını aç", route: salaryRoute, actionKind: salaryRoute === "/maas" ? "open_compensation" : "open_employee" }],
     evidenceGaps: market > 0 ? [] : ["Bu rol için karşılaştırılabilir piyasa benchmarkı bulunmuyor."],
     guardrail: "Bu kişisel ücret bilgisi yalnız mevcut RBAC yetkisi kapsamında yerel FutureHR katmanında gösterildi; dış AI sağlayıcısına kişisel ücret tutarı gönderilmedi.",
   };
@@ -326,18 +373,19 @@ export async function buildLocalSensitiveAnswer(
   }
 
   const fallback = localAgentFallback(mergedPackage) as AgentAIResponse;
+  const outbound = privacySafeOutbound({
+    question: mergedPackage.sanitizedQuestion,
+    context: mergedPackage.externalContext,
+    fallback,
+  }, augmentation as PrivacyAliases);
   try {
     const response = await fetch("/api/ai/agent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        question: mergedPackage.sanitizedQuestion,
-        context: mergedPackage.externalContext,
-        fallback,
-      }),
+      body: JSON.stringify(outbound),
     });
+    if (!response.ok) return restoreUniversalAliases(fallback, augmentation);
     const payload = await response.json();
-    if (!response.ok) return null;
     const analysis = (payload?.analysis || fallback) as AgentAIResponse;
 
     const languageSafe = containsCjk(analysis) ? fallback : analysis;

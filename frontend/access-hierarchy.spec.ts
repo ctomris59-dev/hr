@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function openDemo(page: Page) {
   await page.goto("/");
-  await page.getByRole("button", { name: "V1 Demo'yu Aç" }).click();
+  await page.getByRole("button", { name: /Canlı Demoyu İncele|V1 Demo'yu Aç/i }).click();
   await page.waitForURL(/\/dashboard/);
   await expect(page.getByTestId("app-shell")).toBeVisible();
 }

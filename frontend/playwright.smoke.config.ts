@@ -8,5 +8,10 @@ export default defineConfig({
     {name:"desktop",use:{...devices["Desktop Chrome"]}},
     {name:"mobile",use:{...devices["Pixel 5"]}},
   ],
-  webServer:process.env.FUTUREHR_BASE_URL?undefined:{command:"npm run dev -- --hostname 127.0.0.1",url:baseURL,reuseExistingServer:!process.env.CI,timeout:60_000},
+  webServer:process.env.FUTUREHR_BASE_URL?undefined:{
+    command:"npm run build && npm run start -- -H 127.0.0.1 -p 3000",
+    url:baseURL,
+    reuseExistingServer:false,
+    timeout:120_000,
+  },
 });
