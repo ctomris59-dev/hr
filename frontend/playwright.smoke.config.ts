@@ -6,7 +6,7 @@ export default defineConfig({
   use:{baseURL,locale:"tr-TR",timezoneId:"Europe/Istanbul",trace:"retain-on-failure",screenshot:"only-on-failure"},
   projects:[
     {name:"desktop",use:{...devices["Desktop Chrome"]}},
-    {name:"mobile",use:{...devices["iPhone 13"]}},
+    {name:"mobile",use:{...devices["Pixel 5"]}},
   ],
   webServer:process.env.FUTUREHR_BASE_URL?undefined:{command:"npm run dev -- --hostname 127.0.0.1",url:baseURL,reuseExistingServer:!process.env.CI,timeout:60_000},
 });
