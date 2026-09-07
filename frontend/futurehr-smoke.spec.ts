@@ -45,11 +45,17 @@ async function seedIntelligenceFixture(page:Page, role:"CEO"|"EMPLOYEE"="CEO"){
 }
 
 async function openIntelligence(page:Page,route="/dashboard"){
-  await page.goto(route,{waitUntil:"domcontentloaded"});
+  await page.goto(route,{waitUntil:"load"});
+  await expect(page.locator('[data-testid="app-shell"]')).toBeVisible();
+  await page.waitForFunction(()=>document.readyState==="complete");
+  await page.waitForTimeout(750);
   const trigger=page.getByRole("button",{name:"FutureHR Intelligence'ı aç"});
   await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded","false");
   await trigger.click();
-  await expect(page.getByRole("dialog",{name:"FutureHR Intelligence"})).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded","true");
+  await expect(page.locator("#futurehr-agent-title")).toBeVisible({timeout:15_000});
+  await expect(page.locator("#futurehr-agent-question")).toBeVisible();
 }
 
 async function askIntelligence(page:Page,question:string){
