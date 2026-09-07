@@ -142,7 +142,7 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
       {quickEntryVisible && (
         <section
           data-quick-entry="true"
-          className="relative mb-5 overflow-hidden rounded-2xl border-2 border-indigo-200 bg-gradient-to-r from-indigo-50 via-white to-violet-50 px-5 py-5 shadow-[0_16px_40px_rgba(79,70,229,0.14)] ring-1 ring-indigo-100 sm:px-6 sm:py-5 dark:border-indigo-800/70 dark:from-indigo-950/45 dark:via-slate-900 dark:to-violet-950/35 dark:ring-indigo-900/50"
+          className="relative -mx-1 mb-6 overflow-hidden rounded-[24px] border border-indigo-100/90 bg-white px-6 py-6 shadow-[0_18px_50px_rgba(30,64,175,0.10)] ring-1 ring-slate-200/70 sm:-mx-2 sm:px-8 sm:py-7 dark:border-slate-700 dark:bg-slate-900 dark:ring-slate-800"
           aria-label={`${config.title} hızlı kayıt ve veri işlemleri`}
         >
           <div className="absolute inset-x-0 top-0 h-1" style={{ background: `linear-gradient(90deg,${config.accent},${config.accent2})` }} />
