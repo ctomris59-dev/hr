@@ -123,7 +123,8 @@ test("FutureHR Intelligence keeps personal salary local and enforces RBAC",async
   await expect(page.getByText(/Ayşe Kaya'nın FutureHR'da kayıtlı mevcut maaşı 52\.000 TL/i).first()).toBeVisible();
   expect(agentRequests).toHaveLength(0);
 
-  await page.getByRole("button",{name:"FutureHR Intelligence'ı kapat"}).click();
+  const dialog=page.getByRole("dialog",{name:"FutureHR Intelligence"});
+  await dialog.getByRole("button",{name:"Kapat"}).click();
   await seedIntelligenceFixture(page,"EMPLOYEE");
   await openIntelligence(page,"/kullanici");
   await askIntelligence(page,"Cem Yılmaz'ın maaşı nedir?");
