@@ -9,6 +9,16 @@ header[data-tour="topbar"] {
   overflow: visible;
 }
 
+/* Keep the Intelligence control above decorative/topbar layers and explicitly
+   interactive even when the responsive topbar disables pointer events on itself. */
+header[data-tour="topbar"] button[aria-label="FutureHR Intelligence'ı aç"] {
+  position: relative !important;
+  z-index: 1002 !important;
+  pointer-events: auto !important;
+  isolation: isolate;
+  touch-action: manipulation;
+}
+
 [role="dialog"][aria-labelledby="futurehr-agent-title"] {
   position: fixed !important;
   inset: 0 !important;
