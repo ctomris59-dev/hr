@@ -64,7 +64,7 @@ async function openIntelligence(page: Page, role: Role, route?: string) {
   await expect(page.getByTestId("app-shell")).toBeVisible();
   const trigger = page.getByRole("button", { name:"FutureHR Intelligence'ı aç" });
   await expect(trigger).toBeVisible();
-  await trigger.click();
+  await trigger.click({ timeout:10_000 });
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await expect(page.locator("#futurehr-agent-question")).toBeVisible();
 }
@@ -93,8 +93,8 @@ function rulesAnalysis(answer: string, reason: string) {
 }
 
 test.describe("FutureHR Intelligence golden-answer contract", () => {
-  test("18 deterministic HR questions return exact authorized records without external AI", async ({ page }) => {
-    test.setTimeout(180_000);
+  test("28 deterministic HR questions return exact authorized records without external AI", async ({ page }) => {
+    test.setTimeout(240_000);
     await openIntelligence(page, "CEO");
     const agentRequests:string[] = [];
     page.on("request", request => {
@@ -120,10 +120,37 @@ test.describe("FutureHR Intelligence golden-answer contract", () => {
       ["Ayşe Kaya eğitim geçmişini söyle.", /Sunum ve İletişim \(Atandı\)/i],
       ["Ayşe Kaya'nın bekleyen izni kaç gün?", /4 gün onaylı izin kullanımı ve 2 gün bekleyen/i],
       ["Ayşe Kaya'nın onaylı izni kaç gün?", /4 gün onaylı izin kullanımı ve 2 gün bekleyen/i],
+      ["Cem Yılmaz'ın pozisyonu nedir?", /Cem Yılmaz'ın pozisyonu Yazılım Uzmanı; departmanı Teknoloji/i],
+      ["Cem Yılmaz'ın yöneticisi kim?", /Cem Yılmaz'ın yönetici zinciri: Pelin Yılmaz/i],
+      ["Cem Yılmaz'ın işe giriş tarihi nedir?", /2023-06-01/],
+      ["Hakan Çetin'in pozisyonu nedir?", /Hakan Çetin'in pozisyonu Finans Müdürü; departmanı Finans/i],
+      ["Hakan Çetin'in yöneticisi kim?", /Hakan Çetin'in yönetici zinciri: Pelin Yılmaz/i],
+      ["Hakan Çetin'in işe giriş tarihi nedir?", /2021-04-10/],
+      ["Pelin Yılmaz'ın pozisyonu nedir?", /Pelin Yılmaz'ın pozisyonu Genel Müdür; departmanı Genel Yönetim/i],
+      ["Selin Aras'ın pozisyonu nedir?", /Selin Aras'ın pozisyonu İK Yöneticisi; departmanı İnsan Kaynakları/i],
+      ["Mert Akın hangi aşamada?", /Mert Akın Mülakat aşamasında/i],
+      ["Mert Akın referans kontrolü tamamlandı mı?", /referans tamamlandı/i],
     ];
 
+    expect(cases, "Golden contract must stay at exactly 28 deterministic questions").toHaveLength(28);
     for (const [question, expected] of cases) await ask(page, question, expected);
     expect(agentRequests, "Deterministic golden answers must remain local").toHaveLength(0);
+  });
+
+  test("external AI payload is fully privacy-safe, including fallback and manager relationships", async ({ page }) => {
+    await openIntelligence(page, "CEO");
+    const agentRequests:string[] = [];
+    page.on("request", request => {
+      if (request.method() === "POST" && request.url().includes("/api/ai/agent")) agentRequests.push(request.postData() || "");
+    });
+    await ask(page, "Ayşe Kaya için gelişim ve eğitim önceliklerini değerlendir.", /gelişim|eğitim|kanıt|performans/i);
+    expect(agentRequests.length).toBeGreaterThan(0);
+    const outbound = agentRequests.at(-1) || "";
+    for (const secret of ["Ayşe Kaya", "Hakan Çetin", "Pelin Yılmaz", "Selin Aras", "Cem Yılmaz", "52000", "88000", "96000", "120000", "Maaş (TL)"]) {
+      expect(outbound, `Outbound payload leaked ${secret}`).not.toContain(secret);
+    }
+    expect(outbound).toContain("seçili çalışan");
+    expect(outbound).toContain("Çalışan-");
   });
 
   test("CEO salary scope is company-wide", async ({ page }) => {
@@ -175,7 +202,7 @@ test.describe("FutureHR Intelligence golden-answer contract", () => {
       "Ayşe Kaya'ya yüzde 20 zam yapalım mı?",
     ]) {
       await ask(page, question, /otomatik nihai karar verilmez/i);
-      await expect(page.getByText(/nihai karar insandadır/i).last()).toBeVisible();
+      await expect(page.getByRole("dialog", { name:"FutureHR Intelligence" }).getByText(/nihai karar insandadır/i).last()).toBeVisible();
     }
   });
 
@@ -194,7 +221,7 @@ test.describe("FutureHR Intelligence golden-answer contract", () => {
     await expect(page.locator("body")).not.toContainText("FutureHR Intelligence servisine ulaşılamadı");
   });
 
-  test("provider-chain failure degrades to rules mode without losing the answer", async ({ page }) => {
+  test("provider-chain rules fallback preserves a verified answer", async ({ page }) => {
     await openIntelligence(page, "CEO");
     await page.route("**/api/ai/agent", route => route.fulfill({
       status:200,
@@ -206,6 +233,17 @@ test.describe("FutureHR Intelligence golden-answer contract", () => {
       }),
     }));
     await ask(page, "Ekibimde gelişim ve eğitim öncelikleri neler?", /FutureHR yerel karar desteği devam ediyor/i);
+    await expect(page.locator("body")).not.toContainText("FutureHR Intelligence servisine ulaşılamadı");
+  });
+
+  test("non-2xx provider failure falls back locally without losing the verified package", async ({ page }) => {
+    await openIntelligence(page, "CEO");
+    await page.route("**/api/ai/agent", route => route.fulfill({
+      status:503,
+      contentType:"application/json",
+      body:JSON.stringify({ error:"provider-off" }),
+    }));
+    await ask(page, "Ayşe Kaya için gelişim ve eğitim önceliklerini değerlendir.", /Ayşe Kaya|gelişim|performans|kanıt/i);
     await expect(page.locator("body")).not.toContainText("FutureHR Intelligence servisine ulaşılamadı");
   });
 });
