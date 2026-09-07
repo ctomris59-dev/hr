@@ -1,4 +1,45 @@
 /* FutureHR responsive contract v2: semantic topbar rules + native mobile record cards. */
+
+/* Quick-entry callout regression guard.
+   Some legacy visual layers can restyle generic absolute/div children. Keep the
+   decorative accent strip physically thin and keep the actual callout content
+   above it on every module and viewport. */
+.module-workspace-v2 section[data-quick-entry="true"]{
+  position:relative!important;
+  isolation:isolate!important;
+  min-height:0!important;
+}
+.module-workspace-v2 section[data-quick-entry="true"]>div.absolute.inset-x-0.top-0.h-1{
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  bottom:auto!important;
+  width:auto!important;
+  height:4px!important;
+  min-height:0!important;
+  max-height:4px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:linear-gradient(90deg,var(--module-accent),var(--module-accent-2))!important;
+  box-shadow:none!important;
+  transform:none!important;
+  overflow:hidden!important;
+  z-index:1!important;
+  pointer-events:none!important;
+}
+.module-workspace-v2 section[data-quick-entry="true"]>div:not(.absolute){
+  position:relative!important;
+  z-index:2!important;
+  min-height:0!important;
+}
+.module-workspace-v2 section[data-quick-entry="true"] button{
+  position:relative!important;
+  z-index:3!important;
+}
+
 @media(max-width:1023px){
   /* Neutralize the historical ordinal selectors. Intended desktop-only controls are hidden semantically below. */
   header[data-tour="topbar"]>div:last-child>:nth-child(2),
