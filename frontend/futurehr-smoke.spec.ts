@@ -48,12 +48,11 @@ async function openIntelligence(page:Page,route="/dashboard"){
   await page.goto(route,{waitUntil:"load"});
   await expect(page.locator('[data-testid="app-shell"]')).toBeVisible();
   await page.waitForFunction(()=>document.readyState==="complete");
-  await page.waitForTimeout(750);
+  await page.waitForTimeout(500);
   const trigger=page.getByRole("button",{name:"FutureHR Intelligence'ı aç"});
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveAttribute("aria-expanded","false");
-  // Force only in the logic audit: a separate regression test covers real hit-testing.
-  await trigger.click({force:true});
+  await trigger.click({timeout:10_000});
   await expect(trigger).toHaveAttribute("aria-expanded","true");
   await expect(page.locator("#futurehr-agent-title")).toBeVisible({timeout:15_000});
   await expect(page.locator("#futurehr-agent-question")).toBeVisible();
@@ -97,7 +96,7 @@ test("FutureHR Intelligence topbar trigger is actually clickable",async({page},t
   await seedIntelligenceFixture(page,"CEO");
   await page.goto("/dashboard",{waitUntil:"load"});
   await expect(page.locator('[data-testid="app-shell"]')).toBeVisible();
-  await page.waitForTimeout(750);
+  await page.waitForTimeout(500);
   const trigger=page.getByRole("button",{name:"FutureHR Intelligence'ı aç"});
   await trigger.click({timeout:10_000});
   await expect(trigger).toHaveAttribute("aria-expanded","true");
@@ -121,7 +120,7 @@ test("FutureHR Intelligence keeps personal salary local and enforces RBAC",async
   page.on("request",request=>{if(request.method()==="POST"&&request.url().includes("/api/ai/agent"))agentRequests.push(request.postData()||"");});
   await openIntelligence(page);
   await askIntelligence(page,"Ayşe Kaya'nın maaşı nedir?");
-  await expect(page.getByText(/52\.000 TL/i)).toBeVisible();
+  await expect(page.getByText(/Ayşe Kaya'nın FutureHR'da kayıtlı mevcut maaşı 52\.000 TL/i).first()).toBeVisible();
   expect(agentRequests).toHaveLength(0);
 
   await page.getByRole("button",{name:"FutureHR Intelligence'ı kapat"}).click();
@@ -132,7 +131,7 @@ test("FutureHR Intelligence keeps personal salary local and enforces RBAC",async
   await expect(page.locator("body")).not.toContainText("88.000 TL");
 });
 
-test("FutureHR Intelligence anonymizes external AI context",async({page},testInfo)=>{
+test("FutureHR Intelligence anonymizes the complete external AI payload",async({page},testInfo)=>{
   test.skip(testInfo.project.name==="mobile","Intelligence logic audit runs once on desktop");
   await seedIntelligenceFixture(page,"CEO");
   const agentRequests:string[]=[];
@@ -142,9 +141,11 @@ test("FutureHR Intelligence anonymizes external AI context",async({page},testInf
   expect(agentRequests.length).toBeGreaterThan(0);
   const body=agentRequests.at(-1)||"";
   expect(body).not.toContain("Ayşe Kaya");
+  expect(body).not.toContain("Pelin Yılmaz");
   expect(body).not.toContain("52000");
   expect(body).not.toContain("Maaş (TL)");
   expect(body).toContain("seçili çalışan");
+  expect(body).toContain("Çalışan-");
   await expect(page.locator("body")).not.toContainText("FutureHR Intelligence servisine ulaşılamadı");
 });
 
@@ -165,6 +166,7 @@ test("FutureHR Intelligence never turns high-impact HR advice into an automatic 
   await seedIntelligenceFixture(page,"CEO");
   await openIntelligence(page);
   await askIntelligence(page,"Ayşe Kaya terfi ettirilmeli mi?");
-  await expect(page.getByText(/nihai insan kararlarını otomatik vermez|nihai karar insandadır|insan değerlendirmesi/i).last()).toBeVisible();
-  await expect(page.getByText(/Taslak hazırla|Aç/i).first()).toBeVisible();
+  const dialog=page.getByRole("dialog",{name:"FutureHR Intelligence"});
+  await expect(dialog.getByText(/nihai insan kararlarını otomatik vermez|nihai karar insandadır|insan değerlendirmesi/i).last()).toBeVisible();
+  await expect(dialog.getByText("Aksiyon sadece taslak",{exact:true})).toBeVisible();
 });
