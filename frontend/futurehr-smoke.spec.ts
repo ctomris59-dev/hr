@@ -15,7 +15,7 @@ async function noHorizontalOverflow(page:Page){
 test("public entry is usable",async({page},testInfo)=>{
   await page.goto("/");
   await expect(page.getByText("People Intelligence System").first()).toBeVisible();
-  await expect(page.getByRole("button",{name:/V1 Demo'yu Aç/i})).toBeVisible();
+  await expect(page.getByRole("button",{name:/Canlı Demoyu İncele|V1 Demo'yu Aç/i})).toBeVisible();
   if(testInfo.project.name==="mobile"){
     await expect(page.locator("#username")).toBeVisible();
     await expect(page.locator("#password")).toBeVisible();
