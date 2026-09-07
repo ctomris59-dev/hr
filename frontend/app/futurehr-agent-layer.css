@@ -4,16 +4,26 @@
    sizing below intentionally follows the ACTUAL available containing width. */
 
 header[data-tour="topbar"] {
-  position: relative;
-  z-index: 1000;
-  overflow: visible;
+  position: relative !important;
+  z-index: 2147482000 !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+}
+
+/* The workspace can contain positioned/fixed decision cards. Trap all of those
+   descendants in a lower stacking context so none can physically cover the topbar. */
+main[data-tour="workspace"] {
+  position: relative !important;
+  z-index: 0 !important;
+  isolation: isolate !important;
+  min-height: 0 !important;
 }
 
 /* Keep the Intelligence control above decorative/topbar layers and explicitly
    interactive even when the responsive topbar disables pointer events on itself. */
 header[data-tour="topbar"] button[aria-label="FutureHR Intelligence'ı aç"] {
   position: relative !important;
-  z-index: 1002 !important;
+  z-index: 2147482001 !important;
   pointer-events: auto !important;
   isolation: isolate;
   touch-action: manipulation;
