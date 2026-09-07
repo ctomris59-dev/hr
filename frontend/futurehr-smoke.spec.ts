@@ -52,7 +52,8 @@ async function openIntelligence(page:Page,route="/dashboard"){
   const trigger=page.getByRole("button",{name:"FutureHR Intelligence'ı aç"});
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveAttribute("aria-expanded","false");
-  await trigger.click();
+  // Force only in the logic audit: a separate regression test covers real hit-testing.
+  await trigger.click({force:true});
   await expect(trigger).toHaveAttribute("aria-expanded","true");
   await expect(page.locator("#futurehr-agent-title")).toBeVisible({timeout:15_000});
   await expect(page.locator("#futurehr-agent-question")).toBeVisible();
@@ -89,6 +90,17 @@ test("critical workspaces render without viewport breakage",async({page},testInf
     await noHorizontalOverflow(page);
   }
   if(testInfo.project.name==="mobile")await expect(page.getByRole("navigation",{name:"Mobil hızlı menü"})).toBeVisible();
+});
+
+test("FutureHR Intelligence topbar trigger is actually clickable",async({page},testInfo)=>{
+  test.skip(testInfo.project.name==="mobile","Desktop topbar hit-testing regression");
+  await seedIntelligenceFixture(page,"CEO");
+  await page.goto("/dashboard",{waitUntil:"load"});
+  await expect(page.locator('[data-testid="app-shell"]')).toBeVisible();
+  await page.waitForTimeout(750);
+  const trigger=page.getByRole("button",{name:"FutureHR Intelligence'ı aç"});
+  await trigger.click({timeout:10_000});
+  await expect(trigger).toHaveAttribute("aria-expanded","true");
 });
 
 test("FutureHR Intelligence reads deterministic employee facts exactly",async({page},testInfo)=>{
