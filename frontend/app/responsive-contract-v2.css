@@ -1,0 +1,33 @@
+/* FutureHR responsive contract v2: semantic topbar rules + native mobile record cards. */
+@media(max-width:1023px){
+  /* Neutralize the historical ordinal selectors. Intended desktop-only controls are hidden semantically below. */
+  header[data-tour="topbar"]>div:last-child>:nth-child(2),
+  header[data-tour="topbar"]>div:last-child>:nth-child(3),
+  header[data-tour="topbar"]>div:last-child>:nth-child(4),
+  header[data-tour="topbar"]>div:last-child>:nth-child(6){display:revert!important;}
+  header[data-tour="topbar"] [data-tour="quick-search"],
+  header[data-tour="topbar"] button[aria-label="Yardımı aç"],
+  header[data-tour="topbar"] button[aria-label="Tema yükleniyor"],
+  header[data-tour="topbar"] button[aria-label="Açık moda geç"],
+  header[data-tour="topbar"] button[aria-label="Koyu moda geç"],
+  header[data-tour="topbar"] button:has(svg.lucide-presentation),
+  header[data-tour="topbar"] div:has(>select[aria-label="Demo persona seçimi"]){display:none!important;}
+
+  .module-native-content:has(table.futurehr-mobile-record-table),
+  .visualized-native-content:has(table.futurehr-mobile-record-table){overflow-x:visible!important;}
+}
+
+@media(max-width:767px){
+  table.futurehr-mobile-record-table{display:block!important;width:100%!important;min-width:0!important;border:0!important;background:transparent!important;}
+  table.futurehr-mobile-record-table thead{display:none!important;}
+  table.futurehr-mobile-record-table tbody{display:grid!important;width:100%!important;gap:10px!important;}
+  table.futurehr-mobile-record-table tbody tr{display:block!important;width:100%!important;overflow:hidden!important;border:1px solid var(--fh-line)!important;border-radius:14px!important;background:var(--fh-panel)!important;box-shadow:var(--fh-shadow-sm)!important;}
+  table.futurehr-mobile-record-table tbody td{display:grid!important;grid-template-columns:minmax(94px,36%) minmax(0,1fr)!important;align-items:start!important;gap:10px!important;width:100%!important;min-height:38px!important;padding:9px 11px!important;border:0!important;border-bottom:1px solid color-mix(in srgb,var(--fh-line) 72%,transparent)!important;white-space:normal!important;overflow-wrap:anywhere!important;text-align:left!important;font-size:12px!important;line-height:1.4!important;}
+  table.futurehr-mobile-record-table tbody td:last-child{border-bottom:0!important;}
+  table.futurehr-mobile-record-table tbody td::before{content:attr(data-mobile-label);min-width:0;color:var(--fh-muted);font-size:9px;font-weight:800;letter-spacing:.045em;text-transform:uppercase;}
+  table.futurehr-mobile-record-table tbody td[data-mobile-action="true"]{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:7px!important;padding-top:10px!important;padding-bottom:10px!important;}
+  table.futurehr-mobile-record-table tbody td[data-mobile-action="true"]::before{width:100%!important;flex:0 0 100%!important;}
+  table.futurehr-mobile-record-table tbody td[data-mobile-action="true"] button,
+  table.futurehr-mobile-record-table tbody td[data-mobile-action="true"] a{min-height:40px!important;flex:1 1 auto!important;justify-content:center!important;}
+  table[data-mobile-table="scroll"]{min-width:680px!important;}
+}

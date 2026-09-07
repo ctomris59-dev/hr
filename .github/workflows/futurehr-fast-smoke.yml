@@ -1,0 +1,53 @@
+name: FutureHR Fast Smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: futurehr-fast-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-smoke:
+    name: frontend-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: TypeScript contract
+        run: npx tsc --noEmit
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Desktop + mobile critical smoke
+        run: npm run test:smoke
+
+  backend-scope:
+    name: backend-tenant-scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Tenant escape + dashboard scope
+        run: pytest -q tests/test_dashboard_summary_v1.py tests/test_employee_saas_api.py::test_cross_tenant_employee_id_returns_not_found tests/test_employee_saas_api.py::test_manager_team_scope_contains_only_managed_employees

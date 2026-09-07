@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
+import "./futurehr-design-system.css";
 import "./readability-hardening.css";
 import "./ux-hardening.css";
 import "./readability-final.css";
@@ -19,6 +20,7 @@ import "./profile-identity-premium.css";
 import "./premium-enterprise-system.css";
 import "./futurehr-agent-layer.css";
 import "./mobile-enterprise.css";
+import "./responsive-contract-v2.css";
 import { AuthProvider } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { DataProvider } from "../context/DataContext";
@@ -30,6 +32,7 @@ import SidebarRailController from "../components/SidebarRailController";
 import PremiumEmptyStateRuntime from "../components/PremiumEmptyStateRuntime";
 import PremiumMotionRuntime from "../components/PremiumMotionRuntime";
 import MobileManagerDock from "../components/MobileManagerDock";
+import MobileTableCardRuntime from "../components/MobileTableCardRuntime";
 import { Toaster } from "sonner";
 import ToastInterceptor from "../components/ToastInterceptor";
 
@@ -57,6 +60,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <SidebarRailController />
                 <PremiumEmptyStateRuntime />
                 <PremiumMotionRuntime />
+                <MobileTableCardRuntime />
                 {children}
                 <MobileManagerDock />
               </DataProvider>
