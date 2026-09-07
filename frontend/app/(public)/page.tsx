@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
+  BarChart3,
   CheckCircle2,
   ChevronRight,
   CircleUserRound,
@@ -13,11 +14,25 @@ import {
   LockKeyhole,
   ShieldCheck,
   Sparkles,
+  Target,
+  Users,
 } from "lucide-react";
 import { USERS } from "../data/users";
 import { getStorageData, setStorageData, STORAGE_KEYS } from "../utils/storage";
 import { applyFutureHRV1DemoData } from "@/lib/hr/demoV1";
 import { DEMO_PERSONAS } from "@/lib/hr/demoPersonas";
+
+const trustPoints = [
+  "Rol bazlı erişim",
+  "Kanıt temelli kararlar",
+  "İnsan onaylı karar desteği",
+];
+
+const decisionSignals = [
+  { label: "Kritik yetenek", value: "12", note: "görünür", icon: Users },
+  { label: "Ücret sinyali", value: "4", note: "inceleme", icon: BarChart3 },
+  { label: "Halef adayı", value: "2", note: "hazır", icon: Target },
+];
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -72,71 +87,60 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="fixed inset-0 overflow-hidden bg-[#f8fafc] text-slate-950">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(59,130,246,0.08),transparent_27%),radial-gradient(circle_at_75%_80%,rgba(14,165,233,0.05),transparent_28%)]" />
-
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -right-[12%] -top-[28%] h-[138%] w-[58%] opacity-[0.98] blur-[0.2px]"
-          style={{
-            clipPath: "polygon(24% 0%, 100% 0%, 84% 100%, 53% 73%, 35% 38%)",
-            background:
-              "linear-gradient(148deg,#bfe0ff 0%,#8fa8ff 17%,#7b61ff 31%,#f04fd6 53%,#ff5f8c 66%,#ff8a2a 82%,#ffd45a 100%)",
-          }}
-        />
-        <div
-          className="absolute -right-[6%] -top-[18%] h-[128%] w-[43%] opacity-[0.92] mix-blend-multiply"
-          style={{
-            clipPath: "polygon(35% 0%, 100% 0%, 73% 100%, 56% 68%, 46% 36%)",
-            background:
-              "linear-gradient(160deg,rgba(255,246,136,0.25) 0%,#ffbb38 18%,#ff7a1a 44%,#ff3f86 69%,#c345ff 100%)",
-          }}
-        />
-        <div
-          className="absolute right-[2%] top-[-12%] h-[112%] w-[29%] opacity-[0.95]"
-          style={{
-            clipPath: "polygon(40% 0%, 100% 0%, 56% 100%, 47% 64%)",
-            background: "linear-gradient(176deg,#ffd85a 0%,#ff9d2d 38%,#ff5d91 70%,#d858ff 100%)",
-          }}
-        />
-        <div
-          className="absolute -right-[2%] bottom-[-24%] h-[66%] w-[42%] opacity-[0.6] blur-2xl"
-          style={{
-            clipPath: "polygon(18% 0%,100% 30%,82% 100%,0% 72%)",
-            background: "linear-gradient(135deg,#5aa9ff 0%,#6d5dfc 42%,#f04fd6 100%)",
-          }}
-        />
+    <main className="relative min-h-dvh overflow-x-hidden bg-[#f4f6fa] text-[#10213c]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(19,45,78,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(19,45,78,0.035)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_78%)]" />
+        <div className="absolute left-[-12%] top-[-18%] h-[520px] w-[520px] rounded-full bg-indigo-300/15 blur-[110px]" />
+        <div className="absolute right-[-10%] top-[12%] h-[460px] w-[460px] rounded-full bg-sky-200/25 blur-[120px]" />
       </div>
 
-      <div className="relative z-10 mx-auto h-full max-w-[1560px] px-[clamp(28px,5vw,76px)] py-[clamp(22px,4vh,46px)]">
-        <header className="flex items-start justify-between">
-          <div>
-            <div className="select-none text-[clamp(42px,4vw,60px)] font-bold lowercase leading-[0.88] tracking-[-0.07em] text-[#2942d6]">
-              future hr
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[1540px] flex-col px-5 py-5 sm:px-8 lg:px-12 xl:px-16">
+        <header className="flex items-center justify-between border-b border-[#183354]/10 pb-5">
+          <div className="flex items-end gap-3">
+            <div>
+              <div className="select-none text-[38px] font-bold lowercase leading-none tracking-[-0.07em] text-[#2844d8] sm:text-[42px]">
+                future hr
+              </div>
+              <p className="mt-1.5 text-[11px] font-semibold tracking-[0.01em] text-[#60708a]">
+                People Intelligence System
+              </p>
             </div>
-            <p className="mt-2 text-[12px] font-semibold tracking-[-0.01em] text-slate-600 sm:text-[13px]">
-              People Intelligence System
-            </p>
           </div>
 
-          <div className="hidden items-center gap-2 rounded-full border border-white/70 bg-white/75 px-3 py-2 text-[11px] font-medium text-slate-600 shadow-sm backdrop-blur lg:flex">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            İnsan merkezli karar desteği
+          <div className="hidden items-center gap-5 text-[11px] font-semibold text-[#53657f] md:flex">
+            <span>Performans</span>
+            <span>Yetenek</span>
+            <span>Ücret</span>
+            <span>Kariyer</span>
+            <button
+              type="button"
+              onClick={() => document.getElementById("username")?.focus()}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-[#183354]/15 bg-white px-4 text-[#183354] shadow-[0_8px_24px_rgba(26,46,76,.06)] transition hover:-translate-y-0.5 hover:border-[#2844d8]/30"
+            >
+              Kurumsal giriş
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
           </div>
         </header>
 
-        <div className="grid h-[calc(100%-78px)] grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)] xl:grid-cols-[minmax(0,1.28fr)_minmax(390px,0.72fr)]">
-          <section className="max-w-[850px] self-center pb-[2vh]">
-            <h1 className="text-[clamp(42px,5.1vw,76px)] font-semibold leading-[0.98] tracking-[-0.055em] text-slate-950">
-              İnsan kararlarını
-              <br />
-              <span className="bg-[linear-gradient(90deg,#4f63a7_0%,#5d66b9_23%,#7456d6_46%,#e14db6_70%,#ff7a29_100%)] bg-clip-text text-transparent">
-                güçlü bir sisteme dönüştürün.
+        <div className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[minmax(0,1.03fr)_minmax(430px,0.97fr)] lg:gap-14 xl:gap-20 xl:py-12">
+          <section className="max-w-[800px]">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#2844d8]/12 bg-white/75 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#2844d8] shadow-[0_8px_28px_rgba(32,57,98,.05)] backdrop-blur">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              İnsan merkezli People Intelligence
+            </div>
+
+            <h1 className="max-w-[760px] tracking-[-0.055em]">
+              <span className="block font-serif text-[clamp(48px,5.15vw,78px)] font-medium leading-[0.96] text-[#111b2f]">
+                İnsan kararlarını
+              </span>
+              <span className="mt-1 block text-[clamp(44px,4.8vw,72px)] font-semibold leading-[0.99] text-[#2844d8]">
+                daha güçlü hale getirin.
               </span>
             </h1>
 
-            <p className="mt-6 max-w-[780px] text-[clamp(18px,1.65vw,25px)] leading-[1.38] tracking-[-0.025em] text-[#667394]">
-              Şirketinizdeki yeteneği görünür kılın, insan kaynağınızı adil, ölçülebilir ve veriye dayalı yönetin.
+            <p className="mt-7 max-w-[700px] text-[clamp(17px,1.35vw,21px)] leading-[1.55] tracking-[-0.018em] text-[#61718b]">
+              Yeteneği görünür kılın, doğru kişiyi doğru rolle eşleştirin ve insan kararlarını güvenilir verilerle destekleyin.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -144,50 +148,97 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleDemoLogin}
                 disabled={loading}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#4f46e5,#635bff)] px-5 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(79,70,229,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(79,70,229,0.3)] disabled:cursor-wait disabled:opacity-70"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#183a76] px-5 text-[13px] font-semibold text-white shadow-[0_14px_30px_rgba(24,58,118,0.18)] transition hover:-translate-y-0.5 hover:bg-[#153467] hover:shadow-[0_18px_38px_rgba(24,58,118,0.23)] disabled:cursor-wait disabled:opacity-70"
               >
-                {loading ? "Demo hazırlanıyor..." : "V1 Demo'yu Aç"}
+                {loading ? "Demo hazırlanıyor..." : "Canlı Demoyu İncele"}
                 <ArrowRight className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => document.getElementById("username")?.focus()}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/90 px-5 text-[13px] font-semibold text-slate-700 shadow-sm transition hover:bg-white"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#183354]/15 bg-white/80 px-5 text-[13px] font-semibold text-[#263b58] shadow-[0_8px_24px_rgba(26,46,76,.05)] transition hover:-translate-y-0.5 hover:bg-white"
               >
                 Kurumsal Giriş
-                <ChevronRight className="h-4 w-4 text-slate-400" />
+                <ChevronRight className="h-4 w-4 text-[#7c8ca3]" />
               </button>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-medium text-slate-500">
-              {["5 ana çalışma alanı", "4 ücret senaryosu", "9-Box & halefiyet", "Kanıt tabanlı karar akışı"].map((item) => (
-                <span key={item} className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#183354]/10 pt-6">
+              {trustPoints.map((item) => (
+                <span key={item} className="inline-flex items-center gap-2 text-[11.5px] font-semibold text-[#5c6d86]">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                   {item}
                 </span>
               ))}
             </div>
           </section>
 
-          <section className="relative hidden h-full items-center justify-end lg:flex">
-            <div className="relative z-20 w-full max-w-[390px] rounded-[28px] border border-white/80 bg-white/88 p-5 shadow-[0_28px_70px_rgba(39,51,90,0.16)] backdrop-blur-xl xl:p-6">
+          <section className="relative mx-auto w-full max-w-[560px] lg:mx-0 lg:max-w-none">
+            <div className="relative rounded-[30px] border border-[#183354]/10 bg-[#152b4d] p-3 shadow-[0_36px_90px_rgba(30,48,77,0.17)] sm:p-4">
+              <div className="rounded-[23px] bg-[#f9fbfd] p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-4 border-b border-[#183354]/8 pb-4">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#7a8aa1]">Demo çalışma alanı</p>
+                    <h2 className="mt-1 text-[18px] font-semibold tracking-[-0.03em] text-[#172941]">Bugünün insan kararları</h2>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[9px] font-bold text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Canlı
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-2.5">
+                  {decisionSignals.map(({ label, value, note, icon: Icon }) => (
+                    <div key={label} className="rounded-2xl border border-[#183354]/8 bg-white p-3 shadow-[0_6px_20px_rgba(34,55,83,.04)]">
+                      <div className="flex items-center justify-between gap-2">
+                        <Icon className="h-3.5 w-3.5 text-[#526783]" />
+                        <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#93a0b2]">{note}</span>
+                      </div>
+                      <strong className="mt-3 block text-[23px] font-semibold tracking-[-0.04em] text-[#172941]">{value}</strong>
+                      <span className="mt-0.5 block text-[9.5px] font-semibold text-[#6e7d93]">{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 rounded-2xl border border-[#183354]/8 bg-white p-4 shadow-[0_6px_20px_rgba(34,55,83,.035)]">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#8a97a9]">Karar görünümü</p>
+                      <p className="mt-1 text-[12px] font-semibold text-[#213751]">Performans → potansiyel → aksiyon</p>
+                    </div>
+                    <Sparkles className="h-4 w-4 text-[#2844d8]" />
+                  </div>
+                  <div className="mt-4 flex h-14 items-end gap-1.5">
+                    {[38, 48, 43, 62, 57, 72, 66, 78, 70, 86, 81, 91].map((height, index) => (
+                      <span
+                        key={`${height}-${index}`}
+                        className="flex-1 rounded-t-sm bg-[#dfe6f2] last:bg-[#2844d8]"
+                        style={{ height: `${height}%`, opacity: index > 8 ? 1 : 0.78 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative mx-3 -mt-3 rounded-[26px] border border-[#183354]/10 bg-white p-5 shadow-[0_28px_70px_rgba(31,48,77,0.14)] sm:mx-6 sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-600">Kurumsal giriş</p>
-                  <h2 className="mt-1.5 text-[24px] font-semibold tracking-[-0.04em] text-slate-950">Çalışma alanına girin</h2>
-                  <p className="mt-2 text-[12px] leading-5 text-slate-500">Gerçek kullanıcı erişimi ile demo akışı birbirinden ayrıdır.</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#2844d8]">Kurumsal giriş</p>
+                  <h2 className="mt-1.5 text-[21px] font-semibold tracking-[-0.035em] text-[#172941]">Çalışma alanınıza girin</h2>
+                  <p className="mt-1.5 text-[11px] leading-5 text-[#738196]">Gerçek kullanıcı erişimi ile demo akışı birbirinden ayrıdır.</p>
                 </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                  <Sparkles className="h-4 w-4" />
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#eef2ff] text-[#2844d8]">
+                  <ShieldCheck className="h-4 w-4" />
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
+              <form onSubmit={handleSubmit} className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <div>
-                  <label htmlFor="username" className="mb-1.5 block text-[11px] font-semibold text-slate-700">Kullanıcı Adı</label>
+                  <label htmlFor="username" className="mb-1.5 block text-[10px] font-semibold text-[#45566f]">Kullanıcı adı</label>
                   <div className="relative">
-                    <CircleUserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <CircleUserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#95a2b4]" />
                     <input
                       id="username"
                       type="text"
@@ -195,16 +246,16 @@ export default function LoginPage() {
                       onChange={(e) => setUsername(e.target.value)}
                       required
                       autoComplete="username"
-                      placeholder="Kullanıcı adınızı girin"
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-[13px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                      placeholder="Kullanıcı adınız"
+                      className="h-11 w-full rounded-xl border border-[#183354]/12 bg-[#fbfcfe] pl-10 pr-4 text-[12px] text-[#172941] outline-none transition placeholder:text-[#9aa6b6] focus:border-[#2844d8]/45 focus:bg-white focus:ring-4 focus:ring-[#2844d8]/5"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="mb-1.5 block text-[11px] font-semibold text-slate-700">Şifre</label>
+                  <label htmlFor="password" className="mb-1.5 block text-[10px] font-semibold text-[#45566f]">Şifre</label>
                   <div className="relative">
-                    <LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#95a2b4]" />
                     <input
                       id="password"
                       type={showPassword ? "text" : "password"}
@@ -212,13 +263,13 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete="current-password"
-                      placeholder="Şifrenizi girin"
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-11 text-[13px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                      placeholder="Şifreniz"
+                      className="h-11 w-full rounded-xl border border-[#183354]/12 bg-[#fbfcfe] pl-10 pr-11 text-[12px] text-[#172941] outline-none transition placeholder:text-[#9aa6b6] focus:border-[#2844d8]/45 focus:bg-white focus:ring-4 focus:ring-[#2844d8]/5"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#95a2b4] transition hover:text-[#53657d]"
                       aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -226,32 +277,35 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[11px] font-medium text-red-700">{error}</div> : null}
+                {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[11px] font-medium text-red-700 sm:col-span-2 lg:col-span-1 xl:col-span-2">{error}</div> : null}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#162a5b,#344ed8)] px-4 text-[13px] font-semibold text-white shadow-[0_12px_24px_rgba(52,78,216,0.18)] transition hover:shadow-[0_16px_30px_rgba(52,78,216,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#183a76] px-4 text-[12px] font-semibold text-white shadow-[0_10px_22px_rgba(24,58,118,0.16)] transition hover:bg-[#153467] disabled:cursor-not-allowed disabled:opacity-70 sm:col-span-2 lg:col-span-1 xl:col-span-2"
                 >
                   {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </form>
 
-              <div className="my-4 flex items-center gap-3 text-[10px] text-slate-400">
-                <div className="h-px flex-1 bg-slate-200" />veya<div className="h-px flex-1 bg-slate-200" />
-              </div>
-
-              <Link href="/aday-girisi" className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[12px] font-medium text-indigo-600 transition hover:bg-indigo-50">
-                <span>Aday girişi</span>
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-
-              <div className="mt-4 rounded-2xl bg-slate-50 px-3.5 py-3 text-[11px] leading-5 text-slate-500">
-                <span className="font-semibold text-slate-700">FutureHR ilkesi:</span> Sistem önerir; insan değerlendirir ve kararı verir.
+              <div className="mt-3 flex items-center justify-between gap-4 border-t border-[#183354]/8 pt-3">
+                <p className="hidden text-[9.5px] leading-4 text-[#7b899d] sm:block">
+                  Sistem önerir; insan değerlendirir ve kararı verir.
+                </p>
+                <Link href="/aday-girisi" className="inline-flex shrink-0 items-center gap-1.5 text-[10.5px] font-semibold text-[#2844d8] transition hover:text-[#183a76]">
+                  Aday girişi
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             </div>
           </section>
         </div>
+
+        <footer className="flex flex-col gap-2 border-t border-[#183354]/10 py-4 text-[9.5px] font-medium text-[#8190a4] sm:flex-row sm:items-center sm:justify-between">
+          <span>FutureHR · People Intelligence System</span>
+          <span>İnsan kararlarında görünürlük, tutarlılık ve güven.</span>
+        </footer>
       </div>
     </main>
   );
