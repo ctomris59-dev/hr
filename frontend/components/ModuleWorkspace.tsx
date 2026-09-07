@@ -140,19 +140,46 @@ export default function ModuleWorkspace({ pathname, children }: { pathname: stri
       </section>
 
       {quickEntryVisible && (
-        <section className="mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900" aria-label={`${config.title} hızlı kayıt ve veri işlemleri`}>
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg" style={{ background: config.soft, color: config.accent }}><FileInput className="h-4 w-4" strokeWidth={1.8} /></span>
-            <div className="min-w-0">
-              <span className="block text-[9px] font-extrabold uppercase tracking-[0.14em]" style={{ color: config.accent }}>HIZLI İŞLEM</span>
-              <strong className="mt-0.5 block text-sm font-semibold text-slate-900 dark:text-white">{salaryCore ? "Ücret kayıtları ve veri girişi" : "Kayıt / veri girişi"}</strong>
-              <p className="mt-0.5 text-[11px] leading-4 text-slate-500 dark:text-slate-400">{salaryCore ? "Ücret kayıtlarını incelemek, veri girmek veya düzenlemek için doğrudan işlem alanına geçin." : "Yeni kayıt eklemek, mevcut veriyi düzenlemek, filtrelemek veya varsa Excel araçlarına ulaşmak için buradan başlayın."}</p>
+        <section
+          data-quick-entry="true"
+          className="relative mb-5 overflow-hidden rounded-2xl border-2 border-indigo-200 bg-gradient-to-r from-indigo-50 via-white to-violet-50 px-5 py-5 shadow-[0_16px_40px_rgba(79,70,229,0.14)] ring-1 ring-indigo-100 sm:px-6 sm:py-5 dark:border-indigo-800/70 dark:from-indigo-950/45 dark:via-slate-900 dark:to-violet-950/35 dark:ring-indigo-900/50"
+          aria-label={`${config.title} hızlı kayıt ve veri işlemleri`}
+        >
+          <div className="absolute inset-x-0 top-0 h-1" style={{ background: `linear-gradient(90deg,${config.accent},${config.accent2})` }} />
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/80 shadow-sm" style={{ background: config.soft, color: config.accent }}>
+                <FileInput className="h-5 w-5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0">
+                <span className="inline-flex items-center rounded-full border border-indigo-200 bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-indigo-700 shadow-sm dark:border-indigo-800 dark:bg-slate-900/90 dark:text-indigo-300">
+                  VERİ GİRİŞİ BURADA
+                </span>
+                <strong className="mt-2 block text-[17px] font-extrabold leading-6 text-slate-950 sm:text-lg dark:text-white">
+                  {salaryCore ? "Ücret kayıtlarını ve verileri buradan yönetin" : "Kayıt ve veri girişini buradan başlatın"}
+                </strong>
+                <p className="mt-1.5 max-w-3xl text-[12px] font-medium leading-5 text-slate-600 sm:text-[13px] dark:text-slate-300">
+                  {salaryCore ? "Yeni ücret kaydı, düzenleme, filtreleme ve Excel işlemleri için işlem alanını açın." : "Yeni kayıt eklemek, mevcut veriyi düzenlemek, filtrelemek veya Excel araçlarına ulaşmak için işlem alanını açın."}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Bu alanda yapılabilecek işlemler">
+                  {(salaryCore ? ["Ücret kaydı", "Düzenleme", "Excel"] : ["Yeni kayıt", "Düzenleme", "Excel / toplu veri"]).map((item) => (
+                    <span key={item} className="rounded-full border border-slate-200/90 bg-white/80 px-2.5 py-1 text-[10px] font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">{item}</span>
+                  ))}
+                </div>
+              </div>
             </div>
+            <button
+              type="button"
+              aria-controls={operationsTargetId}
+              onClick={() => revealOperations(operationsTargetId)}
+              className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(79,70,229,0.28)] transition hover:-translate-y-0.5 hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-offset-2 sm:w-auto"
+              style={{ background: `linear-gradient(135deg,${config.accent},${config.accent2})` }}
+            >
+              <FileInput className="h-4 w-4" strokeWidth={2} />
+              {salaryCore ? "Ücret işlemlerini aç" : "Veri girişini aç"}
+              <span aria-hidden="true">→</span>
+            </button>
           </div>
-          <button type="button" aria-controls={operationsTargetId} onClick={() => revealOperations(operationsTargetId)} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-offset-2" style={{ background: `linear-gradient(135deg,${config.accent},${config.accent2})` }}>
-            <FileInput className="h-4 w-4" strokeWidth={1.9} />
-            {salaryCore ? "Ücret işlemlerine git" : "İşlem alanını aç"}
-          </button>
         </section>
       )}
 
