@@ -28,6 +28,52 @@ const EXPERIENCE_TERMS = [
   "ceo", "yönetici özeti", "yonetici ozeti", "bu hafta", "bu ay", "öncelik", "oncelik",
 ];
 const EXPERIENCE_MANAGEMENT_ROLES = new Set(["CEO", "IK", "ADMIN", "DIRECTOR", "MANAGER", "HR_ADMIN"]);
+const OUTBOUND_BLOCKED_KEYS = new Set([
+  "full_name", "fullName", "name", "displayName", "employeeName", "employee_name", "Ad Soyad", "Personel", "employee",
+  "email", "phone", "address", "tc", "tckn", "nationalId", "birthDate", "birthday", "age", "gender", "sex",
+  "religion", "ethnicity", "race", "health", "disability", "politics", "password", "token", "secret",
+  "salary", "salary_amount", "gross_salary", "current_salary", "currentSalary", "Maaş", "Maaş (TL)", "Mevcut Maaş",
+]);
+
+type PrivacyAliases = {
+  focusDisplayName: string | null;
+  focusAlias: "seçili çalışan" | "seçili aday" | null;
+  aliasMap: Record<string, string>;
+};
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function redactOutboundText(value: string, aliases: PrivacyAliases) {
+  const replacements: Array<[string, string]> = [];
+  if (aliases.focusDisplayName && aliases.focusAlias) replacements.push([aliases.focusDisplayName, aliases.focusAlias]);
+  for (const [alias, real] of Object.entries(aliases.aliasMap)) replacements.push([real, alias]);
+  replacements.sort(([a], [b]) => b.length - a.length);
+  let result = value;
+  for (const [real, alias] of replacements) {
+    if (!real) continue;
+    result = result.replace(new RegExp(escapeRegex(real), "gi"), alias);
+  }
+  if (SALARY_TERMS.test(result)) {
+    result = result
+      .replace(/\b\d{1,3}(?:[.\s]\d{3})+(?:,\d+)?\s*(?:TL|TRY)?\b/gi, "[yerel ücret gizlendi]")
+      .replace(/\b\d{4,}\s*(?:TL|TRY|₺)?\b/gi, "[yerel ücret gizlendi]");
+  }
+  return result;
+}
+
+function privacySafeOutbound(value: unknown, aliases: PrivacyAliases, depth = 0): unknown {
+  if (depth > 8 || value == null) return value;
+  if (typeof value === "string") return redactOutboundText(value, aliases);
+  if (typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map((item) => privacySafeOutbound(item, aliases, depth + 1));
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !OUTBOUND_BLOCKED_KEYS.has(key))
+      .map(([key, child]) => [key, privacySafeOutbound(child, aliases, depth + 1)]),
+  );
+}
 
 function isDirectPersonalSalaryQuestion(question: string, hasEmployee = false) {
   if (PERSONAL_SALARY_PATTERNS.some((pattern) => pattern.test(question))) return true;
@@ -327,18 +373,19 @@ export async function buildLocalSensitiveAnswer(
   }
 
   const fallback = localAgentFallback(mergedPackage) as AgentAIResponse;
+  const outbound = privacySafeOutbound({
+    question: mergedPackage.sanitizedQuestion,
+    context: mergedPackage.externalContext,
+    fallback,
+  }, augmentation as PrivacyAliases);
   try {
     const response = await fetch("/api/ai/agent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        question: mergedPackage.sanitizedQuestion,
-        context: mergedPackage.externalContext,
-        fallback,
-      }),
+      body: JSON.stringify(outbound),
     });
+    if (!response.ok) return restoreUniversalAliases(fallback, augmentation);
     const payload = await response.json();
-    if (!response.ok) return null;
     const analysis = (payload?.analysis || fallback) as AgentAIResponse;
 
     const languageSafe = containsCjk(analysis) ? fallback : analysis;
