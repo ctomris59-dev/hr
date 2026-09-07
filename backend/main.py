@@ -24,7 +24,7 @@ from routers import (
     recruitment, org_chart, admin, dashboard, audit, workflow, observability,
     auth_v1, sso_v1, people_v1, employee_experience, performance_v1, talent_v1,
     workforce_ops_v1, decision_intelligence_v1, recruitment_v1, compensation_intelligence_v1,
-    integrations_v1, access_policy_v1, product_state_v1,
+    integrations_v1, access_policy_v1, product_state_v1, dashboard_v1, audit_v1,
 )
 
 settings = get_settings()
@@ -82,6 +82,8 @@ app.include_router(compensation_intelligence_v1.router)
 app.include_router(integrations_v1.router)
 app.include_router(access_policy_v1.router)
 app.include_router(product_state_v1.router)
+app.include_router(dashboard_v1.router)
+app.include_router(audit_v1.router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -93,6 +95,8 @@ async def startup_event():
             raise RuntimeError("SAAS_AUTH_ENABLED requires DATABASE_URL")
         if settings.SECRET_KEY == "change-me-in-production" or len(settings.SECRET_KEY) < 32:
             raise RuntimeError("SAAS_AUTH_ENABLED requires a strong SECRET_KEY of at least 32 characters")
+        from core.migrations import upgrade_database_to_head
+        upgrade_database_to_head()
     logger.info("Application starting up", extra={"app_name": settings.APP_NAME, "version": settings.APP_VERSION, "environment": settings.ENVIRONMENT, "debug": settings.DEBUG, "data_mode": settings.DATA_MODE, "saas_auth_enabled": settings.SAAS_AUTH_ENABLED, "database_configured": database_configured(), "legacy_api_allowed": settings.ALLOW_LEGACY_API_IN_SAAS})
 
 @app.on_event("shutdown")
