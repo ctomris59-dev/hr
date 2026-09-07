@@ -1,4 +1,4 @@
-import { canAccessRoute } from "@/lib/hr/accessControl";
+import { canAccessEmployeeRecord, canAccessRoute } from "@/lib/hr/accessControl";
 import { normalizeEmployeeName } from "@/lib/hr/employeeIdentity";
 import { findEmployeeInQuestion, scopedEmployees } from "@/lib/hr/employee360Context";
 import { collectFutureHRData, localAgentFallback } from "@/lib/hr/futureHRAgent";
@@ -108,7 +108,7 @@ function accessDeniedAnswer(displayName: string): AgentAIResponse {
     answer: `${displayName} için bireysel ücret tutarı mevcut rolünüzün erişim kapsamı dışında.`,
     executiveSummary: "Bireysel ücret verisi RBAC nedeniyle gösterilmedi.",
     confidence: "yüksek",
-    confidenceReason: "FutureHR ücret modülü erişim politikası doğrudan uygulandı.",
+    confidenceReason: "FutureHR ücret veri erişim politikası doğrudan uygulandı.",
     recommendations: [],
     evidenceSources: [],
     nextActions: [],
@@ -166,7 +166,8 @@ async function directSalaryAnswer(
   }
 
   const displayName = employeeName(employee) || focusName;
-  if (!canAccessRoute(currentUserRole, "/maas")) return accessDeniedAnswer(displayName);
+  if (!canAccessEmployeeRecord(baseData.user, employee, "salary", "view")) return accessDeniedAnswer(displayName);
+  const salaryRoute = canAccessRoute(currentUserRole, "/maas") ? "/maas" : "/kullanici";
 
   const directSalary = employeeSalary(employee);
   const cycleSalary = salaryFromCompensationCycles(compensationCycles, employee, displayName);
@@ -189,9 +190,9 @@ async function directSalaryAnswer(
       executiveSummary: "Yetki var; doğrulanabilir mevcut maaş tutarı yok.",
       confidence: "yüksek",
       confidenceReason: "FutureHR yerel ücret resolver'ı çalışan kaydını ve ücret dönemi sonuçlarını kontrol etti; pozitif mevcut ücret bulunamadı.",
-      recommendations: [{ title: "Ücret verisini doğrula", why: "Çalışanın mevcut maaş alanı veya aktif ücret dönemi girdisi eksik.", evidence: "FutureHR bireysel ücret + ücret dönemi kayıtları", route: "/maas" }],
-      evidenceSources: [{ id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · mevcut tutar eksik`, route: "/maas", domain: "compensation", confidence: "yüksek" }],
-      nextActions: [{ label: "Ücret ekranını aç", route: "/maas", actionKind: "open_compensation" }],
+      recommendations: [{ title: "Ücret verisini doğrula", why: "Çalışanın mevcut maaş alanı veya aktif ücret dönemi girdisi eksik.", evidence: "FutureHR bireysel ücret + ücret dönemi kayıtları", route: salaryRoute }],
+      evidenceSources: [{ id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · mevcut tutar eksik`, route: salaryRoute, domain: "compensation", confidence: "yüksek" }],
+      nextActions: [{ label: salaryRoute === "/maas" ? "Ücret ekranını aç" : "Kendi alanını aç", route: salaryRoute, actionKind: salaryRoute === "/maas" ? "open_compensation" : "open_employee" }],
       evidenceGaps: ["Mevcut maaş tutarı organizasyon veya aktif ücret dönemi kayıtlarında yok."],
       guardrail: "FutureHR Intelligence tutar uydurmaz; yalnız yetkili ve doğrulanabilir ücret verisini gösterir.",
     };
@@ -211,13 +212,13 @@ async function directSalaryAnswer(
       title: "Benchmark konumunu incele",
       why: `Mevcut ücret piyasa referansının %${(compaRatio! * 100).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} seviyesinde.`,
       evidence: `${formatTl(salary)} mevcut ücret · ${formatTl(market)} piyasa benchmarkı`,
-      route: "/maas",
+      route: salaryRoute,
     }] : [],
     evidenceSources: [
-      { id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · kaynak: ${salarySource}`, route: "/maas", domain: "compensation", confidence: "yüksek", value: formatTl(salary) },
-      ...(market > 0 ? [{ id: "salary-benchmark", label: "Piyasa Benchmarkı", detail: `${department || "—"} · ${position || "—"}`, route: "/maas", domain: "compensation" as const, confidence: "orta" as const, value: formatTl(market) }] : []),
+      { id: "salary-record", label: "Bireysel Ücret Kaydı", detail: `${department || "—"} · ${position || "—"} · kaynak: ${salarySource}`, route: salaryRoute, domain: "compensation", confidence: "yüksek", value: formatTl(salary) },
+      ...(market > 0 ? [{ id: "salary-benchmark", label: "Piyasa Benchmarkı", detail: `${department || "—"} · ${position || "—"}`, route: salaryRoute, domain: "compensation" as const, confidence: "orta" as const, value: formatTl(market) }] : []),
     ],
-    nextActions: [{ label: "Ücret detayını aç", route: "/maas", actionKind: "open_compensation" }],
+    nextActions: [{ label: salaryRoute === "/maas" ? "Ücret detayını aç" : "Kendi alanını aç", route: salaryRoute, actionKind: salaryRoute === "/maas" ? "open_compensation" : "open_employee" }],
     evidenceGaps: market > 0 ? [] : ["Bu rol için karşılaştırılabilir piyasa benchmarkı bulunmuyor."],
     guardrail: "Bu kişisel ücret bilgisi yalnız mevcut RBAC yetkisi kapsamında yerel FutureHR katmanında gösterildi; dış AI sağlayıcısına kişisel ücret tutarı gönderilmedi.",
   };
